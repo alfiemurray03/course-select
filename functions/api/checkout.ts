@@ -1,10 +1,12 @@
 interface Env {
   DB?: D1Database;
+  LEARNER_UPLOADS?: R2Bucket;
   STRIPE_SECRET_KEY?: string;
   SITE_URL?: string;
 }
 
 const ONLINE_LICENCE_LIMIT = 25;
+const MAXIMUM_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 type CheckoutItemRequest = {
   courseId?: string;
@@ -18,11 +20,26 @@ type CustomerRequest = {
   enrolmentEmail?: string;
   organisationName?: string;
   providerConsent?: boolean;
+  authorityConfirmed?: boolean;
+};
+
+type LearnerRequest = {
+  courseId?: string;
+  position?: number;
+  legalFirstName?: string;
+  legalLastName?: string;
+  enrolmentEmail?: string;
+};
+
+type LearnerSubmissionRequest = {
+  method?: string;
+  learners?: LearnerRequest[];
 };
 
 type CheckoutRequest = {
   items?: CheckoutItemRequest[];
   customer?: CustomerRequest;
+  learnerSubmission?: LearnerSubmissionRequest;
 };
 
 type CoursePriceRow = {
@@ -45,6 +62,23 @@ type ValidCustomer = {
   legalLastName: string;
   enrolmentEmail: string;
   organisationName: string | null;
+};
+
+type ValidLearner = {
+  courseId: string;
+  position: number;
+  legalFirstName: string;
+  legalLastName: string;
+  enrolmentEmail: string;
+};
+
+type ValidatedUpload = {
+  bytes: ArrayBuffer;
+  originalFilename: string;
+  safeFilename: string;
+  contentType: string;
+  size: number;
+  sha256: string;
 };
 
 function safeSiteUrl(request: Request, configured?: string) {
@@ -73,21 +107,25 @@ function cleanText(value: unknown, maximumLength: number) {
   return cleaned;
 }
 
+function normaliseEmail(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const email = value.trim().toLowerCase();
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  return email;
+}
+
 function normaliseCustomer(customer?: CustomerRequest): ValidCustomer | null {
   if (!customer || (customer.type !== 'individual' && customer.type !== 'business')) return null;
-  if (customer.providerConsent !== true) return null;
+  if (customer.providerConsent !== true || customer.authorityConfirmed !== true) return null;
 
   const legalFirstName = cleanText(customer.legalFirstName, 80);
   const legalLastName = cleanText(customer.legalLastName, 80);
-  const enrolmentEmail = typeof customer.enrolmentEmail === 'string'
-    ? customer.enrolmentEmail.trim().toLowerCase()
-    : '';
+  const enrolmentEmail = normaliseEmail(customer.enrolmentEmail);
   const organisationName = typeof customer.organisationName === 'string' && customer.organisationName.trim()
     ? cleanText(customer.organisationName, 160)
     : null;
 
-  if (!legalFirstName || !legalLastName) return null;
-  if (enrolmentEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(enrolmentEmail)) return null;
+  if (!legalFirstName || !legalLastName || !enrolmentEmail) return null;
   if (customer.type === 'business' && customer.organisationName?.trim() && !organisationName) return null;
 
   return {
@@ -99,10 +137,214 @@ function normaliseCustomer(customer?: CustomerRequest): ValidCustomer | null {
   };
 }
 
+function normaliseManualLearners(
+  submission: LearnerSubmissionRequest,
+  items: { courseId: string; quantity: number }[],
+): ValidLearner[] | null {
+  if (submission.method !== 'manual' || !Array.isArray(submission.learners)) return null;
+
+  const expectedByCourse = new Map(items.map((item) => [item.courseId, item.quantity]));
+  const expectedTotal = items.reduce((total, item) => total + item.quantity, 0);
+  if (submission.learners.length !== expectedTotal) return null;
+
+  const positions = new Set<string>();
+  const identityByEmail = new Map<string, string>();
+  const learners: ValidLearner[] = [];
+
+  for (const learner of submission.learners) {
+    const courseId = typeof learner.courseId === 'string' ? learner.courseId.trim() : '';
+    const position = Number(learner.position);
+    const maximumPosition = expectedByCourse.get(courseId);
+    const legalFirstName = cleanText(learner.legalFirstName, 80);
+    const legalLastName = cleanText(learner.legalLastName, 80);
+    const enrolmentEmail = normaliseEmail(learner.enrolmentEmail);
+
+    if (!maximumPosition || !Number.isInteger(position) || position < 1 || position > maximumPosition) return null;
+    if (!legalFirstName || !legalLastName || !enrolmentEmail) return null;
+
+    const positionKey = `${courseId}:${position}`;
+    if (positions.has(positionKey)) return null;
+    positions.add(positionKey);
+
+    const identity = `${legalFirstName.toLowerCase()}\u0000${legalLastName.toLowerCase()}`;
+    const existingIdentity = identityByEmail.get(enrolmentEmail);
+    if (existingIdentity && existingIdentity !== identity) return null;
+    identityByEmail.set(enrolmentEmail, identity);
+
+    learners.push({
+      courseId,
+      position,
+      legalFirstName,
+      legalLastName,
+      enrolmentEmail,
+    });
+  }
+
+  for (const item of items) {
+    for (let position = 1; position <= item.quantity; position += 1) {
+      if (!positions.has(`${item.courseId}:${position}`)) return null;
+    }
+  }
+
+  return learners.sort((left, right) => (
+    left.courseId.localeCompare(right.courseId) || left.position - right.position
+  ));
+}
+
+async function sha256Hex(value: ArrayBuffer | string) {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function identityId(prefix: string, value: string) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  const hex = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  return `${prefix}-${hex.slice(0, 40)}`;
+  return `${prefix}-${(await sha256Hex(value)).slice(0, 40)}`;
+}
+
+function safeFilename(filename: string) {
+  const cleaned = filename
+    .replace(/[\\/]/g, '-')
+    .replace(/[^a-zA-Z0-9._ -]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return (cleaned || 'learner-list').slice(0, 120);
+}
+
+function fileExtension(filename: string) {
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+async function validateLearnerFile(file: File): Promise<ValidatedUpload | null> {
+  if (file.size < 1 || file.size > MAXIMUM_UPLOAD_BYTES) return null;
+
+  const extension = fileExtension(file.name);
+  if (!['csv', 'xls', 'xlsx', 'pdf'].includes(extension)) return null;
+
+  const bytes = await file.arrayBuffer();
+  const header = new Uint8Array(bytes.slice(0, 16));
+  let contentType = '';
+
+  if (extension === 'pdf') {
+    if (new TextDecoder().decode(header.slice(0, 5)) !== '%PDF-') return null;
+    contentType = 'application/pdf';
+  } else if (extension === 'xlsx') {
+    if (header[0] !== 0x50 || header[1] !== 0x4b) return null;
+    contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  } else if (extension === 'xls') {
+    const signature = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+    if (!signature.every((value, index) => header[index] === value)) return null;
+    contentType = 'application/vnd.ms-excel';
+  } else {
+    const sample = new Uint8Array(bytes.slice(0, Math.min(bytes.byteLength, 4096)));
+    if (sample.some((byte) => byte === 0)) return null;
+    contentType = 'text/csv; charset=utf-8';
+  }
+
+  return {
+    bytes,
+    originalFilename: file.name.slice(0, 255),
+    safeFilename: safeFilename(file.name),
+    contentType,
+    size: file.size,
+    sha256: await sha256Hex(bytes),
+  };
+}
+
+async function parseRequest(request: Request) {
+  const contentType = request.headers.get('Content-Type') ?? '';
+  if (contentType.toLowerCase().includes('multipart/form-data')) {
+    const form = await request.formData();
+    const payload = form.get('payload');
+    if (typeof payload !== 'string') throw new Error('missing_payload');
+    const input = JSON.parse(payload) as CheckoutRequest;
+    const fileValue = form.get('learnerFile');
+    return {
+      input,
+      file: fileValue instanceof File && fileValue.size > 0 ? fileValue : null,
+    };
+  }
+
+  return {
+    input: await request.json<CheckoutRequest>(),
+    file: null,
+  };
+}
+
+async function ensureLearnerOrderTables(db: D1Database) {
+  await db.batch([
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS order_enrolment_details (
+        order_id TEXT PRIMARY KEY,
+        customer_type TEXT NOT NULL CHECK (customer_type IN ('individual', 'business')),
+        legal_first_name TEXT NOT NULL,
+        legal_last_name TEXT NOT NULL,
+        enrolment_email TEXT NOT NULL,
+        organisation_name TEXT,
+        learner_id TEXT,
+        provider_sharing_consent INTEGER NOT NULL DEFAULT 0 CHECK (provider_sharing_consent IN (0, 1)),
+        consent_recorded_at TEXT,
+        additional_learner_details_required INTEGER NOT NULL DEFAULT 0 CHECK (additional_learner_details_required IN (0, 1)),
+        fulfilment_status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (fulfilment_status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_additional_learners', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
+        ready_for_enrolment_at TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
+      )
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS order_learner_submissions (
+        order_id TEXT PRIMARY KEY,
+        method TEXT NOT NULL CHECK (method IN ('manual', 'file')),
+        expected_learner_count INTEGER NOT NULL,
+        submitted_learner_count INTEGER NOT NULL DEFAULT 0,
+        authority_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (authority_confirmed IN (0, 1)),
+        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_file_review', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+      )
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS order_learner_assignments (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        order_item_id TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        learner_id TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        legal_first_name TEXT NOT NULL,
+        legal_last_name TEXT NOT NULL,
+        enrolment_email TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'file')),
+        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_enrolment', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (course_id) REFERENCES courses(id),
+        FOREIGN KEY (learner_id) REFERENCES learners(id),
+        UNIQUE (order_item_id, position)
+      )
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS order_learner_uploads (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        storage_key TEXT NOT NULL UNIQUE,
+        original_filename TEXT NOT NULL,
+        content_type TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        sha256 TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_review', 'reviewed', 'cancelled', 'payment_failed')),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+      )
+    `),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_order_learner_assignments_order ON order_learner_assignments(order_id, status)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_order_learner_uploads_order ON order_learner_uploads(order_id, status)`),
+  ]);
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -121,10 +363,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   let input: CheckoutRequest;
+  let uploadedFile: File | null;
   try {
-    input = await request.json<CheckoutRequest>();
+    ({ input, file: uploadedFile } = await parseRequest(request));
   } catch {
-    return Response.json({ error: 'invalid_json', message: 'A valid JSON request body is required.' }, { status: 400 });
+    return Response.json({ error: 'invalid_request', message: 'A valid checkout request is required.' }, { status: 400 });
   }
 
   if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > ONLINE_LICENCE_LIMIT) {
@@ -138,7 +381,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (!customer) {
     return Response.json({
       error: 'invalid_customer_details',
-      message: 'Select Individual or Business and provide the learner’s legal first name, legal last name, valid enrolment email and required consent before checkout.',
+      message: 'Select Individual or Business, provide valid customer details and confirm both learner-data declarations before checkout.',
     }, { status: 400 });
   }
 
@@ -156,6 +399,47 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       error: 'large_order_required',
       message: `Online checkout is limited to ${ONLINE_LICENCE_LIMIT} licences in total. Please contact Aptenvo so we can arrange an order of ${ONLINE_LICENCE_LIMIT + 1} licences or more directly.`,
     }, { status: 400 });
+  }
+
+  const submission = input.learnerSubmission;
+  if (!submission || (submission.method !== 'manual' && submission.method !== 'file')) {
+    return Response.json({
+      error: 'invalid_learner_submission',
+      message: 'Choose whether to enter learner details manually or upload a learner list.',
+    }, { status: 400 });
+  }
+
+  const manualLearners = submission.method === 'manual'
+    ? normaliseManualLearners(submission, items)
+    : [];
+  if (submission.method === 'manual' && !manualLearners) {
+    return Response.json({
+      error: 'incomplete_learner_details',
+      message: 'Provide one valid learner record for every course licence in the basket.',
+    }, { status: 400 });
+  }
+
+  let validatedUpload: ValidatedUpload | null = null;
+  if (submission.method === 'file') {
+    if (!uploadedFile) {
+      return Response.json({
+        error: 'learner_file_required',
+        message: 'Attach the learner spreadsheet or PDF before checkout.',
+      }, { status: 400 });
+    }
+    if (!env.LEARNER_UPLOADS) {
+      return Response.json({
+        error: 'learner_storage_not_connected',
+        message: 'Private learner-file storage has not been connected to Aptenvo yet. Please contact Aptenvo or enter the learner details manually.',
+      }, { status: 503 });
+    }
+    validatedUpload = await validateLearnerFile(uploadedFile);
+    if (!validatedUpload) {
+      return Response.json({
+        error: 'invalid_learner_file',
+        message: 'Upload a genuine CSV, XLS, XLSX or PDF file no larger than 10 MB.',
+      }, { status: 400 });
+    }
   }
 
   const requestedJson = JSON.stringify(items.map((item, position) => ({ ...item, position })));
@@ -198,40 +482,53 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }, { status: 404 });
   }
 
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS order_enrolment_details (
-      order_id TEXT PRIMARY KEY,
-      customer_type TEXT NOT NULL CHECK (customer_type IN ('individual', 'business')),
-      legal_first_name TEXT NOT NULL,
-      legal_last_name TEXT NOT NULL,
-      enrolment_email TEXT NOT NULL,
-      organisation_name TEXT,
-      learner_id TEXT,
-      provider_sharing_consent INTEGER NOT NULL DEFAULT 0 CHECK (provider_sharing_consent IN (0, 1)),
-      consent_recorded_at TEXT,
-      additional_learner_details_required INTEGER NOT NULL DEFAULT 0 CHECK (additional_learner_details_required IN (0, 1)),
-      fulfilment_status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (fulfilment_status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_additional_learners', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
-      ready_for_enrolment_at TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-      FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
-    )
-  `).run();
+  await ensureLearnerOrderTables(env.DB);
 
   const orderId = `order-${crypto.randomUUID()}`;
-  const enrolmentRecordId = `enrolment-details-${crypto.randomUUID()}`;
   const customerId = await identityId('customer', customer.enrolmentEmail);
-  const learnerId = await identityId('learner', customer.enrolmentEmail);
   const customerAccountType = customer.type === 'business' ? 'organisation' : 'individual';
-  const additionalLearnerDetailsRequired = rows.some((row) => row.quantity > 1) ? 1 : 0;
+  const orderItems = rows.map((row) => ({ row, id: `order-item-${crypto.randomUUID()}` }));
+  const orderItemByCourse = new Map(orderItems.map((item) => [item.row.course_id, item.id]));
+  const uniqueLearners = new Map<string, ValidLearner>();
+  for (const learner of manualLearners ?? []) uniqueLearners.set(learner.enrolmentEmail, learner);
+
+  const learnerIdByEmail = new Map<string, string>();
+  await Promise.all([...uniqueLearners.keys()].map(async (email) => {
+    learnerIdByEmail.set(email, await identityId('learner', email));
+  }));
+
+  const primaryLearnerId = manualLearners?.[0]
+    ? learnerIdByEmail.get(manualLearners[0].enrolmentEmail) ?? null
+    : null;
   const totals = rows.reduce((sum, row) => ({
     net: sum.net + row.unit_net_pence * row.quantity,
     vat: sum.vat + row.unit_vat_pence * row.quantity,
     gross: sum.gross + row.unit_gross_pence * row.quantity,
   }), { net: 0, vat: 0, gross: 0 });
 
-  const orderStatements = [
+  let uploadedStorageKey: string | null = null;
+  let uploadId: string | null = null;
+  if (validatedUpload && env.LEARNER_UPLOADS) {
+    uploadId = `learner-upload-${crypto.randomUUID()}`;
+    uploadedStorageKey = `orders/${orderId}/learner-lists/${crypto.randomUUID()}-${validatedUpload.safeFilename}`;
+    try {
+      await env.LEARNER_UPLOADS.put(uploadedStorageKey, validatedUpload.bytes, {
+        httpMetadata: { contentType: validatedUpload.contentType },
+        customMetadata: {
+          classification: 'learner-enrolment-information',
+          orderId,
+          uploadId,
+        },
+      });
+    } catch {
+      return Response.json({
+        error: 'learner_upload_failed',
+        message: 'The learner file could not be stored securely. Please try again or enter the learner details manually.',
+      }, { status: 502 });
+    }
+  }
+
+  const orderStatements: D1PreparedStatement[] = [
     env.DB.prepare(`
       INSERT INTO customers (id, email, first_name, last_name, account_type, status)
       VALUES (?, ?, ?, ?, ?, 'active')
@@ -248,23 +545,23 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       customer.legalLastName,
       customerAccountType,
     ),
-    env.DB.prepare(`
+    ...[...uniqueLearners.entries()].map(([email, learner]) => env.DB!.prepare(`
       INSERT INTO learners (id, customer_id, email, first_name, last_name, status)
       VALUES (?, ?, ?, ?, ?, 'active')
       ON CONFLICT(id) DO UPDATE SET
-        customer_id = excluded.customer_id,
+        customer_id = COALESCE(learners.customer_id, excluded.customer_id),
         email = excluded.email,
         first_name = excluded.first_name,
         last_name = excluded.last_name,
         status = 'active',
         updated_at = CURRENT_TIMESTAMP
     `).bind(
-      learnerId,
-      customerId,
-      customer.enrolmentEmail,
-      customer.legalFirstName,
-      customer.legalLastName,
-    ),
+      learnerIdByEmail.get(email),
+      email === customer.enrolmentEmail ? customerId : null,
+      email,
+      learner.legalFirstName,
+      learner.legalLastName,
+    )),
     env.DB.prepare(`
       INSERT INTO orders (
         id, customer_id, status, currency, subtotal_pence, vat_pence, total_pence, customer_email
@@ -284,10 +581,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       customer.legalLastName,
       customer.enrolmentEmail,
       customer.organisationName,
-      learnerId,
-      additionalLearnerDetailsRequired,
+      primaryLearnerId,
+      submission.method === 'file' ? 1 : 0,
     ),
-    ...rows.map((row) => {
+    env.DB.prepare(`
+      INSERT INTO order_learner_submissions (
+        order_id, method, expected_learner_count, submitted_learner_count,
+        authority_confirmed, status
+      ) VALUES (?, ?, ?, ?, 1, 'pending_payment')
+    `).bind(
+      orderId,
+      submission.method,
+      totalLicences,
+      submission.method === 'manual' ? totalLicences : 0,
+    ),
+    ...orderItems.map(({ row, id }) => {
       const lineNetPence = row.unit_net_pence * row.quantity;
       const lineVatPence = row.unit_vat_pence * row.quantity;
       const lineGrossPence = row.unit_gross_pence * row.quantity;
@@ -299,7 +607,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           fulfilment_status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'not_started')
       `).bind(
-        `order-item-${crypto.randomUUID()}`,
+        id,
         orderId,
         row.course_id,
         row.tier_id,
@@ -312,9 +620,51 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         lineGrossPence,
       );
     }),
+    ...(manualLearners ?? []).map((learner) => env.DB!.prepare(`
+      INSERT INTO order_learner_assignments (
+        id, order_id, order_item_id, course_id, learner_id, position,
+        legal_first_name, legal_last_name, enrolment_email, source, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual', 'pending_payment')
+    `).bind(
+      `learner-assignment-${crypto.randomUUID()}`,
+      orderId,
+      orderItemByCourse.get(learner.courseId),
+      learner.courseId,
+      learnerIdByEmail.get(learner.enrolmentEmail),
+      learner.position,
+      learner.legalFirstName,
+      learner.legalLastName,
+      learner.enrolmentEmail,
+    )),
   ];
 
-  await env.DB.batch(orderStatements);
+  if (validatedUpload && uploadId && uploadedStorageKey) {
+    orderStatements.push(env.DB.prepare(`
+      INSERT INTO order_learner_uploads (
+        id, order_id, storage_key, original_filename, content_type,
+        size_bytes, sha256, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_payment')
+    `).bind(
+      uploadId,
+      orderId,
+      uploadedStorageKey,
+      validatedUpload.originalFilename,
+      validatedUpload.contentType,
+      validatedUpload.size,
+      validatedUpload.sha256,
+    ));
+  }
+
+  try {
+    await env.DB.batch(orderStatements);
+  } catch (error) {
+    if (uploadedStorageKey && env.LEARNER_UPLOADS) await env.LEARNER_UPLOADS.delete(uploadedStorageKey).catch(() => undefined);
+    return Response.json({
+      error: 'order_creation_failed',
+      message: 'Aptenvo could not save the order and learner information. Nothing has been charged.',
+      detail: error instanceof Error ? error.message : undefined,
+    }, { status: 500 });
+  }
 
   const siteUrl = safeSiteUrl(request, env.SITE_URL);
   const form = new URLSearchParams();
@@ -326,8 +676,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   form.set('billing_address_collection', 'auto');
   form.set('client_reference_id', orderId);
   form.set('metadata[aptenvo_order_id]', orderId);
-  form.set('metadata[enrolment_record_id]', enrolmentRecordId);
   form.set('metadata[customer_type]', customer.type);
+  form.set('metadata[learner_submission_method]', submission.method);
   form.set('metadata[basket_item_count]', String(rows.length));
   form.set('metadata[licence_count]', String(totalLicences));
   form.set('payment_intent_data[metadata][aptenvo_order_id]', orderId);
@@ -364,15 +714,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   if (!stripeResponse.ok || !stripeData.id || !stripeData.url) {
     await env.DB.batch([
-      env.DB.prepare(`
-        UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?
-      `).bind(orderId),
-      env.DB.prepare(`
-        UPDATE order_enrolment_details
-        SET fulfilment_status = 'payment_failed', updated_at = CURRENT_TIMESTAMP
-        WHERE order_id = ?
-      `).bind(orderId),
+      env.DB.prepare(`UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(orderId),
+      env.DB.prepare(`UPDATE order_enrolment_details SET fulfilment_status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+      env.DB.prepare(`UPDATE order_learner_submissions SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+      env.DB.prepare(`UPDATE order_learner_assignments SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+      env.DB.prepare(`UPDATE order_learner_uploads SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
     ]);
+    if (uploadedStorageKey && env.LEARNER_UPLOADS) await env.LEARNER_UPLOADS.delete(uploadedStorageKey).catch(() => undefined);
 
     return Response.json({
       error: 'stripe_checkout_failed',
@@ -392,5 +740,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     orderId,
     itemCount: rows.length,
     licenceCount: totalLicences,
+    learnerSubmissionMethod: submission.method,
   }, { headers: { 'Cache-Control': 'no-store' } });
 };
