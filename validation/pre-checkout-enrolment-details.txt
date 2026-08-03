@@ -1,0 +1,1 @@
+Validates required customer type, legal learner name, enrolment email, provider-sharing consent, D1 storage and Stripe webhook fulfilment state.
