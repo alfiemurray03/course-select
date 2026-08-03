@@ -4,6 +4,8 @@ interface Env {
   SITE_URL?: string;
 }
 
+const ONLINE_LICENCE_LIMIT = 25;
+
 type CheckoutItemRequest = {
   courseId?: string;
   quantity?: number;
@@ -39,8 +41,8 @@ function normaliseItems(items: CheckoutItemRequest[]) {
   for (const item of items) {
     const courseId = item.courseId?.trim();
     const quantity = Number(item.quantity);
-    if (!courseId || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return null;
-    combined.set(courseId, Math.min(9999, (combined.get(courseId) ?? 0) + quantity));
+    if (!courseId || !Number.isInteger(quantity) || quantity < 1 || quantity > ONLINE_LICENCE_LIMIT) return null;
+    combined.set(courseId, (combined.get(courseId) ?? 0) + quantity);
   }
 
   return [...combined.entries()].map(([courseId, quantity]) => ({ courseId, quantity }));
@@ -68,18 +70,26 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return Response.json({ error: 'invalid_json', message: 'A valid JSON request body is required.' }, { status: 400 });
   }
 
-  if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 25) {
+  if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > ONLINE_LICENCE_LIMIT) {
     return Response.json({
       error: 'invalid_basket',
-      message: 'Your basket must contain between 1 and 25 different courses.',
+      message: `Your online basket must contain between 1 and ${ONLINE_LICENCE_LIMIT} different courses.`,
     }, { status: 400 });
   }
 
   const items = normaliseItems(input.items);
-  if (!items || items.length < 1 || items.length > 25) {
+  if (!items || items.length < 1 || items.length > ONLINE_LICENCE_LIMIT) {
     return Response.json({
       error: 'invalid_checkout_request',
-      message: 'Each basket item must contain a valid course and a licence quantity between 1 and 9,999.',
+      message: `Each basket item must contain a valid course and a licence quantity between 1 and ${ONLINE_LICENCE_LIMIT}.`,
+    }, { status: 400 });
+  }
+
+  const totalLicences = items.reduce((total, item) => total + item.quantity, 0);
+  if (totalLicences > ONLINE_LICENCE_LIMIT) {
+    return Response.json({
+      error: 'large_order_required',
+      message: `Online checkout is limited to ${ONLINE_LICENCE_LIMIT} licences in total. Please contact Aptenvo so we can arrange an order of ${ONLINE_LICENCE_LIMIT + 1} licences or more directly.`,
     }, { status: 400 });
   }
 
@@ -174,6 +184,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   form.set('billing_address_collection', 'auto');
   form.set('metadata[aptenvo_order_id]', orderId);
   form.set('metadata[basket_item_count]', String(rows.length));
+  form.set('metadata[licence_count]', String(totalLicences));
   form.set('payment_intent_data[metadata][aptenvo_order_id]', orderId);
 
   rows.forEach((row, index) => {
@@ -184,7 +195,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       form.set(`line_items[${index}][price_data][unit_amount]`, String(row.unit_gross_pence));
       form.set(`line_items[${index}][price_data][tax_behavior]`, 'inclusive');
       form.set(`line_items[${index}][price_data][product_data][name]`, row.title);
-      form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence supplied through Aptenvo. Price includes VAT.');
+      form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence sold by JA Group Services Ltd through Aptenvo and delivered through the course provider learning platform. Price includes VAT.');
       form.set(`line_items[${index}][price_data][product_data][metadata][course_id]`, row.course_id);
       form.set(`line_items[${index}][price_data][product_data][metadata][provider_id]`, row.provider_id);
     }
@@ -228,6 +239,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     url: stripeData.url,
     orderId,
     itemCount: rows.length,
-    licenceCount: rows.reduce((total, row) => total + row.quantity, 0),
+    licenceCount: totalLicences,
   }, { headers: { 'Cache-Control': 'no-store' } });
 };
