@@ -11,8 +11,18 @@ type CheckoutItemRequest = {
   quantity?: number;
 };
 
+type CustomerRequest = {
+  type?: string;
+  legalFirstName?: string;
+  legalLastName?: string;
+  enrolmentEmail?: string;
+  organisationName?: string;
+  providerConsent?: boolean;
+};
+
 type CheckoutRequest = {
   items?: CheckoutItemRequest[];
+  customer?: CustomerRequest;
 };
 
 type CoursePriceRow = {
@@ -27,6 +37,14 @@ type CoursePriceRow = {
   unit_vat_pence: number;
   unit_gross_pence: number;
   stripe_price_id: string | null;
+};
+
+type ValidCustomer = {
+  type: 'individual' | 'business';
+  legalFirstName: string;
+  legalLastName: string;
+  enrolmentEmail: string;
+  organisationName: string | null;
 };
 
 function safeSiteUrl(request: Request, configured?: string) {
@@ -46,6 +64,45 @@ function normaliseItems(items: CheckoutItemRequest[]) {
   }
 
   return [...combined.entries()].map(([courseId, quantity]) => ({ courseId, quantity }));
+}
+
+function cleanText(value: unknown, maximumLength: number) {
+  if (typeof value !== 'string') return null;
+  const cleaned = value.trim().replace(/\s+/g, ' ');
+  if (!cleaned || cleaned.length > maximumLength || /[\u0000-\u001F\u007F]/.test(cleaned)) return null;
+  return cleaned;
+}
+
+function normaliseCustomer(customer?: CustomerRequest): ValidCustomer | null {
+  if (!customer || (customer.type !== 'individual' && customer.type !== 'business')) return null;
+  if (customer.providerConsent !== true) return null;
+
+  const legalFirstName = cleanText(customer.legalFirstName, 80);
+  const legalLastName = cleanText(customer.legalLastName, 80);
+  const enrolmentEmail = typeof customer.enrolmentEmail === 'string'
+    ? customer.enrolmentEmail.trim().toLowerCase()
+    : '';
+  const organisationName = typeof customer.organisationName === 'string' && customer.organisationName.trim()
+    ? cleanText(customer.organisationName, 160)
+    : null;
+
+  if (!legalFirstName || !legalLastName) return null;
+  if (enrolmentEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(enrolmentEmail)) return null;
+  if (customer.type === 'business' && customer.organisationName?.trim() && !organisationName) return null;
+
+  return {
+    type: customer.type,
+    legalFirstName,
+    legalLastName,
+    enrolmentEmail,
+    organisationName,
+  };
+}
+
+async function identityId(prefix: string, value: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const hex = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${prefix}-${hex.slice(0, 40)}`;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -74,6 +131,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return Response.json({
       error: 'invalid_basket',
       message: `Your online basket must contain between 1 and ${ONLINE_LICENCE_LIMIT} different courses.`,
+    }, { status: 400 });
+  }
+
+  const customer = normaliseCustomer(input.customer);
+  if (!customer) {
+    return Response.json({
+      error: 'invalid_customer_details',
+      message: 'Select Individual or Business and provide the learner’s legal first name, legal last name, valid enrolment email and required consent before checkout.',
     }, { status: 400 });
   }
 
@@ -133,7 +198,33 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }, { status: 404 });
   }
 
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS order_enrolment_details (
+      order_id TEXT PRIMARY KEY,
+      customer_type TEXT NOT NULL CHECK (customer_type IN ('individual', 'business')),
+      legal_first_name TEXT NOT NULL,
+      legal_last_name TEXT NOT NULL,
+      enrolment_email TEXT NOT NULL,
+      organisation_name TEXT,
+      learner_id TEXT,
+      provider_sharing_consent INTEGER NOT NULL DEFAULT 0 CHECK (provider_sharing_consent IN (0, 1)),
+      consent_recorded_at TEXT,
+      additional_learner_details_required INTEGER NOT NULL DEFAULT 0 CHECK (additional_learner_details_required IN (0, 1)),
+      fulfilment_status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (fulfilment_status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_additional_learners', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
+      ready_for_enrolment_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
+    )
+  `).run();
+
   const orderId = `order-${crypto.randomUUID()}`;
+  const enrolmentRecordId = `enrolment-details-${crypto.randomUUID()}`;
+  const customerId = await identityId('customer', customer.enrolmentEmail);
+  const learnerId = await identityId('learner', customer.enrolmentEmail);
+  const customerAccountType = customer.type === 'business' ? 'organisation' : 'individual';
+  const additionalLearnerDetailsRequired = rows.some((row) => row.quantity > 1) ? 1 : 0;
   const totals = rows.reduce((sum, row) => ({
     net: sum.net + row.unit_net_pence * row.quantity,
     vat: sum.vat + row.unit_vat_pence * row.quantity,
@@ -142,10 +233,60 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const orderStatements = [
     env.DB.prepare(`
+      INSERT INTO customers (id, email, first_name, last_name, account_type, status)
+      VALUES (?, ?, ?, ?, ?, 'active')
+      ON CONFLICT(id) DO UPDATE SET
+        email = excluded.email,
+        first_name = excluded.first_name,
+        last_name = excluded.last_name,
+        account_type = excluded.account_type,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      customerId,
+      customer.enrolmentEmail,
+      customer.legalFirstName,
+      customer.legalLastName,
+      customerAccountType,
+    ),
+    env.DB.prepare(`
+      INSERT INTO learners (id, customer_id, email, first_name, last_name, status)
+      VALUES (?, ?, ?, ?, ?, 'active')
+      ON CONFLICT(id) DO UPDATE SET
+        customer_id = excluded.customer_id,
+        email = excluded.email,
+        first_name = excluded.first_name,
+        last_name = excluded.last_name,
+        status = 'active',
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      learnerId,
+      customerId,
+      customer.enrolmentEmail,
+      customer.legalFirstName,
+      customer.legalLastName,
+    ),
+    env.DB.prepare(`
       INSERT INTO orders (
-        id, status, currency, subtotal_pence, vat_pence, total_pence
-      ) VALUES (?, 'awaiting_payment', 'GBP', ?, ?, ?)
-    `).bind(orderId, totals.net, totals.vat, totals.gross),
+        id, customer_id, status, currency, subtotal_pence, vat_pence, total_pence, customer_email
+      ) VALUES (?, ?, 'awaiting_payment', 'GBP', ?, ?, ?, ?)
+    `).bind(orderId, customerId, totals.net, totals.vat, totals.gross, customer.enrolmentEmail),
+    env.DB.prepare(`
+      INSERT INTO order_enrolment_details (
+        order_id, customer_type, legal_first_name, legal_last_name,
+        enrolment_email, organisation_name, learner_id,
+        provider_sharing_consent, consent_recorded_at,
+        additional_learner_details_required, fulfilment_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, ?, 'pending_payment')
+    `).bind(
+      orderId,
+      customer.type,
+      customer.legalFirstName,
+      customer.legalLastName,
+      customer.enrolmentEmail,
+      customer.organisationName,
+      learnerId,
+      additionalLearnerDetailsRequired,
+    ),
     ...rows.map((row) => {
       const lineNetPence = row.unit_net_pence * row.quantity;
       const lineVatPence = row.unit_vat_pence * row.quantity;
@@ -181,8 +322,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   form.set('success_url', `${siteUrl}/basket?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
   form.set('cancel_url', `${siteUrl}/basket?checkout=cancelled`);
   form.set('customer_creation', 'always');
+  form.set('customer_email', customer.enrolmentEmail);
   form.set('billing_address_collection', 'auto');
+  form.set('client_reference_id', orderId);
   form.set('metadata[aptenvo_order_id]', orderId);
+  form.set('metadata[enrolment_record_id]', enrolmentRecordId);
+  form.set('metadata[customer_type]', customer.type);
   form.set('metadata[basket_item_count]', String(rows.length));
   form.set('metadata[licence_count]', String(totalLicences));
   form.set('payment_intent_data[metadata][aptenvo_order_id]', orderId);
@@ -218,9 +363,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   };
 
   if (!stripeResponse.ok || !stripeData.id || !stripeData.url) {
-    await env.DB.prepare(`
-      UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?
-    `).bind(orderId).run();
+    await env.DB.batch([
+      env.DB.prepare(`
+        UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).bind(orderId),
+      env.DB.prepare(`
+        UPDATE order_enrolment_details
+        SET fulfilment_status = 'payment_failed', updated_at = CURRENT_TIMESTAMP
+        WHERE order_id = ?
+      `).bind(orderId),
+    ]);
 
     return Response.json({
       error: 'stripe_checkout_failed',
