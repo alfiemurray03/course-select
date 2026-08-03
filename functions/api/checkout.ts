@@ -4,12 +4,18 @@ interface Env {
   SITE_URL?: string;
 }
 
-type CheckoutRequest = {
+type CheckoutItemRequest = {
   courseId?: string;
   quantity?: number;
 };
 
+type CheckoutRequest = {
+  items?: CheckoutItemRequest[];
+};
+
 type CoursePriceRow = {
+  position: number;
+  quantity: number;
   course_id: string;
   title: string;
   slug: string;
@@ -25,6 +31,19 @@ function safeSiteUrl(request: Request, configured?: string) {
   if (configured) return configured.replace(/\/$/, '');
   const url = new URL(request.url);
   return `${url.protocol}//${url.host}`;
+}
+
+function normaliseItems(items: CheckoutItemRequest[]) {
+  const combined = new Map<string, number>();
+
+  for (const item of items) {
+    const courseId = item.courseId?.trim();
+    const quantity = Number(item.quantity);
+    if (!courseId || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return null;
+    combined.set(courseId, Math.min(9999, (combined.get(courseId) ?? 0) + quantity));
+  }
+
+  return [...combined.entries()].map(([courseId, quantity]) => ({ courseId, quantity }));
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -49,18 +68,33 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return Response.json({ error: 'invalid_json', message: 'A valid JSON request body is required.' }, { status: 400 });
   }
 
-  const courseId = input.courseId?.trim();
-  const quantity = Number(input.quantity);
-
-  if (!courseId || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) {
+  if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 25) {
     return Response.json({
-      error: 'invalid_checkout_request',
-      message: 'Select a valid course and a licence quantity between 1 and 9,999.',
+      error: 'invalid_basket',
+      message: 'Your basket must contain between 1 and 25 different courses.',
     }, { status: 400 });
   }
 
-  const row = await env.DB.prepare(`
+  const items = normaliseItems(input.items);
+  if (!items || items.length < 1 || items.length > 25) {
+    return Response.json({
+      error: 'invalid_checkout_request',
+      message: 'Each basket item must contain a valid course and a licence quantity between 1 and 9,999.',
+    }, { status: 400 });
+  }
+
+  const requestedJson = JSON.stringify(items.map((item, position) => ({ ...item, position })));
+  const result = await env.DB.prepare(`
+    WITH requested AS (
+      SELECT
+        CAST(json_extract(value, '$.position') AS INTEGER) AS position,
+        TRIM(json_extract(value, '$.courseId')) AS course_id,
+        CAST(json_extract(value, '$.quantity') AS INTEGER) AS quantity
+      FROM json_each(?)
+    )
     SELECT
+      r.position,
+      r.quantity,
       c.id AS course_id,
       c.title,
       c.slug,
@@ -70,86 +104,92 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       t.vat_pence AS unit_vat_pence,
       t.aptenvo_gross_pence AS unit_gross_pence,
       sp.stripe_price_id
-    FROM courses c
+    FROM requested r
+    INNER JOIN courses c ON c.id = r.course_id
     INNER JOIN course_price_tiers t ON t.course_id = c.id
     LEFT JOIN stripe_prices sp ON sp.price_tier_id = t.id
-    WHERE c.id = ?
-      AND c.status = 'published'
+    WHERE c.status = 'published'
       AND t.status = 'active'
-      AND ? >= t.minimum_quantity
-      AND (t.maximum_quantity IS NULL OR ? <= t.maximum_quantity)
-    ORDER BY t.minimum_quantity DESC
-    LIMIT 1
-  `).bind(courseId, quantity, quantity).first<CoursePriceRow>();
+      AND r.quantity >= t.minimum_quantity
+      AND (t.maximum_quantity IS NULL OR r.quantity <= t.maximum_quantity)
+    ORDER BY r.position ASC
+  `).bind(requestedJson).all<CoursePriceRow>();
 
-  if (!row) {
+  const rows = result.results ?? [];
+  if (rows.length !== items.length) {
     return Response.json({
       error: 'course_or_price_not_found',
-      message: 'The selected course or quantity price could not be found.',
+      message: 'One or more selected courses or quantity prices could not be found. Please review your basket.',
     }, { status: 404 });
   }
 
   const orderId = `order-${crypto.randomUUID()}`;
-  const orderItemId = `order-item-${crypto.randomUUID()}`;
-  const lineNetPence = row.unit_net_pence * quantity;
-  const lineVatPence = row.unit_vat_pence * quantity;
-  const lineGrossPence = row.unit_gross_pence * quantity;
+  const totals = rows.reduce((sum, row) => ({
+    net: sum.net + row.unit_net_pence * row.quantity,
+    vat: sum.vat + row.unit_vat_pence * row.quantity,
+    gross: sum.gross + row.unit_gross_pence * row.quantity,
+  }), { net: 0, vat: 0, gross: 0 });
 
-  await env.DB.batch([
+  const orderStatements = [
     env.DB.prepare(`
       INSERT INTO orders (
         id, status, currency, subtotal_pence, vat_pence, total_pence
       ) VALUES (?, 'awaiting_payment', 'GBP', ?, ?, ?)
-    `).bind(orderId, lineNetPence, lineVatPence, lineGrossPence),
-    env.DB.prepare(`
-      INSERT INTO order_items (
-        id, order_id, course_id, price_tier_id, quantity,
-        unit_net_pence, unit_vat_pence, unit_gross_pence,
-        line_net_pence, line_vat_pence, line_gross_pence,
-        fulfilment_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'not_started')
-    `).bind(
-      orderItemId,
-      orderId,
-      row.course_id,
-      row.tier_id,
-      quantity,
-      row.unit_net_pence,
-      row.unit_vat_pence,
-      row.unit_gross_pence,
-      lineNetPence,
-      lineVatPence,
-      lineGrossPence,
-    ),
-  ]);
+    `).bind(orderId, totals.net, totals.vat, totals.gross),
+    ...rows.map((row) => {
+      const lineNetPence = row.unit_net_pence * row.quantity;
+      const lineVatPence = row.unit_vat_pence * row.quantity;
+      const lineGrossPence = row.unit_gross_pence * row.quantity;
+      return env.DB!.prepare(`
+        INSERT INTO order_items (
+          id, order_id, course_id, price_tier_id, quantity,
+          unit_net_pence, unit_vat_pence, unit_gross_pence,
+          line_net_pence, line_vat_pence, line_gross_pence,
+          fulfilment_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'not_started')
+      `).bind(
+        `order-item-${crypto.randomUUID()}`,
+        orderId,
+        row.course_id,
+        row.tier_id,
+        row.quantity,
+        row.unit_net_pence,
+        row.unit_vat_pence,
+        row.unit_gross_pence,
+        lineNetPence,
+        lineVatPence,
+        lineGrossPence,
+      );
+    }),
+  ];
+
+  await env.DB.batch(orderStatements);
 
   const siteUrl = safeSiteUrl(request, env.SITE_URL);
   const form = new URLSearchParams();
   form.set('mode', 'payment');
-  form.set('success_url', `${siteUrl}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
-  form.set('cancel_url', `${siteUrl}/courses/${row.slug}?checkout=cancelled`);
+  form.set('success_url', `${siteUrl}/basket?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
+  form.set('cancel_url', `${siteUrl}/basket?checkout=cancelled`);
   form.set('customer_creation', 'always');
   form.set('billing_address_collection', 'auto');
   form.set('metadata[aptenvo_order_id]', orderId);
-  form.set('metadata[course_id]', row.course_id);
-  form.set('metadata[price_tier_id]', row.tier_id);
-  form.set('metadata[quantity]', String(quantity));
+  form.set('metadata[basket_item_count]', String(rows.length));
   form.set('payment_intent_data[metadata][aptenvo_order_id]', orderId);
-  form.set('payment_intent_data[metadata][course_id]', row.course_id);
 
-  if (row.stripe_price_id) {
-    form.set('line_items[0][price]', row.stripe_price_id);
-  } else {
-    form.set('line_items[0][price_data][currency]', 'gbp');
-    form.set('line_items[0][price_data][unit_amount]', String(row.unit_gross_pence));
-    form.set('line_items[0][price_data][tax_behavior]', 'inclusive');
-    form.set('line_items[0][price_data][product_data][name]', row.title);
-    form.set('line_items[0][price_data][product_data][description]', 'Online training licence supplied through Aptenvo. Price includes VAT.');
-    form.set('line_items[0][price_data][product_data][metadata][course_id]', row.course_id);
-    form.set('line_items[0][price_data][product_data][metadata][provider_id]', row.provider_id);
-  }
-
-  form.set('line_items[0][quantity]', String(quantity));
+  rows.forEach((row, index) => {
+    if (row.stripe_price_id) {
+      form.set(`line_items[${index}][price]`, row.stripe_price_id);
+    } else {
+      form.set(`line_items[${index}][price_data][currency]`, 'gbp');
+      form.set(`line_items[${index}][price_data][unit_amount]`, String(row.unit_gross_pence));
+      form.set(`line_items[${index}][price_data][tax_behavior]`, 'inclusive');
+      form.set(`line_items[${index}][price_data][product_data][name]`, row.title);
+      form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence supplied through Aptenvo. Price includes VAT.');
+      form.set(`line_items[${index}][price_data][product_data][metadata][course_id]`, row.course_id);
+      form.set(`line_items[${index}][price_data][product_data][metadata][provider_id]`, row.provider_id);
+    }
+    form.set(`line_items[${index}][quantity]`, String(row.quantity));
+  });
 
   const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
@@ -187,5 +227,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     id: stripeData.id,
     url: stripeData.url,
     orderId,
+    itemCount: rows.length,
+    licenceCount: rows.reduce((total, row) => total + row.quantity, 0),
   }, { headers: { 'Cache-Control': 'no-store' } });
 };
