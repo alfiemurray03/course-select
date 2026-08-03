@@ -1,0 +1,199 @@
+.enrolment-form-intro {
+  margin: -0.55rem 0 1.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.customer-type-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.customer-type-fieldset legend,
+.enrolment-field,
+.enrolment-name-grid label {
+  color: var(--foreground);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.customer-type-fieldset legend > span,
+.enrolment-field > span:not(.optional-label),
+.enrolment-name-grid label > span {
+  color: #b91c1c;
+}
+
+.customer-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.customer-type-options > label {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 70px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.customer-type-options > label:hover,
+.customer-type-options > label.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.customer-type-options > label.selected {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.customer-type-options input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.customer-type-options svg {
+  color: var(--primary);
+}
+
+.customer-type-options strong,
+.customer-type-options small {
+  display: block;
+}
+
+.customer-type-options strong {
+  color: var(--foreground);
+  font-size: 0.86rem;
+}
+
+.customer-type-options small {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.enrolment-name-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.enrolment-name-grid label,
+.enrolment-field {
+  display: grid;
+  gap: 7px;
+}
+
+.enrolment-field {
+  margin-top: 14px;
+}
+
+.enrolment-name-grid input,
+.enrolment-field input[type='text'],
+.enrolment-field input[type='email'] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 500;
+}
+
+.enrolment-name-grid input:focus,
+.enrolment-field input:focus {
+  border-color: var(--primary);
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+  outline-offset: 0;
+}
+
+.enrolment-field small {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.optional-label {
+  margin-left: 5px;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.provider-consent-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.provider-consent-field input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+
+.additional-learners-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.additional-learners-notice svg {
+  margin-top: 2px;
+}
+
+.additional-learners-notice p {
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.additional-learners-notice strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.dark .additional-learners-notice {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(146, 64, 14, 0.22);
+  color: #fde68a;
+}
+
+@media (max-width: 520px) {
+  .customer-type-options,
+  .enrolment-name-grid {
+    grid-template-columns: 1fr;
+  }
+}
