@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
+import './catalogue.css';
 
 const root = document.getElementById('app');
 if (!root) throw new Error('Application root not found.');
