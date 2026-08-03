@@ -42,6 +42,211 @@
   line-height: 1.7;
 }
 
+.button:disabled,
+.basket-quantity-control button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.basket-limit-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--primary-soft);
+  color: var(--foreground);
+  font-size: 0.84rem;
+}
+
+.basket-limit-strip svg {
+  color: var(--primary);
+}
+
+.basket-limit-strip a,
+.large-order-inline-link {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.process-section {
+  display: grid;
+}
+
+.large-order-banner,
+.large-order-panel {
+  display: grid;
+  align-items: center;
+  gap: 32px;
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.large-order-banner {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.large-order-panel {
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+}
+
+.large-order-banner h2,
+.large-order-panel h2 {
+  margin-top: 12px;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+}
+
+.large-order-banner p,
+.large-order-panel p {
+  margin-top: 14px;
+  color: var(--muted-foreground);
+}
+
+.large-order-contact,
+.support-contact-card {
+  padding: 25px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--muted);
+}
+
+.large-order-contact > svg,
+.support-contact-card > svg {
+  color: var(--primary);
+}
+
+.large-order-contact h3,
+.support-contact-card h2 {
+  margin-top: 14px;
+}
+
+.large-order-contact .button,
+.support-contact-card .button {
+  margin-top: 20px;
+}
+
+.relationship-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.relationship-card {
+  padding: clamp(25px, 4vw, 38px);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 0 12px 35px -24px rgba(15, 23, 42, 0.4);
+}
+
+.primary-relationship-card {
+  border-color: rgba(37, 99, 235, 0.38);
+}
+
+.relationship-card .status-pill {
+  display: inline-flex;
+  margin-top: 20px;
+}
+
+.relationship-card h2 {
+  margin-top: 13px;
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+}
+
+.relationship-card > p {
+  margin-top: 14px;
+  color: var(--muted-foreground);
+}
+
+.provider-access-note,
+.support-route-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 15px;
+  background: var(--primary-soft);
+}
+
+.provider-access-note svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.provider-access-note strong,
+.support-route-note strong {
+  color: var(--foreground);
+}
+
+.provider-access-note p,
+.support-route-note span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.company-copy-card h2:not(:first-child) {
+  margin-top: 30px;
+}
+
+.company-copy-card p {
+  color: var(--muted-foreground);
+}
+
+.company-details-card > p {
+  margin-top: 8px;
+  color: var(--muted-foreground);
+}
+
+.company-details-card dl {
+  display: grid;
+  gap: 0;
+  margin: 22px 0;
+}
+
+.company-details-card dl > div {
+  display: grid;
+  gap: 4px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.company-details-card dt {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.company-details-card dd {
+  margin: 0;
+  color: var(--foreground);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.company-details-card a:not(.button) {
+  color: var(--primary);
+}
+
+.support-contact-card p {
+  margin-top: 12px;
+  color: var(--muted-foreground);
+}
+
+.support-route-note {
+  display: block;
+}
+
 .app-error-screen {
   min-height: 100vh;
   display: grid;
@@ -102,4 +307,27 @@
 
 .app-error-card button:hover {
   background: var(--primary-dark);
+}
+
+@media (max-width: 880px) {
+  .large-order-banner,
+  .large-order-panel,
+  .relationship-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .large-order-banner .button {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .basket-limit-strip {
+    grid-template-columns: auto 1fr;
+  }
+
+  .basket-limit-strip a {
+    grid-column: 1 / -1;
+    padding-left: 28px;
+  }
 }
