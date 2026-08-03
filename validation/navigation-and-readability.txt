@@ -1,0 +1,1 @@
+Validates reliable internal navigation, error recovery and corrected basket text contrast.
