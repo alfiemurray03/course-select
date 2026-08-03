@@ -125,7 +125,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
               stripe_checkout_session_id = COALESCE(?, stripe_checkout_session_id),
               stripe_payment_intent_id = ?,
               stripe_customer_id = ?,
-              customer_email = ?,
+              customer_email = COALESCE(?, customer_email),
               paid_at = CURRENT_TIMESTAMP,
               updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
@@ -135,19 +135,46 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           SET fulfilment_status = 'queued', updated_at = CURRENT_TIMESTAMP
           WHERE order_id = ? AND fulfilment_status = 'not_started'
         `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_enrolment_details
+          SET fulfilment_status = CASE
+                WHEN additional_learner_details_required = 1 THEN 'awaiting_additional_learners'
+                ELSE 'awaiting_enrolment'
+              END,
+              ready_for_enrolment_at = CASE
+                WHEN additional_learner_details_required = 0 THEN CURRENT_TIMESTAMP
+                ELSE ready_for_enrolment_at
+              END,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ?
+        `).bind(orderId),
       ]);
     } else if (event.type === 'checkout.session.expired' && orderId) {
-      await env.DB.prepare(`
-        UPDATE orders
-        SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND status = 'awaiting_payment'
-      `).bind(orderId).run();
+      await env.DB.batch([
+        env.DB.prepare(`
+          UPDATE orders
+          SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND status = 'awaiting_payment'
+        `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_enrolment_details
+          SET fulfilment_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ? AND fulfilment_status = 'pending_payment'
+        `).bind(orderId),
+      ]);
     } else if (event.type === 'payment_intent.payment_failed' && orderId) {
-      await env.DB.prepare(`
-        UPDATE orders
-        SET status = 'failed', updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).bind(orderId).run();
+      await env.DB.batch([
+        env.DB.prepare(`
+          UPDATE orders
+          SET status = 'failed', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_enrolment_details
+          SET fulfilment_status = 'payment_failed', updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ?
+        `).bind(orderId),
+      ]);
     } else if (event.type === 'charge.refunded') {
       const paymentIntent = stringValue(object.payment_intent);
       const refunded = object.refunded === true;
