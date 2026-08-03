@@ -111,9 +111,19 @@ const categories = [
   { name: 'Business Compliance', icon: BriefcaseBusiness, copy: 'Data protection, conduct and workplace skills.' },
 ];
 
+const wordmarkStyle = {
+  color: '#2563eb',
+  fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
+  fontSize: '2rem',
+  fontWeight: 800,
+  letterSpacing: '-0.065em',
+  lineHeight: 1,
+  whiteSpace: 'nowrap' as const,
+};
+
 function useTheme() {
   const [mode, setMode] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('course-select-theme');
+    const saved = localStorage.getItem('aptenvo-theme');
     return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
   });
 
@@ -126,7 +136,7 @@ function useTheme() {
     };
     apply();
     media.addEventListener('change', apply);
-    localStorage.setItem('course-select-theme', mode);
+    localStorage.setItem('aptenvo-theme', mode);
     return () => media.removeEventListener('change', apply);
   }, [mode]);
 
@@ -148,11 +158,8 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link to="/" className="brand" aria-label="CourseSelect home">
-          <picture>
-            <source media="(prefers-color-scheme: dark)" srcSet="/course-select-logo-dark.svg" />
-            <img className="brand-logo light-logo" src="/course-select-logo-light.svg" alt="CourseSelect — Choose. Learn. Succeed." />
-          </picture>
+        <Link to="/" className="brand" aria-label="Aptenvo home">
+          <span style={wordmarkStyle}>Aptenvo</span>
         </Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
@@ -195,7 +202,7 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
           <Link to="/individuals">For individuals</Link>
           <Link to="/business">For organisations</Link>
           <Link to="/providers">Course providers</Link>
-          <Link to="/about">About CourseSelect</Link>
+          <Link to="/about">About Aptenvo</Link>
           <Link to="/support">Help and support</Link>
         </nav>
       )}
@@ -209,11 +216,11 @@ function Footer() {
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-brand">
-            <img src="/course-select-logo-dark.svg" alt="CourseSelect" />
+            <span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span>
             <p>Online training from selected course providers for individuals and organisations.</p>
           </div>
           <div>
-            <h3>CourseSelect</h3>
+            <h3>Aptenvo</h3>
             <Link to="/courses">Browse courses</Link>
             <Link to="/individuals">For individuals</Link>
             <Link to="/business">For organisations</Link>
@@ -237,7 +244,7 @@ function Footer() {
       </footer>
       <div className="corporate-disclosure">
         <div>
-          <strong>CourseSelect is a trading division of JA Group Services Ltd.</strong>
+          <strong>Aptenvo is a trading division of JA Group Services Ltd.</strong>
           <span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370.</span>
         </div>
         <span>© {new Date().getFullYear()} JA Group Services Ltd.</span>
@@ -249,7 +256,7 @@ function Footer() {
 function Layout({ children }: { children: ReactNode }) {
   const { mode, setMode } = useTheme();
   const location = useLocation();
-  useEffect(() => window.scrollTo({ top: 0, behavior: 'instant' }), [location.pathname]);
+  useEffect(() => window.scrollTo({ top: 0, behavior: 'auto' }), [location.pathname]);
   return (
     <>
       <Header mode={mode} setMode={setMode} />
@@ -270,7 +277,7 @@ function HomePage() {
           <div className="hero-copy">
             <div className="eyebrow">Online learning · Trusted providers · Flexible access</div>
             <h1>Choose the right course.<br /><span>Build what comes next.</span></h1>
-            <p>CourseSelect brings online training from selected providers into one clear, easy-to-use platform for individuals and organisations.</p>
+            <p>Aptenvo brings online training from selected providers into one clear, easy-to-use platform for individuals and organisations.</p>
             <div className="button-row">
               <Link className="button button-light" to="/courses">Browse courses <ArrowRight size={18} /></Link>
               <Link className="button button-ghost" to="/business">Training for organisations</Link>
@@ -283,8 +290,8 @@ function HomePage() {
           </div>
           <aside className="hero-panel">
             <div className="hero-panel-heading">
-              <span>CourseSelect</span>
-              <h2>Choose. Learn. Succeed.</h2>
+              <span>Aptenvo</span>
+              <h2>Online learning, made clearer.</h2>
             </div>
             <div className="hero-stats">
               <div><strong>1</strong><span>launch provider</span></div>
@@ -340,14 +347,14 @@ function HomePage() {
           <div>
             <div className="eyebrow blue">For organisations</div>
             <h2>Make workforce training easier to manage</h2>
-            <p>Buy multiple licences, assign courses to learners and keep training records together through a future CourseSelect organisation dashboard.</p>
+            <p>Buy multiple licences, assign courses to learners and keep training records together through a future Aptenvo organisation dashboard.</p>
             <ul className="check-list">
               <li><Check size={18} /> Quantity-based course pricing</li>
               <li><Check size={18} /> Learner assignment controls</li>
               <li><Check size={18} /> Progress and completion reporting</li>
               <li><Check size={18} /> Support through JA Group Services</li>
             </ul>
-            <Link className="button button-primary" to="/business">Explore CourseSelect Business <ArrowRight size={18} /></Link>
+            <Link className="button button-primary" to="/business">Explore Aptenvo Business <ArrowRight size={18} /></Link>
           </div>
           <div className="dashboard-preview">
             <div className="preview-top"><span>Organisation overview</span><span className="status-pill">Foundation preview</span></div>
@@ -368,7 +375,7 @@ function HomePage() {
       <section className="cta-section">
         <div className="container cta-inner">
           <div><span>Ready to get started?</span><h2>Choose your next course with confidence.</h2></div>
-          <Link className="button button-light" to="/courses">Browse CourseSelect <ArrowRight size={18} /></Link>
+          <Link className="button button-light" to="/courses">Browse Aptenvo <ArrowRight size={18} /></Link>
         </div>
       </section>
     </main>
@@ -398,7 +405,7 @@ function CoursesPage() {
               {options.map((option) => <option key={option}>{option}</option>)}
             </select>
           </div>
-          <div className="results-heading"><strong>{filtered.length} courses</strong><span>Draft CourseSelect launch catalogue</span></div>
+          <div className="results-heading"><strong>{filtered.length} courses</strong><span>Draft Aptenvo launch catalogue</span></div>
           <div className="course-grid">{filtered.map((course) => <CourseCard course={course} key={course.slug} />)}</div>
         </div>
       </section>
@@ -433,7 +440,7 @@ function CoursePage() {
             <ul>
               <li><Check size={16} /> Online, self-paced learning</li>
               <li><Check size={16} /> Provider clearly identified</li>
-              <li><Check size={16} /> CourseSelect customer support</li>
+              <li><Check size={16} /> Aptenvo customer support</li>
             </ul>
           </aside>
         </div>
@@ -444,12 +451,12 @@ function CoursePage() {
             <h2>Course overview</h2>
             <p>This page is ready for the provider-approved course description, learning outcomes, assessment information, certificate details and any licence expiry period.</p>
             <h3>Before this course goes live</h3>
-            <p>CourseSelect will verify the provider product ID, reseller price, public price, course duration, certificate wording and fulfilment route.</p>
+            <p>Aptenvo will verify the provider product ID, reseller price, public price, course duration, certificate wording and fulfilment route.</p>
           </article>
           <aside className="info-card">
             <h3>Provided by</h3>
             <div className="provider-row"><div className="provider-mark">H</div><div><strong>{course.provider}</strong><span>Selected training provider</span></div></div>
-            <p>Sold through CourseSelect, a trading division of JA Group Services Ltd.</p>
+            <p>Sold through Aptenvo, a trading division of JA Group Services Ltd.</p>
           </aside>
         </div>
       </section>
@@ -460,7 +467,7 @@ function CoursePage() {
 function BusinessPage() {
   return (
     <main>
-      <PageHero eyebrow="CourseSelect Business" title="Training for teams, without the faff" copy="Buy course licences for your organisation, assign them to learners and keep progress information in one place." />
+      <PageHero eyebrow="Aptenvo Business" title="Training for teams, without the faff" copy="Buy course licences for your organisation, assign them to learners and keep progress information in one place." />
       <section className="section">
         <div className="container feature-grid">
           <Feature icon={<Users />} title="Manage learners" copy="Invite staff and assign the right course to each person." />
@@ -472,7 +479,7 @@ function BusinessPage() {
       <section className="section section-muted">
         <div className="container prose-card">
           <h2>Built for more than one provider</h2>
-          <p>CourseSelect is being designed as a provider-neutral training marketplace. Highfield e-learning will be the first launch provider, with the technical structure ready for additional course providers later.</p>
+          <p>Aptenvo is being designed as a provider-neutral training marketplace. Highfield e-learning will be the first launch provider, with the technical structure ready for additional course providers later.</p>
           <Link className="button button-primary" to="/support">Discuss organisation training <ArrowRight size={18} /></Link>
         </div>
       </section>
@@ -483,7 +490,7 @@ function BusinessPage() {
 function ProvidersPage() {
   return (
     <main>
-      <PageHero eyebrow="Course providers" title="Clear about who provides your training" copy="Every CourseSelect listing identifies the organisation responsible for the course content, delivery and certificate arrangements." />
+      <PageHero eyebrow="Course providers" title="Clear about who provides your training" copy="Every Aptenvo listing identifies the organisation responsible for the course content, delivery and certificate arrangements." />
       <section className="section">
         <div className="container provider-card">
           <div className="provider-mark large">H</div>
@@ -517,12 +524,12 @@ function IndividualsPage() {
 function AboutPage() {
   return (
     <main>
-      <PageHero eyebrow="About CourseSelect" title="A clearer way to choose online training" copy="CourseSelect is a new trading division of JA Group Services Ltd, created to bring courses from selected providers into one customer-focused platform." />
+      <PageHero eyebrow="About Aptenvo" title="A clearer way to choose online training" copy="Aptenvo is a new trading division of JA Group Services Ltd, created to bring courses from selected providers into one customer-focused platform." />
       <section className="section">
         <div className="container content-grid">
           <article className="content-card">
-            <h2>What CourseSelect does</h2>
-            <p>CourseSelect will provide the catalogue, purchasing journey, customer account, organisation tools and first-line support. The relevant training provider remains responsible for the course content and delivery.</p>
+            <h2>What Aptenvo does</h2>
+            <p>Aptenvo will provide the catalogue, purchasing journey, customer account, organisation tools and first-line support. The relevant training provider remains responsible for the course content and delivery.</p>
             <h2>Our launch approach</h2>
             <p>The platform will launch with Highfield e-learning courses under JA Group Services Ltd’s existing reseller arrangement, then expand to other suitable providers over time.</p>
           </article>
@@ -550,11 +557,11 @@ function SupportPage() {
       <section className="section">
         <div className="container support-grid">
           <div className="support-options">
-            <Feature icon={<Headphones />} title="Customer support" copy="CourseSelect will provide first-line support for orders, accounts and access queries." />
+            <Feature icon={<Headphones />} title="Customer support" copy="Aptenvo will provide first-line support for orders, accounts and access queries." />
             <Feature icon={<ShieldCheck />} title="Privacy and security" copy="Contact JA Group Services about personal data, security or account concerns." />
           </div>
           <form className="contact-card" onSubmit={submit}>
-            <h2>Contact CourseSelect</h2>
+            <h2>Contact Aptenvo</h2>
             {sent ? <div className="success-message"><Check size={22} /> Your draft enquiry has been captured locally for this preview.</div> : (
               <>
                 <label>Name<input required name="name" /></label>
@@ -573,7 +580,7 @@ function SupportPage() {
 function AccountPage() {
   return (
     <main>
-      <PageHero eyebrow="My CourseSelect" title="Your learning account is coming next" copy="This foundation is ready to connect to JA Group Services ID through Microsoft Entra External ID." />
+      <PageHero eyebrow="My Aptenvo" title="Your learning account is coming next" copy="This foundation is ready to connect to JA Group Services ID through Microsoft Entra External ID." />
       <section className="section">
         <div className="container prose-card centre">
           <CircleUserRound size={48} />
@@ -589,8 +596,8 @@ function AccountPage() {
 function LegalPage({ title }: { title: string }) {
   return (
     <main>
-      <PageHero eyebrow="Legal and trust" title={title} copy="This page has been created as part of the CourseSelect website foundation and is ready for approved JA Group Services wording." />
-      <section className="section"><div className="container prose-card"><h2>Draft placeholder</h2><p>The final document must be reviewed and approved before CourseSelect begins public trading or processes customer information.</p></div></section>
+      <PageHero eyebrow="Legal and trust" title={title} copy="This page has been created as part of the Aptenvo website foundation and is ready for approved JA Group Services wording." />
+      <section className="section"><div className="container prose-card"><h2>Draft placeholder</h2><p>The final document must be reviewed and approved before Aptenvo begins public trading or processes customer information.</p></div></section>
     </main>
   );
 }
