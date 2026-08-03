@@ -1,5 +1,6 @@
 interface Env {
   DB?: D1Database;
+  LEARNER_UPLOADS?: R2Bucket;
   STRIPE_WEBHOOK_SECRET?: string;
 }
 
@@ -7,6 +8,10 @@ type StripeEvent = {
   id: string;
   type: string;
   data: { object: Record<string, unknown> };
+};
+
+type StorageKeyRow = {
+  storage_key: string;
 };
 
 function parseSignature(header: string) {
@@ -65,6 +70,20 @@ function stringValue(value: unknown) {
 
 function recordValue(value: unknown) {
   return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
+async function deletePrivateLearnerFiles(env: Env, orderId: string) {
+  if (!env.DB || !env.LEARNER_UPLOADS) return;
+
+  try {
+    const result = await env.DB.prepare(`
+      SELECT storage_key FROM order_learner_uploads WHERE order_id = ?
+    `).bind(orderId).all<StorageKeyRow>();
+    const keys = (result.results ?? []).map((row) => row.storage_key).filter(Boolean);
+    if (keys.length) await env.LEARNER_UPLOADS.delete(keys);
+  } catch {
+    // A failed cleanup must not cause Stripe to repeatedly retry a valid webhook.
+  }
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -138,15 +157,42 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         env.DB.prepare(`
           UPDATE order_enrolment_details
           SET fulfilment_status = CASE
-                WHEN additional_learner_details_required = 1 THEN 'awaiting_additional_learners'
+                WHEN EXISTS (
+                  SELECT 1 FROM order_learner_submissions submission
+                  WHERE submission.order_id = order_enrolment_details.order_id
+                    AND submission.method = 'file'
+                ) THEN 'awaiting_additional_learners'
                 ELSE 'awaiting_enrolment'
               END,
               ready_for_enrolment_at = CASE
-                WHEN additional_learner_details_required = 0 THEN CURRENT_TIMESTAMP
+                WHEN EXISTS (
+                  SELECT 1 FROM order_learner_submissions submission
+                  WHERE submission.order_id = order_enrolment_details.order_id
+                    AND submission.method = 'manual'
+                ) THEN CURRENT_TIMESTAMP
                 ELSE ready_for_enrolment_at
               END,
               updated_at = CURRENT_TIMESTAMP
           WHERE order_id = ?
+        `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_learner_submissions
+          SET status = CASE
+                WHEN method = 'file' THEN 'awaiting_file_review'
+                ELSE 'awaiting_enrolment'
+              END,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ?
+        `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_learner_assignments
+          SET status = 'awaiting_enrolment', updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ? AND status = 'pending_payment'
+        `).bind(orderId),
+        env.DB.prepare(`
+          UPDATE order_learner_uploads
+          SET status = 'awaiting_review', updated_at = CURRENT_TIMESTAMP
+          WHERE order_id = ? AND status = 'pending_payment'
         `).bind(orderId),
       ]);
     } else if (event.type === 'checkout.session.expired' && orderId) {
@@ -161,7 +207,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           SET fulfilment_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
           WHERE order_id = ? AND fulfilment_status = 'pending_payment'
         `).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_submissions SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_assignments SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_uploads SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
       ]);
+      await deletePrivateLearnerFiles(env, orderId);
     } else if (event.type === 'payment_intent.payment_failed' && orderId) {
       await env.DB.batch([
         env.DB.prepare(`
@@ -174,7 +224,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           SET fulfilment_status = 'payment_failed', updated_at = CURRENT_TIMESTAMP
           WHERE order_id = ?
         `).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_submissions SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_assignments SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
+        env.DB.prepare(`UPDATE order_learner_uploads SET status = 'payment_failed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`).bind(orderId),
       ]);
+      await deletePrivateLearnerFiles(env, orderId);
     } else if (event.type === 'charge.refunded') {
       const paymentIntent = stringValue(object.payment_intent);
       const refunded = object.refunded === true;
