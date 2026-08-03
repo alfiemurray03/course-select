@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://courseselect.co.uk/sitemap.xml
+# Add the Aptenvo sitemap URL when the production domain is connected.
