@@ -1,7 +1,7 @@
 {
-  "name": "CourseSelect",
-  "short_name": "CourseSelect",
-  "description": "Choose. Learn. Succeed.",
+  "name": "Aptenvo",
+  "short_name": "Aptenvo",
+  "description": "Online learning from trusted course providers.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#081c3e",
