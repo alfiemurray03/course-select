@@ -1,5 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+export const ONLINE_LICENCE_LIMIT = 25;
+
 type BasketItem = {
   courseId: string;
   quantity: number;
@@ -9,6 +11,7 @@ type BasketContextValue = {
   items: BasketItem[];
   itemCount: number;
   licenceCount: number;
+  remainingLicenceCapacity: number;
   addItem: (courseId: string, quantity: number) => void;
   setItemQuantity: (courseId: string, quantity: number) => void;
   removeItem: (courseId: string) => void;
@@ -20,7 +23,24 @@ const BasketContext = createContext<BasketContextValue | null>(null);
 
 function normaliseQuantity(value: number) {
   if (!Number.isFinite(value)) return 1;
-  return Math.min(9999, Math.max(1, Math.floor(value)));
+  return Math.min(ONLINE_LICENCE_LIMIT, Math.max(1, Math.floor(value)));
+}
+
+function capBasket(items: BasketItem[]) {
+  const combined = new Map<string, number>();
+  for (const item of items) {
+    combined.set(item.courseId, (combined.get(item.courseId) ?? 0) + normaliseQuantity(item.quantity));
+  }
+
+  let remaining = ONLINE_LICENCE_LIMIT;
+  const capped: BasketItem[] = [];
+  for (const [courseId, requested] of combined) {
+    if (remaining < 1) break;
+    const quantity = Math.min(requested, remaining);
+    capped.push({ courseId, quantity });
+    remaining -= quantity;
+  }
+  return capped;
 }
 
 function loadBasket(): BasketItem[] {
@@ -30,18 +50,16 @@ function loadBasket(): BasketItem[] {
     const parsed = JSON.parse(saved) as unknown;
     if (!Array.isArray(parsed)) return [];
 
-    return parsed
+    const valid = parsed
       .filter((item): item is BasketItem => Boolean(
         item
         && typeof item === 'object'
         && typeof (item as BasketItem).courseId === 'string'
         && Number.isFinite((item as BasketItem).quantity),
       ))
-      .map((item) => ({
-        courseId: item.courseId,
-        quantity: normaliseQuantity(item.quantity),
-      }))
-      .slice(0, 25);
+      .map((item) => ({ courseId: item.courseId, quantity: normaliseQuantity(item.quantity) }));
+
+    return capBasket(valid);
   } catch {
     return [];
   }
@@ -55,24 +73,34 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = useCallback((courseId: string, quantity: number) => {
-    const cleanQuantity = normaliseQuantity(quantity);
+    const requested = normaliseQuantity(quantity);
     setItems((current) => {
+      const currentTotal = current.reduce((total, item) => total + item.quantity, 0);
+      const remaining = ONLINE_LICENCE_LIMIT - currentTotal;
+      if (remaining < 1) return current;
+
+      const quantityToAdd = Math.min(requested, remaining);
       const existing = current.find((item) => item.courseId === courseId);
       if (existing) {
         return current.map((item) => item.courseId === courseId
-          ? { ...item, quantity: normaliseQuantity(item.quantity + cleanQuantity) }
+          ? { ...item, quantity: item.quantity + quantityToAdd }
           : item);
       }
-      if (current.length >= 25) return current;
-      return [...current, { courseId, quantity: cleanQuantity }];
+      return [...current, { courseId, quantity: quantityToAdd }];
     });
   }, []);
 
   const setItemQuantity = useCallback((courseId: string, quantity: number) => {
-    const cleanQuantity = normaliseQuantity(quantity);
-    setItems((current) => current.map((item) => item.courseId === courseId
-      ? { ...item, quantity: cleanQuantity }
-      : item));
+    const requested = normaliseQuantity(quantity);
+    setItems((current) => {
+      const otherTotal = current
+        .filter((item) => item.courseId !== courseId)
+        .reduce((total, item) => total + item.quantity, 0);
+      const maximumForItem = Math.max(1, ONLINE_LICENCE_LIMIT - otherTotal);
+      return current.map((item) => item.courseId === courseId
+        ? { ...item, quantity: Math.min(requested, maximumForItem) }
+        : item);
+    });
   }, []);
 
   const removeItem = useCallback((courseId: string) => {
@@ -81,15 +109,19 @@ export function BasketProvider({ children }: { children: ReactNode }) {
 
   const clearBasket = useCallback(() => setItems([]), []);
 
-  const value = useMemo(() => ({
-    items,
-    itemCount: items.length,
-    licenceCount: items.reduce((total, item) => total + item.quantity, 0),
-    addItem,
-    setItemQuantity,
-    removeItem,
-    clearBasket,
-  }), [items, addItem, setItemQuantity, removeItem, clearBasket]);
+  const value = useMemo(() => {
+    const licenceCount = items.reduce((total, item) => total + item.quantity, 0);
+    return {
+      items,
+      itemCount: items.length,
+      licenceCount,
+      remainingLicenceCapacity: Math.max(0, ONLINE_LICENCE_LIMIT - licenceCount),
+      addItem,
+      setItemQuantity,
+      removeItem,
+      clearBasket,
+    };
+  }, [items, addItem, setItemQuantity, removeItem, clearBasket]);
 
   return <BasketContext.Provider value={value}>{children}</BasketContext.Provider>;
 }
