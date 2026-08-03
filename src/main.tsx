@@ -8,7 +8,6 @@ import './styles.css';
 import './catalogue.css';
 import './basket.css';
 import './reliability.css';
-import './enrolment-form.css';
 import './learner-details.css';
 
 function enableReliableInternalNavigation() {
