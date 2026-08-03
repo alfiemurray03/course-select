@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CourseSelect helps individuals and organisations choose online training from trusted course providers." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>CourseSelect | Choose. Learn. Succeed.</title>
+    <script>
+      (function () {
+        try {
+          var preference = localStorage.getItem('course-select-theme') || 'system';
+          var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var useDark = preference === 'dark' || (preference === 'system' && systemDark);
+          document.documentElement.classList.toggle('dark', useDark);
+          document.documentElement.style.colorScheme = useDark ? 'dark' : 'light';
+        } catch (_) {
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
