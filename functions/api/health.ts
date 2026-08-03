@@ -15,7 +15,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   }
 
   return Response.json({
-    service: 'CourseSelect',
+    service: 'Aptenvo',
     status: 'ok',
     database,
     timestamp: new Date().toISOString(),
