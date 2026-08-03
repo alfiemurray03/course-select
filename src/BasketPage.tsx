@@ -67,14 +67,14 @@ export default function BasketPage() {
           <div className="container">
             <div className="eyebrow">Order received</div>
             <h1>Thank you for your purchase</h1>
-            <p>Your payment has returned successfully. Aptenvo will confirm the order and prepare the relevant course licences.</p>
+            <p>Your payment has been received. Aptenvo will confirm the order and prepare the relevant course licences.</p>
           </div>
         </section>
         <section className="section">
           <div className="container basket-confirmation-card">
             <div className="basket-confirmation-icon"><Check size={34} /></div>
-            <h2>Your basket has been cleared</h2>
-            <p>Payment confirmation and fulfilment are handled through Aptenvo’s Stripe webhook and order records.</p>
+            <h2>Your purchase is being processed</h2>
+            <p>Your basket has been cleared and the purchased courses are now recorded against your Aptenvo order.</p>
             <div className="button-row basket-confirmation-actions">
               <Link className="button button-primary" to="/account">View My Aptenvo</Link>
               <Link className="button button-secondary" to="/courses">Browse more courses</Link>
@@ -90,8 +90,8 @@ export default function BasketPage() {
       <section className="page-hero basket-page-hero">
         <div className="container">
           <div className="eyebrow">Your basket</div>
-          <h1>Review your training order</h1>
-          <p>Add different courses, adjust licence quantities and pay for everything together in one secure checkout.</p>
+          <h1>Review your training basket</h1>
+          <p>Add several different courses, choose the number of licences required for each one, and pay for everything together in one secure checkout.</p>
         </div>
       </section>
 
@@ -99,15 +99,15 @@ export default function BasketPage() {
         <div className="container">
           {checkoutStatus === 'cancelled' && (
             <div className="basket-notice basket-notice-warning" role="status">
-              Checkout was cancelled. Nothing has been charged and your basket is still here.
+              Checkout was cancelled. Nothing has been charged and all courses remain in your basket.
             </div>
           )}
 
           {!detailedItems.length ? (
             <div className="empty-basket-card">
               <div className="empty-basket-icon"><ShoppingBasket size={36} /></div>
-              <h2>Your basket is empty</h2>
-              <p>Browse the catalogue and add the courses you need. You can combine up to 25 different courses in one order.</p>
+              <h2>Your basket is currently empty</h2>
+              <p>Browse the course catalogue and add the training you need. You can purchase up to 25 different courses together in a single checkout.</p>
               <Link className="button button-primary" to="/courses">Browse courses <ArrowRight size={18} /></Link>
             </div>
           ) : (
@@ -116,7 +116,7 @@ export default function BasketPage() {
                 <div className="basket-panel-heading">
                   <div>
                     <span>{itemCount} different {itemCount === 1 ? 'course' : 'courses'}</span>
-                    <h2>{licenceCount} {licenceCount === 1 ? 'licence' : 'licences'} in total</h2>
+                    <h2>{licenceCount} {licenceCount === 1 ? 'licence' : 'licences'} selected</h2>
                   </div>
                   <button className="basket-clear-button" type="button" onClick={clearBasket}>Clear basket</button>
                 </div>
@@ -132,7 +132,7 @@ export default function BasketPage() {
                             <div>
                               <span>{course.category} · {course.level}</span>
                               <Link to={`/courses/${course.slug}`}>{course.title}</Link>
-                              <small>Provided by {course.provider}</small>
+                              <small>Course provider: {course.provider}</small>
                             </div>
                             <button className="basket-remove-button" type="button" onClick={() => removeItem(course.id)} aria-label={`Remove ${course.title}`}>
                               <Trash2 size={18} />
@@ -167,14 +167,14 @@ export default function BasketPage() {
               </div>
 
               <aside className="basket-summary-card">
-                <h2>Order summary</h2>
-                <div className="basket-summary-row"><span>Courses</span><strong>{itemCount}</strong></div>
-                <div className="basket-summary-row"><span>Licences</span><strong>{licenceCount}</strong></div>
+                <h2>Basket summary</h2>
+                <div className="basket-summary-row"><span>Different courses</span><strong>{itemCount}</strong></div>
+                <div className="basket-summary-row"><span>Total licences</span><strong>{licenceCount}</strong></div>
                 <div className="basket-summary-divider" />
                 <div className="basket-summary-row"><span>Subtotal excluding VAT</span><strong>{formatMoney(totals.net)}</strong></div>
                 <div className="basket-summary-row"><span>VAT</span><strong>{formatMoney(totals.vat)}</strong></div>
-                <div className="basket-summary-total"><span>Total</span><strong>{formatMoney(totals.gross)}</strong></div>
-                <span className="basket-vat-note">Total includes VAT.</span>
+                <div className="basket-summary-total"><span>Total to pay</span><strong>{formatMoney(totals.gross)}</strong></div>
+                <span className="basket-vat-note">The total shown includes VAT.</span>
 
                 <button className="button button-primary full-width basket-checkout-button" type="button" onClick={beginCheckout} disabled={checkingOut}>
                   <ShieldCheck size={18} /> {checkingOut ? 'Preparing checkout…' : 'Proceed to secure checkout'}
@@ -182,10 +182,10 @@ export default function BasketPage() {
                 {checkoutMessage && <p className="checkout-message" role="status">{checkoutMessage}</p>}
 
                 <ul className="basket-confidence-list">
-                  <li><Check size={16} /> One payment for the complete basket</li>
-                  <li><Check size={16} /> Server-verified course prices</li>
-                  <li><Check size={16} /> Quantity pricing applied per course</li>
-                  <li><Check size={16} /> Secure payment through Stripe</li>
+                  <li><Check size={16} /> One secure payment for the complete basket</li>
+                  <li><Check size={16} /> Prices are verified against the Aptenvo database</li>
+                  <li><Check size={16} /> Quantity pricing is applied separately to each course</li>
+                  <li><Check size={16} /> Payment will be processed securely through Stripe</li>
                 </ul>
               </aside>
             </div>
