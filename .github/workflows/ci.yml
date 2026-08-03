@@ -21,5 +21,7 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Type-check Aptenvo
+        run: npm run check
       - name: Build Aptenvo
         run: npm run build
