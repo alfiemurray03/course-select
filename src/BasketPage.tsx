@@ -1,4 +1,21 @@
-import { ArrowRight, BookOpen, Building2, Check, Info, Minus, Plus, ShieldCheck, ShoppingBasket, Trash2, UserRound } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpen,
+  Building2,
+  Check,
+  FileSpreadsheet,
+  FileText,
+  Info,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingBasket,
+  Trash2,
+  Upload,
+  UserRound,
+  Users,
+  X,
+} from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -6,8 +23,33 @@ import { catalogue, formatMoney, tierForQuantity } from './catalogue';
 import { ONLINE_LICENCE_LIMIT, useBasket } from './basket';
 
 type CustomerType = '' | 'individual' | 'business';
+type SubmissionMethod = 'manual' | 'file';
+type LearnerField = 'legalFirstName' | 'legalLastName' | 'enrolmentEmail';
+
+type LearnerDetails = {
+  legalFirstName: string;
+  legalLastName: string;
+  enrolmentEmail: string;
+};
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const maximumUploadBytes = 10 * 1024 * 1024;
+const allowedUploadExtensions = ['csv', 'xls', 'xlsx', 'pdf'];
+const emptyLearner = (): LearnerDetails => ({
+  legalFirstName: '',
+  legalLastName: '',
+  enrolmentEmail: '',
+});
+
+function uploadExtension(filename: string) {
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function BasketPage() {
   const {
@@ -28,6 +70,11 @@ export default function BasketPage() {
   const [enrolmentEmail, setEnrolmentEmail] = useState('');
   const [organisationName, setOrganisationName] = useState('');
   const [providerConsent, setProviderConsent] = useState(false);
+  const [authorityConfirmed, setAuthorityConfirmed] = useState(false);
+  const [submissionMethod, setSubmissionMethod] = useState<SubmissionMethod>('manual');
+  const [learnerDetails, setLearnerDetails] = useState<Record<string, LearnerDetails[]>>({});
+  const [learnerFile, setLearnerFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState('');
   const checkoutStatus = searchParams.get('checkout');
 
   useEffect(() => {
@@ -41,51 +88,159 @@ export default function BasketPage() {
     return [{ ...item, course, tier }];
   }), [items]);
 
+  useEffect(() => {
+    setLearnerDetails((current) => {
+      const next: Record<string, LearnerDetails[]> = {};
+      for (const item of detailedItems) {
+        const existing = current[item.course.id] ?? [];
+        next[item.course.id] = Array.from({ length: item.quantity }, (_, index) => existing[index] ?? emptyLearner());
+      }
+      return next;
+    });
+  }, [detailedItems]);
+
+  useEffect(() => {
+    const primary = {
+      legalFirstName: legalFirstName.trim(),
+      legalLastName: legalLastName.trim(),
+      enrolmentEmail: enrolmentEmail.trim().toLowerCase(),
+    };
+    if (!primary.legalFirstName && !primary.legalLastName && !primary.enrolmentEmail) return;
+
+    setLearnerDetails((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const item of detailedItems) {
+        const rows = [...(next[item.course.id] ?? [])];
+        const first = rows[0];
+        if (first && !first.legalFirstName && !first.legalLastName && !first.enrolmentEmail) {
+          rows[0] = primary;
+          next[item.course.id] = rows;
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [legalFirstName, legalLastName, enrolmentEmail, detailedItems]);
+
   const totals = useMemo(() => detailedItems.reduce((sum, item) => ({
     net: sum.net + item.tier.aptenvoNetPence * item.quantity,
     vat: sum.vat + item.tier.vatPence * item.quantity,
     gross: sum.gross + item.tier.aptenvoGrossPence * item.quantity,
   }), { net: 0, vat: 0, gross: 0 }), [detailedItems]);
 
-  const requiresAdditionalLearners = detailedItems.some((item) => item.quantity > 1);
-  const detailsComplete = Boolean(
+  const manualAssignments = useMemo(() => detailedItems.flatMap((item) => (
+    (learnerDetails[item.course.id] ?? []).map((learner, index) => ({
+      courseId: item.course.id,
+      position: index + 1,
+      legalFirstName: learner.legalFirstName.trim(),
+      legalLastName: learner.legalLastName.trim(),
+      enrolmentEmail: learner.enrolmentEmail.trim().toLowerCase(),
+    }))
+  )), [detailedItems, learnerDetails]);
+
+  const manualDetailsComplete = manualAssignments.length === licenceCount && manualAssignments.every((learner) => (
+    learner.legalFirstName.length > 0
+    && learner.legalLastName.length > 0
+    && emailPattern.test(learner.enrolmentEmail)
+  ));
+
+  const customerDetailsComplete = Boolean(
     customerType
     && legalFirstName.trim().length > 0
     && legalLastName.trim().length > 0
     && emailPattern.test(enrolmentEmail.trim())
-    && providerConsent,
+    && providerConsent
+    && authorityConfirmed,
   );
+
+  const submissionComplete = submissionMethod === 'manual'
+    ? manualDetailsComplete
+    : Boolean(learnerFile && !fileError);
+
+  const detailsComplete = customerDetailsComplete && submissionComplete;
+
+  const updateLearner = (courseId: string, index: number, field: LearnerField, value: string) => {
+    setLearnerDetails((current) => {
+      const rows = [...(current[courseId] ?? [])];
+      rows[index] = { ...(rows[index] ?? emptyLearner()), [field]: value };
+      return { ...current, [courseId]: rows };
+    });
+  };
+
+  const usePrimaryDetails = (courseId: string, index: number) => {
+    setLearnerDetails((current) => {
+      const rows = [...(current[courseId] ?? [])];
+      rows[index] = {
+        legalFirstName: legalFirstName.trim(),
+        legalLastName: legalLastName.trim(),
+        enrolmentEmail: enrolmentEmail.trim().toLowerCase(),
+      };
+      return { ...current, [courseId]: rows };
+    });
+  };
+
+  const chooseLearnerFile = (file: File | null) => {
+    setLearnerFile(null);
+    setFileError('');
+    if (!file) return;
+
+    const extension = uploadExtension(file.name);
+    if (!allowedUploadExtensions.includes(extension)) {
+      setFileError('Upload a CSV, XLS, XLSX or PDF file.');
+      return;
+    }
+    if (file.size < 1 || file.size > maximumUploadBytes) {
+      setFileError('The learner file must be no larger than 10 MB.');
+      return;
+    }
+    setLearnerFile(file);
+  };
 
   const beginCheckout = async (event: FormEvent) => {
     event.preventDefault();
     if (!detailedItems.length) return;
 
     if (!detailsComplete) {
-      setCheckoutMessage('Complete all required customer and enrolment details before proceeding to payment.');
+      setCheckoutMessage(
+        submissionMethod === 'manual'
+          ? 'Complete the customer details and every learner row before proceeding to payment.'
+          : 'Complete the customer details, attach a valid learner file and confirm the required declarations before proceeding.',
+      );
       return;
     }
 
     setCheckingOut(true);
-    setCheckoutMessage('Saving the enrolment details and preparing your secure checkout…');
+    setCheckoutMessage('Saving the learner information and preparing your secure checkout…');
 
     try {
+      const payload = {
+        items: detailedItems.map((item) => ({
+          courseId: item.course.id,
+          quantity: item.quantity,
+        })),
+        customer: {
+          type: customerType,
+          legalFirstName: legalFirstName.trim(),
+          legalLastName: legalLastName.trim(),
+          enrolmentEmail: enrolmentEmail.trim().toLowerCase(),
+          organisationName: customerType === 'business' ? organisationName.trim() : '',
+          providerConsent,
+          authorityConfirmed,
+        },
+        learnerSubmission: {
+          method: submissionMethod,
+          learners: submissionMethod === 'manual' ? manualAssignments : [],
+        },
+      };
+
+      const body = new FormData();
+      body.set('payload', JSON.stringify(payload));
+      if (submissionMethod === 'file' && learnerFile) body.set('learnerFile', learnerFile);
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: detailedItems.map((item) => ({
-            courseId: item.course.id,
-            quantity: item.quantity,
-          })),
-          customer: {
-            type: customerType,
-            legalFirstName: legalFirstName.trim(),
-            legalLastName: legalLastName.trim(),
-            enrolmentEmail: enrolmentEmail.trim().toLowerCase(),
-            organisationName: customerType === 'business' ? organisationName.trim() : '',
-            providerConsent,
-          },
-        }),
+        body,
       });
       const data = await response.json() as { url?: string; message?: string };
 
@@ -96,7 +251,7 @@ export default function BasketPage() {
 
       setCheckoutMessage(data.message ?? 'Checkout could not be prepared. Please contact Aptenvo if the problem continues.');
     } catch {
-      setCheckoutMessage('Checkout is temporarily unavailable. Your basket has been kept safely on this device. Please contact Aptenvo if you need assistance.');
+      setCheckoutMessage('Checkout is temporarily unavailable. Your basket and learner information remain on this page. Please contact Aptenvo if you need assistance.');
     } finally {
       setCheckingOut(false);
     }
@@ -109,14 +264,14 @@ export default function BasketPage() {
           <div className="container">
             <div className="eyebrow">Aptenvo order received</div>
             <h1>Thank you for your purchase</h1>
-            <p>Your payment has been received by Aptenvo. Your customer and enrolment details are now attached to the paid order for processing.</p>
+            <p>Your payment has been received by Aptenvo. The submitted learner information is now attached to the paid order for enrolment processing.</p>
           </div>
         </section>
         <section className="section">
           <div className="container basket-confirmation-card">
             <div className="basket-confirmation-icon"><Check size={34} /></div>
             <h2>Your Aptenvo purchase is awaiting enrolment</h2>
-            <p>After Aptenvo completes enrolment, Highfield will email the learner with instructions for accessing its Learning Management System. Contact Aptenvo for any order, enrolment or access support.</p>
+            <p>Aptenvo will review the learner information and complete enrolment. Highfield will then email each learner with instructions for accessing its Learning Management System. Contact Aptenvo for all support.</p>
             <div className="button-row basket-confirmation-actions">
               <Link className="button button-primary" to="/account">View My Aptenvo</Link>
               <Link className="button button-secondary" to="/courses">Browse more courses</Link>
@@ -133,7 +288,7 @@ export default function BasketPage() {
         <div className="container">
           <div className="eyebrow">Your Aptenvo basket</div>
           <h1>Review your training purchase</h1>
-          <p>Combine different courses and provide the customer and enrolment details before continuing to secure payment.</p>
+          <p>Set the licence quantities, provide the learner information and then continue to secure payment.</p>
         </div>
       </section>
 
@@ -149,7 +304,7 @@ export default function BasketPage() {
             <div className="empty-basket-card">
               <div className="empty-basket-icon"><ShoppingBasket size={36} /></div>
               <h2>Your basket is currently empty</h2>
-              <p>Browse the course catalogue and add the training you need. A single online basket may contain different courses with no more than {ONLINE_LICENCE_LIMIT} licences in total.</p>
+              <p>Browse the course catalogue and add the training you need. A single online basket may contain no more than {ONLINE_LICENCE_LIMIT} licences in total.</p>
               <Link className="button button-primary" to="/courses">Browse courses <ArrowRight size={18} /></Link>
             </div>
           ) : (
@@ -214,19 +369,101 @@ export default function BasketPage() {
                   })}
                 </div>
 
+                <section className="learner-submission-panel" aria-labelledby="learner-information-heading">
+                  <div className="learner-panel-heading">
+                    <div className="learner-panel-icon"><Users size={24} /></div>
+                    <div>
+                      <span>Required before payment</span>
+                      <h2 id="learner-information-heading">Learner information</h2>
+                      <p>Enter every learner manually or attach a spreadsheet or PDF containing the complete learner list.</p>
+                    </div>
+                  </div>
+
+                  <fieldset className="submission-method-fieldset">
+                    <legend>How would you like to provide the learner list?</legend>
+                    <div className="submission-method-options">
+                      <label className={submissionMethod === 'manual' ? 'selected' : ''}>
+                        <input type="radio" name="submission-method" checked={submissionMethod === 'manual'} onChange={() => setSubmissionMethod('manual')} />
+                        <Users size={20} />
+                        <span><strong>Enter learner details</strong><small>Complete one row for every licence</small></span>
+                      </label>
+                      <label className={submissionMethod === 'file' ? 'selected' : ''}>
+                        <input type="radio" name="submission-method" checked={submissionMethod === 'file'} onChange={() => setSubmissionMethod('file')} />
+                        <Upload size={20} />
+                        <span><strong>Upload learner list</strong><small>CSV, Excel spreadsheet or PDF</small></span>
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  {submissionMethod === 'manual' ? (
+                    <div className="course-learner-groups">
+                      {detailedItems.map(({ course, quantity }) => (
+                        <section className="course-learner-group" key={`learners-${course.id}`}>
+                          <div className="course-learner-heading">
+                            <div><BookOpen size={19} /><span><strong>{course.title}</strong><small>{quantity} {quantity === 1 ? 'learner' : 'learners'} required</small></span></div>
+                          </div>
+                          <div className="learner-row-list">
+                            {(learnerDetails[course.id] ?? []).map((learner, index) => (
+                              <div className="learner-entry-row" key={`${course.id}-${index}`}>
+                                <div className="learner-entry-number">{index + 1}</div>
+                                <div className="learner-entry-fields">
+                                  <label>Legal first name<input type="text" maxLength={80} value={learner.legalFirstName} onChange={(event) => updateLearner(course.id, index, 'legalFirstName', event.target.value)} required /></label>
+                                  <label>Legal last name<input type="text" maxLength={80} value={learner.legalLastName} onChange={(event) => updateLearner(course.id, index, 'legalLastName', event.target.value)} required /></label>
+                                  <label className="learner-email-field">Enrolment email<input type="email" maxLength={254} value={learner.enrolmentEmail} onChange={(event) => updateLearner(course.id, index, 'enrolmentEmail', event.target.value)} required /></label>
+                                </div>
+                                <button className="copy-primary-button" type="button" onClick={() => usePrimaryDetails(course.id, index)} disabled={!legalFirstName.trim() || !legalLastName.trim() || !emailPattern.test(enrolmentEmail.trim())}>
+                                  Use primary details
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="learner-upload-area">
+                      <div className="upload-guidance">
+                        <FileSpreadsheet size={25} />
+                        <div>
+                          <h3>Upload the learner list</h3>
+                          <p>The document must clearly show the course, legal first name, legal last name and enrolment email for every learner.</p>
+                          <a href="/templates/aptenvo-learner-upload-template.csv" download>Download the CSV template</a>
+                        </div>
+                      </div>
+
+                      {!learnerFile ? (
+                        <label className={`learner-file-picker${fileError ? ' has-error' : ''}`}>
+                          <Upload size={30} />
+                          <strong>Choose a spreadsheet or PDF</strong>
+                          <span>CSV, XLS, XLSX or PDF · maximum 10 MB</span>
+                          <input type="file" accept=".csv,.xls,.xlsx,.pdf,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => chooseLearnerFile(event.target.files?.[0] ?? null)} required />
+                        </label>
+                      ) : (
+                        <div className="selected-learner-file">
+                          {uploadExtension(learnerFile.name) === 'pdf' ? <FileText size={27} /> : <FileSpreadsheet size={27} />}
+                          <div><strong>{learnerFile.name}</strong><span>{formatFileSize(learnerFile.size)} · ready to attach securely</span></div>
+                          <button type="button" onClick={() => chooseLearnerFile(null)} aria-label="Remove learner file"><X size={18} /></button>
+                        </div>
+                      )}
+                      {fileError && <p className="learner-file-error" role="alert">{fileError}</p>}
+                      <p className="upload-security-note"><ShieldCheck size={17} /> The file will be stored privately and linked to the Aptenvo order. It will not be publicly accessible.</p>
+                    </div>
+                  )}
+                </section>
+
                 <Link className="basket-continue-link" to="/courses">← Continue browsing courses</Link>
               </div>
 
               <aside className="basket-summary-card">
-                <h2>Customer and enrolment details</h2>
-                <p className="enrolment-form-intro">These details are required before payment and will be attached to the Aptenvo order for enrolment processing.</p>
+                <h2>Customer details</h2>
+                <p className="enrolment-form-intro">These details identify the Aptenvo customer and primary contact for this order.</p>
 
                 <fieldset className="customer-type-fieldset">
                   <legend>Are you purchasing as? <span aria-hidden="true">*</span></legend>
                   <div className="customer-type-options">
                     <label className={customerType === 'individual' ? 'selected' : ''}>
                       <input type="radio" name="customer-type" value="individual" checked={customerType === 'individual'} onChange={() => setCustomerType('individual')} required />
-                      <UserRound size={20} /><span><strong>Individual</strong><small>Buying for yourself</small></span>
+                      <UserRound size={20} /><span><strong>Individual</strong><small>Buying personally</small></span>
                     </label>
                     <label className={customerType === 'business' ? 'selected' : ''}>
                       <input type="radio" name="customer-type" value="business" checked={customerType === 'business'} onChange={() => setCustomerType('business')} required />
@@ -240,9 +477,9 @@ export default function BasketPage() {
                   <label>Legal last name <span aria-hidden="true">*</span><input type="text" autoComplete="family-name" maxLength={80} value={legalLastName} onChange={(event) => setLegalLastName(event.target.value)} required /></label>
                 </div>
 
-                <label className="enrolment-field">Email address for Highfield LMS enrolment <span aria-hidden="true">*</span>
+                <label className="enrolment-field">Primary contact or learner email <span aria-hidden="true">*</span>
                   <input type="email" autoComplete="email" maxLength={254} value={enrolmentEmail} onChange={(event) => setEnrolmentEmail(event.target.value)} required />
-                  <small>Highfield will use this address to send the learner’s LMS access instructions after Aptenvo completes enrolment.</small>
+                  <small>This is the Aptenvo order contact. You can use the same details for learner rows where appropriate.</small>
                 </label>
 
                 {customerType === 'business' && (
@@ -251,16 +488,14 @@ export default function BasketPage() {
                   </label>
                 )}
 
-                {requiresAdditionalLearners && (
-                  <div className="additional-learners-notice">
-                    <Info size={18} />
-                    <p><strong>More than one learner may be required.</strong> These details identify the primary learner or authorised contact. Aptenvo will need the remaining learner names and enrolment emails before every licence can be enrolled.</p>
-                  </div>
-                )}
+                <label className="provider-consent-field">
+                  <input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} required />
+                  <span>I confirm that I am authorised to provide the personal information of every learner included in this order.</span>
+                </label>
 
                 <label className="provider-consent-field">
                   <input type="checkbox" checked={providerConsent} onChange={(event) => setProviderConsent(event.target.checked)} required />
-                  <span>I confirm that the details are accurate and may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Aptenvo remains my customer support contact.</span>
+                  <span>I confirm that the learner details may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Aptenvo remains the customer support contact.</span>
                 </label>
 
                 <div className="basket-summary-divider" />
@@ -279,8 +514,8 @@ export default function BasketPage() {
                 {checkoutMessage && <p className="checkout-message" role="status">{checkoutMessage}</p>}
 
                 <ul className="basket-confidence-list">
-                  <li><Check size={16} /> Your purchase and customer relationship are with Aptenvo</li>
-                  <li><Check size={16} /> Enrolment details are stored against the Aptenvo order</li>
+                  <li><Check size={16} /> Learners are linked to the exact course licences</li>
+                  <li><Check size={16} /> Uploaded documents remain private</li>
                   <li><Check size={16} /> Highfield sends LMS access after Aptenvo enrolment</li>
                   <li><Check size={16} /> Contact Aptenvo first for all support</li>
                 </ul>
