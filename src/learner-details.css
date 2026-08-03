@@ -1,0 +1,480 @@
+.learner-submission-panel {
+  border-top: 1px solid var(--border);
+  padding: clamp(24px, 4vw, 34px);
+  background: var(--card);
+}
+
+.learner-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.learner-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.learner-panel-heading span {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.learner-panel-heading h2 {
+  margin-top: 3px;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+}
+
+.learner-panel-heading p {
+  margin-top: 7px;
+  color: var(--muted-foreground);
+}
+
+.submission-method-fieldset,
+.customer-type-fieldset {
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.submission-method-fieldset legend,
+.customer-type-fieldset legend {
+  margin-bottom: 10px;
+  color: var(--foreground);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.submission-method-options,
+.customer-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.submission-method-options label,
+.customer-type-options label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.submission-method-options label.selected,
+.customer-type-options label.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.submission-method-options input,
+.customer-type-options input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.submission-method-options svg,
+.customer-type-options svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.submission-method-options span,
+.customer-type-options span {
+  display: grid;
+  min-width: 0;
+}
+
+.submission-method-options strong,
+.customer-type-options strong {
+  color: var(--foreground);
+  font-size: 0.88rem;
+}
+
+.submission-method-options small,
+.customer-type-options small {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.course-learner-groups {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.course-learner-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--background);
+}
+
+.course-learner-heading {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.course-learner-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.course-learner-heading svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.course-learner-heading span {
+  display: grid;
+}
+
+.course-learner-heading strong {
+  color: var(--foreground);
+  font-size: 0.9rem;
+}
+
+.course-learner-heading small {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+
+.learner-row-list {
+  display: grid;
+}
+
+.learner-entry-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.learner-entry-row:last-child {
+  border-bottom: 0;
+}
+
+.learner-entry-number {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  margin-bottom: 6px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.learner-entry-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(210px, 1.4fr);
+  gap: 10px;
+}
+
+.learner-entry-fields label,
+.enrolment-name-grid label,
+.enrolment-field {
+  display: grid;
+  gap: 6px;
+  color: var(--foreground);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.learner-entry-fields input,
+.enrolment-name-grid input,
+.enrolment-field input {
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.learner-entry-fields input:focus,
+.enrolment-name-grid input:focus,
+.enrolment-field input:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.13);
+  border-color: var(--primary);
+}
+
+.copy-primary-button {
+  min-height: 42px;
+  margin-bottom: 1px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--primary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.copy-primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.learner-upload-area {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.upload-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--muted);
+}
+
+.upload-guidance > svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.upload-guidance h3 {
+  font-size: 1rem;
+}
+
+.upload-guidance p {
+  margin-top: 5px;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+}
+
+.upload-guidance a {
+  display: inline-block;
+  margin-top: 7px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.learner-file-picker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  min-height: 180px;
+  padding: 24px;
+  border: 2px dashed var(--border);
+  border-radius: 17px;
+  background: var(--background);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.learner-file-picker:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.learner-file-picker.has-error {
+  border-color: #dc2626;
+}
+
+.learner-file-picker svg {
+  color: var(--primary);
+}
+
+.learner-file-picker strong {
+  color: var(--foreground);
+}
+
+.learner-file-picker span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.learner-file-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.selected-learner-file {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  border-radius: 14px;
+  background: rgba(22, 163, 74, 0.07);
+}
+
+.selected-learner-file > svg {
+  color: #16a34a;
+}
+
+.selected-learner-file div {
+  display: grid;
+  min-width: 0;
+}
+
+.selected-learner-file strong {
+  overflow: hidden;
+  color: var(--foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-learner-file span {
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.selected-learner-file button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.learner-file-error {
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.upload-security-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.upload-security-note svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.enrolment-name-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.enrolment-field {
+  margin-top: 14px;
+}
+
+.enrolment-field small {
+  color: var(--muted-foreground);
+  font-size: 0.73rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.optional-label {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.provider-consent-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 15px;
+  color: var(--muted-foreground);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.provider-consent-field input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+}
+
+@media (max-width: 1080px) {
+  .learner-entry-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .copy-primary-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .learner-entry-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .learner-email-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  .submission-method-options,
+  .customer-type-options,
+  .enrolment-name-grid,
+  .learner-entry-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .learner-entry-row {
+    grid-template-columns: 1fr;
+  }
+
+  .learner-entry-number,
+  .copy-primary-button {
+    grid-column: auto;
+  }
+
+  .learner-email-field {
+    grid-column: auto;
+  }
+}
