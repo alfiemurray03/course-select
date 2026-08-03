@@ -1,4 +1,4 @@
-name: CourseSelect CI
+name: Aptenvo CI
 
 on:
   push:
@@ -22,5 +22,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
-      - name: Type-check and build
+      - name: Build Aptenvo
         run: npm run build
