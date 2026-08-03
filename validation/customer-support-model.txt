@@ -1,0 +1,1 @@
+Validates Aptenvo customer ownership, first-line support, provider escalation, company information and 25-licence online limit.
