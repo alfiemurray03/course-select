@@ -13,6 +13,7 @@ import {
   Headphones,
   HeartHandshake,
   Info,
+  Mail,
   Menu,
   Moon,
   Search,
@@ -23,7 +24,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -35,7 +36,7 @@ import {
 } from 'react-router-dom';
 
 import BasketPage from './BasketPage';
-import { useBasket } from './basket';
+import { ONLINE_LICENCE_LIMIT, useBasket } from './basket';
 import {
   catalogue,
   categories as catalogueCategories,
@@ -46,6 +47,8 @@ import {
 } from './catalogue';
 
 type ThemeMode = 'light' | 'dark' | 'system';
+
+const CONTACT_EMAIL = 'contact@jagroupservices.co.uk';
 
 const wordmarkStyle = {
   color: '#2563eb',
@@ -102,22 +105,18 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link to="/" className="brand" aria-label="Aptenvo home">
-          <span style={wordmarkStyle}>Aptenvo</span>
-        </Link>
+        <Link to="/" className="brand" aria-label="Aptenvo home"><span style={wordmarkStyle}>Aptenvo</span></Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
           <NavLink to="/">Home</NavLink>
           <NavLink to="/courses">Browse courses</NavLink>
           <div className="nav-dropdown">
-            <button type="button" onClick={() => setLearnOpen((value) => !value)} aria-expanded={learnOpen}>
-              Learning <ChevronDown size={15} />
-            </button>
+            <button type="button" onClick={() => setLearnOpen((value) => !value)} aria-expanded={learnOpen}>Learning <ChevronDown size={15} /></button>
             {learnOpen && (
               <div className="dropdown-panel">
                 <Link to="/individuals"><strong>For individuals</strong><span>Choose training for yourself</span></Link>
-                <Link to="/business"><strong>For organisations</strong><span>Manage workforce training</span></Link>
-                <Link to="/providers"><strong>Course providers</strong><span>Trusted training partners</span></Link>
+                <Link to="/business"><strong>For organisations</strong><span>Workforce training and larger orders</span></Link>
+                <Link to="/providers"><strong>How courses are delivered</strong><span>Aptenvo support and Highfield LMS access</span></Link>
               </div>
             )}
           </div>
@@ -127,13 +126,10 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
 
         <div className="header-actions">
           <Link className="basket-header-button" to="/basket" aria-label={`Basket with ${itemCount} courses and ${licenceCount} licences`}>
-            <ShoppingBasket size={19} />
-            <span className="basket-header-label">Basket</span>
+            <ShoppingBasket size={19} /><span className="basket-header-label">Basket</span>
             {itemCount > 0 && <span className="basket-count-badge">{itemCount}</span>}
           </Link>
-          <Link className="account-button desktop-account" to="/account">
-            <CircleUserRound size={18} /> Sign in
-          </Link>
+          <Link className="account-button desktop-account" to="/account"><CircleUserRound size={18} /> Sign in</Link>
           <button className="icon-button theme-button" type="button" onClick={rotateTheme} aria-label={`Theme: ${mode}`}>
             {mode === 'dark' ? <Moon size={19} /> : mode === 'light' ? <Sun size={19} /> : <Sparkles size={19} />}
           </button>
@@ -147,13 +143,8 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
         <nav className="mobile-nav" aria-label="Mobile navigation">
           <Link className="mobile-account" to="/account"><CircleUserRound size={19} /> Sign in to JA Group Services ID</Link>
           <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {itemCount > 0 && `(${itemCount})`}</Link>
-          <Link to="/">Home</Link>
-          <Link to="/courses">Browse courses</Link>
-          <Link to="/individuals">For individuals</Link>
-          <Link to="/business">For organisations</Link>
-          <Link to="/providers">Course providers</Link>
-          <Link to="/about">About Aptenvo</Link>
-          <Link to="/support">Help and support</Link>
+          <Link to="/">Home</Link><Link to="/courses">Browse courses</Link><Link to="/individuals">For individuals</Link>
+          <Link to="/business">For organisations</Link><Link to="/providers">How courses are delivered</Link><Link to="/about">About Aptenvo</Link><Link to="/support">Help and support</Link>
         </nav>
       )}
     </header>
@@ -167,36 +158,15 @@ function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span>
-            <p>Online training from selected course providers for individuals and organisations.</p>
+            <p>An authorised reseller of Highfield Online Training, operated by JA Group Services Ltd.</p>
           </div>
-          <div>
-            <h3>Aptenvo</h3>
-            <Link to="/courses">Browse courses</Link>
-            <Link to="/basket">Your basket</Link>
-            <Link to="/individuals">For individuals</Link>
-            <Link to="/business">For organisations</Link>
-          </div>
-          <div>
-            <h3>Support</h3>
-            <Link to="/support">Help centre</Link>
-            <Link to="/support">Contact support</Link>
-            <Link to="/accessibility">Accessibility</Link>
-            <Link to="/complaints">Complaints</Link>
-          </div>
-          <div>
-            <h3>Legal</h3>
-            <Link to="/terms">Terms and conditions</Link>
-            <Link to="/privacy">Privacy notice</Link>
-            <Link to="/cookies">Cookie notice</Link>
-            <Link to="/refunds">Refund policy</Link>
-          </div>
+          <div><h3>Aptenvo</h3><Link to="/courses">Browse courses</Link><Link to="/basket">Your basket</Link><Link to="/individuals">For individuals</Link><Link to="/business">For organisations</Link></div>
+          <div><h3>Support</h3><Link to="/support">Help centre</Link><Link to="/support?topic=large-order">Large orders</Link><Link to="/accessibility">Accessibility</Link><Link to="/complaints">Complaints</Link></div>
+          <div><h3>Legal</h3><Link to="/terms">Terms and conditions</Link><Link to="/privacy">Privacy notice</Link><Link to="/cookies">Cookie notice</Link><Link to="/refunds">Refund policy</Link></div>
         </div>
       </footer>
       <div className="corporate-disclosure">
-        <div>
-          <strong>Aptenvo is a trading division of JA Group Services Ltd.</strong>
-          <span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370.</span>
-        </div>
+        <div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370.</span></div>
         <span>© {new Date().getFullYear()} JA Group Services Ltd.</span>
       </div>
     </>
@@ -207,13 +177,7 @@ function Layout({ children }: { children: ReactNode }) {
   const { mode, setMode } = useTheme();
   const location = useLocation();
   useEffect(() => window.scrollTo({ top: 0, behavior: 'auto' }), [location.pathname]);
-  return (
-    <>
-      <Header mode={mode} setMode={setMode} />
-      {children}
-      <Footer />
-    </>
-  );
+  return <><Header mode={mode} setMode={setMode} />{children}<Footer /></>;
 }
 
 function HomePage() {
@@ -221,99 +185,55 @@ function HomePage() {
   return (
     <main>
       <section className="hero">
-        <div className="hero-glow hero-glow-one" />
-        <div className="hero-glow hero-glow-two" />
+        <div className="hero-glow hero-glow-one" /><div className="hero-glow hero-glow-two" />
         <div className="container hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow">Online learning · Trusted providers · Flexible access</div>
+            <div className="eyebrow">Authorised reseller · Aptenvo customer support · Highfield course access</div>
             <h1>Choose the right course.<br /><span>Build what comes next.</span></h1>
-            <p>Aptenvo brings online training from selected providers into one clear platform for individuals, teams and organisations.</p>
-            <div className="button-row">
-              <Link className="button button-light" to="/courses">Browse all {catalogue.length} courses <ArrowRight size={18} /></Link>
-              <Link className="button button-ghost" to="/business">Training for organisations</Link>
-            </div>
-            <div className="trust-list">
-              <span><Check size={16} /> Self-paced online learning</span>
-              <span><Check size={16} /> Clear VAT-inclusive pricing</span>
-              <span><Check size={16} /> Combine courses in one basket</span>
-            </div>
+            <p>Aptenvo is operated by JA Group Services Ltd and is an authorised reseller of Highfield Online Training. You purchase from Aptenvo and remain an Aptenvo customer throughout.</p>
+            <div className="button-row"><Link className="button button-light" to="/courses">Browse all {catalogue.length} courses <ArrowRight size={18} /></Link><Link className="button button-ghost" to="/business">Training for organisations</Link></div>
+            <div className="trust-list"><span><Check size={16} /> Customer relationship with Aptenvo</span><span><Check size={16} /> Clear VAT-inclusive pricing</span><span><Check size={16} /> Up to {ONLINE_LICENCE_LIMIT} licences online</span></div>
           </div>
           <aside className="hero-panel">
-            <div className="hero-panel-heading"><span>Aptenvo</span><h2>A complete online training catalogue.</h2></div>
-            <div className="hero-stats">
-              <div><strong>{catalogue.length}</strong><span>catalogue items</span></div>
-              <div><strong>{catalogueCategories.length}</strong><span>subjects</span></div>
-              <div><strong>1</strong><span>launch provider</span></div>
-            </div>
-            <div className="hero-provider">
-              <div className="provider-mark">H</div>
-              <div><strong>Highfield e-learning</strong><span>Launch course provider</span></div>
-              <Award size={22} />
-            </div>
+            <div className="hero-panel-heading"><span>One clear customer journey</span><h2>Purchase through Aptenvo. Learn through Highfield.</h2></div>
+            <div className="hero-stats"><div><strong>{catalogue.length}</strong><span>catalogue items</span></div><div><strong>{catalogueCategories.length}</strong><span>subjects</span></div><div><strong>{ONLINE_LICENCE_LIMIT}</strong><span>online limit</span></div></div>
+            <div className="hero-provider"><div className="provider-mark">H</div><div><strong>Highfield Online Training</strong><span>Course content and Learning Management System</span></div><Award size={22} /></div>
           </aside>
         </div>
       </section>
 
-      <section className="fact-strip">
-        <div className="container facts">
-          <Fact icon={<GraduationCap />} label="Flexible learning" value="Complete courses online" />
-          <Fact icon={<ShoppingBasket />} label="One basket" value="Combine different courses" />
-          <Fact icon={<Award />} label="Clear provider details" value="Know who supplies each course" />
-          <Fact icon={<Headphones />} label="Customer support" value="Supported by JA Group Services" />
-        </div>
-      </section>
+      <section className="fact-strip"><div className="container facts">
+        <Fact icon={<Building2 />} label="Your supplier" value="JA Group Services Ltd through Aptenvo" />
+        <Fact icon={<ShoppingBasket />} label="Online orders" value={`Up to ${ONLINE_LICENCE_LIMIT} licences in total`} />
+        <Fact icon={<Mail />} label="Course access" value="Highfield emails the enrolled learner" />
+        <Fact icon={<Headphones />} label="All support" value="Contact Aptenvo first" />
+      </div></section>
 
-      <section className="section">
-        <div className="container">
-          <SectionHeading eyebrow="Browse by subject" title="Training that fits your next step" description="Search the complete catalogue by subject, level, course type and provider." />
-          <div className="category-grid">
-            {featuredCategories.map(({ name, icon: Icon, copy }) => (
-              <Link className="category-card" to={`/courses?category=${encodeURIComponent(name)}`} key={name}>
-                <div className="icon-tile"><Icon size={24} /></div><h3>{name}</h3><p>{copy}</p><span>Explore courses <ArrowRight size={16} /></span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="section"><div className="container">
+        <SectionHeading eyebrow="Browse by subject" title="Training that fits your next step" description="Search the Highfield Online Training catalogue available to purchase through Aptenvo." />
+        <div className="category-grid">{featuredCategories.map(({ name, icon: Icon, copy }) => <Link className="category-card" to={`/courses?category=${encodeURIComponent(name)}`} key={name}><div className="icon-tile"><Icon size={24} /></div><h3>{name}</h3><p>{copy}</p><span>Explore courses <ArrowRight size={16} /></span></Link>)}</div>
+      </div></section>
 
-      <section className="section section-muted">
-        <div className="container">
-          <SectionHeading eyebrow="Featured courses" title="Popular places to start" description="Review each course, choose the number of licences and add several different courses to one basket." />
-          <div className="course-grid">{featured.map((course) => <CourseCard course={course} key={course.slug} />)}</div>
-          <div className="centre-action"><Link className="button button-primary" to="/courses">View the full catalogue <ArrowRight size={18} /></Link></div>
-        </div>
-      </section>
+      <section className="section section-muted"><div className="container">
+        <SectionHeading eyebrow="Featured courses" title="Popular places to start" description="Review the course information, choose the required licences and combine different courses in one Aptenvo basket." />
+        <div className="course-grid">{featured.map((course) => <CourseCard course={course} key={course.slug} />)}</div>
+        <div className="centre-action"><Link className="button button-primary" to="/courses">View the full catalogue <ArrowRight size={18} /></Link></div>
+      </div></section>
 
-      <section className="section">
-        <div className="container split-panel">
-          <div>
-            <div className="eyebrow blue">For organisations</div>
-            <h2>Buy the right training for your whole team</h2>
-            <p>Add different courses and licence quantities to one basket. Aptenvo applies the relevant quantity band to each course separately before creating one Stripe checkout.</p>
-            <ul className="check-list">
-              <li><Check size={18} /> Multiple courses in one transaction</li>
-              <li><Check size={18} /> Quantity pricing calculated per course</li>
-              <li><Check size={18} /> One order with multiple line items</li>
-              <li><Check size={18} /> Separate fulfilment records per course</li>
-            </ul>
-            <Link className="button button-primary" to="/business">Explore Aptenvo Business <ArrowRight size={18} /></Link>
-          </div>
-          <div className="dashboard-preview catalogue-summary">
-            <div className="preview-top"><span>Basket and catalogue</span><span className="status-pill">Connected</span></div>
-            <div className="metric-grid">
-              <div><span>Published items</span><strong>{catalogue.length}</strong></div>
-              <div><span>Course subjects</span><strong>{catalogueCategories.length}</strong></div>
-              <div><span>Basket limit</span><strong>25</strong></div>
-            </div>
-            <div className="catalogue-ready-list">
-              <span><Check size={18} /> Persistent basket on the customer device</span>
-              <span><Check size={18} /> Server-verified prices from D1</span>
-              <span><Check size={18} /> Net, VAT and gross order totals</span>
-              <span><Check size={18} /> Stripe multi-line checkout</span>
-            </div>
-          </div>
+      <section className="section"><div className="container process-section">
+        <SectionHeading eyebrow="What happens after purchase" title="Your Aptenvo order and Highfield course access" description="The customer relationship stays with Aptenvo. Highfield supplies the course and Learning Management System access needed to fulfil your purchase." />
+        <div className="steps-grid">
+          <Step number="01" title="Purchase from Aptenvo" copy="Choose your courses and complete one secure payment to JA Group Services Ltd through Aptenvo." />
+          <Step number="02" title="Aptenvo processes enrolment" copy="Aptenvo records your order and enrols the named learner onto the course purchased." />
+          <Step number="03" title="Highfield emails the learner" copy="Highfield sends the enrolled learner instructions for accessing its Learning Management System." />
+          <Step number="04" title="Aptenvo supports you" copy="For any issue, contact Aptenvo first. We investigate and only escalate to Highfield when provider assistance is required." />
         </div>
-      </section>
+      </div></section>
+
+      <section className="section section-muted"><div className="container large-order-banner">
+        <div><span className="eyebrow blue">Large licence requirements</span><h2>Need more than {ONLINE_LICENCE_LIMIT} licences?</h2><p>Public online checkout is limited to {ONLINE_LICENCE_LIMIT} licences in total. Orders of {ONLINE_LICENCE_LIMIT + 1} licences or more are handled directly by Aptenvo for every customer type, including individuals and organisations.</p></div>
+        <Link className="button button-primary" to="/support?topic=large-order">Contact Aptenvo <ArrowRight size={18} /></Link>
+      </div></section>
     </main>
   );
 }
@@ -337,31 +257,22 @@ function CoursesPage() {
     return catalogue.filter((course) => {
       const matchesCategory = category === 'All subjects' || course.category === category;
       const matchesType = type === 'All course types' || course.courseType === type;
-      const haystack = `${course.title} ${course.provider} ${course.category} ${course.level} ${course.shortDescription}`.toLowerCase();
+      const haystack = `${course.title} Highfield Online Training ${course.category} ${course.level} ${course.shortDescription}`.toLowerCase();
       return matchesCategory && matchesType && (!normalised || haystack.includes(normalised));
     });
   }, [query, category, type]);
 
-  return (
-    <main>
-      <PageHero eyebrow="Course catalogue" title="Find your next online course" copy={`Search ${catalogue.length} courses and focused modules from the Aptenvo launch catalogue.`} />
-      <section className="section">
-        <div className="container">
-          <div className="catalogue-toolbar expanded-toolbar">
-            <label className="search-box"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search course title, subject or level" /></label>
-            <label className="select-filter"><Filter size={17} /><select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Filter by subject">
-              <option>All subjects</option>{catalogueCategories.map((option) => <option key={option}>{option}</option>)}
-            </select></label>
-            <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by course type">
-              <option>All course types</option><option value="full-course">Full courses</option><option value="short-course">Short courses</option><option value="first-aid">First aid</option><option value="specialist">Specialist courses</option><option value="care-standard">Care Certificate standards</option><option value="module">Individual modules</option>
-            </select>
-          </div>
-          <div className="results-heading"><strong>{filtered.length} results</strong><span>Prices shown include VAT</span></div>
-          {filtered.length ? <div className="course-grid">{filtered.map((course) => <CourseCard course={course} key={course.slug} />)}</div> : <div className="empty-results"><Search size={28} /><h2>No matching courses</h2><p>Try a broader search or remove one of the filters.</p></div>}
-        </div>
-      </section>
-    </main>
-  );
+  return <main><PageHero eyebrow="Course catalogue" title="Find your next online course" copy={`Search ${catalogue.length} Highfield Online Training courses and focused modules available to purchase through Aptenvo.`} />
+    <section className="section"><div className="container">
+      <div className="catalogue-toolbar expanded-toolbar">
+        <label className="search-box"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search course title, subject or level" /></label>
+        <label className="select-filter"><Filter size={17} /><select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Filter by subject"><option>All subjects</option>{catalogueCategories.map((option) => <option key={option}>{option}</option>)}</select></label>
+        <select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by course type"><option>All course types</option><option value="full-course">Full courses</option><option value="short-course">Short courses</option><option value="first-aid">First aid</option><option value="specialist">Specialist courses</option><option value="care-standard">Care Certificate standards</option><option value="module">Individual modules</option></select>
+      </div>
+      <div className="results-heading"><strong>{filtered.length} results</strong><span>Prices include VAT · Maximum {ONLINE_LICENCE_LIMIT} licences online</span></div>
+      {filtered.length ? <div className="course-grid">{filtered.map((course) => <CourseCard course={course} key={course.slug} />)}</div> : <div className="empty-results"><Search size={28} /><h2>No matching courses</h2><p>Try a broader search or remove one of the filters.</p></div>}
+    </div></section>
+  </main>;
 }
 
 function CoursePage() {
@@ -369,95 +280,102 @@ function CoursePage() {
   const course = catalogue.find((entry) => entry.slug === slug);
   const [quantity, setQuantity] = useState(1);
   const [basketMessage, setBasketMessage] = useState('');
-  const { addItem } = useBasket();
+  const { items, licenceCount, addItem } = useBasket();
 
   if (!course) return <NotFoundPage />;
 
+  const currentCourseQuantity = items.find((item) => item.courseId === course.id)?.quantity ?? 0;
+  const remainingCapacity = Math.max(0, ONLINE_LICENCE_LIMIT - licenceCount);
   const tier = tierForQuantity(course, quantity);
   const lineTotal = tier.aptenvoGrossPence * quantity;
 
   const addToBasket = () => {
+    if (quantity > remainingCapacity) {
+      setBasketMessage(remainingCapacity > 0
+        ? `Only ${remainingCapacity} more ${remainingCapacity === 1 ? 'licence can' : 'licences can'} be added online. Contact Aptenvo for an order above ${ONLINE_LICENCE_LIMIT} licences.`
+        : `Your basket has reached the ${ONLINE_LICENCE_LIMIT}-licence online limit. Contact Aptenvo for a larger order.`);
+      return;
+    }
     addItem(course.id, quantity);
-    setBasketMessage(`${quantity} ${quantity === 1 ? 'licence' : 'licences'} added to your basket.`);
+    const newCourseQuantity = currentCourseQuantity + quantity;
+    setBasketMessage(`${quantity} ${quantity === 1 ? 'licence' : 'licences'} added. You now have ${newCourseQuantity} ${newCourseQuantity === 1 ? 'licence' : 'licences'} for this course in your basket.`);
   };
 
-  return (
-    <main>
-      <section className="course-hero">
-        <div className="container course-hero-grid">
-          <div>
-            <Link className="back-link" to="/courses">← Back to courses</Link>
-            <div className="eyebrow">{course.category} · {course.level}</div>
-            <h1>{course.title}</h1><p>{course.shortDescription}</p>
-            <div className="course-meta"><span><Clock3 size={18} /> Self-paced online learning</span><span><Award size={18} /> Provider: {course.provider}</span></div>
-          </div>
-          <aside className="purchase-card complete-purchase-card">
-            <span>Price for {quantity} {quantity === 1 ? 'licence' : 'licences'}</span>
-            <strong>{formatMoney(lineTotal)}</strong>
-            <small>{formatMoney(tier.aptenvoGrossPence)} per learner, including VAT</small>
-            <label className="quantity-field">Number of licences<input type="number" min="1" max="9999" value={quantity} onChange={(event) => setQuantity(Math.min(9999, Math.max(1, Number(event.target.value) || 1)))} /></label>
-            <button className="button button-primary full-width" type="button" onClick={addToBasket}><ShoppingBasket size={18} /> Add to basket</button>
-            {basketMessage && <div className="basket-added-message" role="status"><Check size={17} /><span>{basketMessage}</span><Link to="/basket">View basket</Link></div>}
-            <ul><li><Check size={16} /> Add other courses before paying</li><li><Check size={16} /> Quantity price selected automatically</li><li><Check size={16} /> One secure checkout for the basket</li></ul>
-          </aside>
-        </div>
-      </section>
+  const needsLargeOrderContact = quantity > remainingCapacity || remainingCapacity === 0;
 
-      <section className="section course-detail-section">
-        <div className="container course-detail-layout">
-          <div className="course-main-content">
-            <article className="content-card course-copy-card">
-              <h2>Course overview</h2><p>{course.overview}</p><h2>Who this course is for</h2><p>{course.audience}</p><h2>What learners will cover</h2>
-              <ul className="outcome-list">{course.learningOutcomes.map((outcome) => <li key={outcome}><Check size={18} /> <span>{outcome}</span></li>)}</ul>
-            </article>
-            <article className="content-card">
-              <h2>Delivery and certification</h2>
-              <dl className="course-definition-list"><div><dt>Delivery</dt><dd>{course.delivery}</dd></div><div><dt>Provider</dt><dd>{course.provider}</dd></div><div><dt>Certificate</dt><dd>{course.certificate}</dd></div><div><dt>Course type</dt><dd>{course.courseType.replace(/-/g, ' ')}</dd></div></dl>
-              <div className="qualification-notice"><Info size={20} /><div><strong>Important qualification information</strong><p>{course.qualificationNotice}</p></div></div>
-            </article>
-          </div>
-          <aside className="course-side-content">
-            <div className="info-card pricing-card">
-              <h2>Licence pricing</h2><p>Aptenvo prices are calculated at 30% above the provider’s original retail price. VAT is then added at 20%.</p>
-              <div className="pricing-table-wrap"><table className="pricing-table"><thead><tr><th>Quantity</th><th>Ex VAT</th><th>Inc VAT</th></tr></thead><tbody>{course.pricingTiers.map((priceTier) => <tr key={`${priceTier.minQuantity}-${priceTier.maxQuantity ?? 'plus'}`} className={priceTier === tier ? 'active-tier' : ''}><td>{priceTier.minQuantity}{priceTier.maxQuantity ? `–${priceTier.maxQuantity}` : '+'}</td><td>{formatMoney(priceTier.aptenvoNetPence)}</td><td><strong>{formatMoney(priceTier.aptenvoGrossPence)}</strong></td></tr>)}</tbody></table></div>
-              <small>{course.priceSource}</small>
-            </div>
-            <div className="info-card provider-detail-card"><h3>Course provider</h3><div className="provider-row"><div className="provider-mark">H</div><div><strong>{course.provider}</strong><span>Third-party course provider</span></div></div><p>Sold and supported through Aptenvo, a trading division of JA Group Services Ltd.</p></div>
-          </aside>
-        </div>
-      </section>
-    </main>
-  );
+  return <main>
+    <section className="course-hero"><div className="container course-hero-grid">
+      <div><Link className="back-link" to="/courses">← Back to courses</Link><div className="eyebrow">{course.category} · {course.level}</div><h1>{course.title}</h1><p>{course.shortDescription}</p><div className="course-meta"><span><Clock3 size={18} /> Self-paced online learning</span><span><Award size={18} /> Course by Highfield Online Training</span></div></div>
+      <aside className="purchase-card complete-purchase-card">
+        <span>Price for {quantity} {quantity === 1 ? 'licence' : 'licences'}</span><strong>{formatMoney(lineTotal)}</strong><small>{formatMoney(tier.aptenvoGrossPence)} per learner, including VAT</small>
+        <label className="quantity-field">Number of licences<input type="number" min="1" max={ONLINE_LICENCE_LIMIT} value={quantity} onChange={(event) => setQuantity(Math.min(ONLINE_LICENCE_LIMIT, Math.max(1, Number(event.target.value) || 1)))} /></label>
+        <button className="button button-primary full-width" type="button" onClick={addToBasket} disabled={remainingCapacity === 0}><ShoppingBasket size={18} /> {remainingCapacity === 0 ? 'Online basket limit reached' : 'Add to basket'}</button>
+        {basketMessage && <div className="basket-added-message" role="status"><Info size={17} /><span>{basketMessage}</span><Link to={needsLargeOrderContact ? '/support?topic=large-order' : '/basket'}>{needsLargeOrderContact ? 'Contact us' : 'View basket'}</Link></div>}
+        <ul><li><Check size={16} /> Customer relationship stays with Aptenvo</li><li><Check size={16} /> Highfield emails LMS access after enrolment</li><li><Check size={16} /> Contact Aptenvo for all support</li></ul>
+      </aside>
+    </div></section>
+
+    <section className="section course-detail-section"><div className="container course-detail-layout">
+      <div className="course-main-content">
+        <article className="content-card course-copy-card"><h2>Course overview</h2><p>{course.overview}</p><h2>Who this course is for</h2><p>{course.audience}</p><h2>What learners will cover</h2><ul className="outcome-list">{course.learningOutcomes.map((outcome) => <li key={outcome}><Check size={18} /><span>{outcome}</span></li>)}</ul></article>
+        <article className="content-card"><h2>Purchase, delivery and certification</h2>
+          <dl className="course-definition-list"><div><dt>Your supplier</dt><dd>JA Group Services Ltd, trading as Aptenvo</dd></div><div><dt>Customer relationship</dt><dd>Your order, payment, account, customer service and support relationship remain with Aptenvo.</dd></div><div><dt>Course provider</dt><dd>Highfield Online Training</dd></div><div><dt>Learning platform</dt><dd>Highfield Learning Management System</dd></div><div><dt>Access arrangements</dt><dd>After Aptenvo enrols the named learner, Highfield emails that learner with LMS access instructions.</dd></div><div><dt>Support route</dt><dd>Contact Aptenvo first for every issue. If we cannot resolve a provider-side issue, we will escalate it to Highfield on your behalf.</dd></div><div><dt>Certificate</dt><dd>{course.certificate}</dd></div><div><dt>Course type</dt><dd>{course.courseType.replace(/-/g, ' ')}</dd></div></dl>
+          <div className="qualification-notice"><Info size={20} /><div><strong>Important qualification information</strong><p>{course.qualificationNotice}</p></div></div>
+        </article>
+      </div>
+      <aside className="course-side-content">
+        <div className="info-card pricing-card"><h2>Licence pricing</h2><p>Online checkout supports a maximum of {ONLINE_LICENCE_LIMIT} licences in total. Larger requirements are processed directly by Aptenvo.</p><div className="pricing-table-wrap"><table className="pricing-table"><thead><tr><th>Quantity</th><th>Ex VAT</th><th>Inc VAT</th></tr></thead><tbody>{course.pricingTiers.filter((priceTier) => priceTier.minQuantity <= ONLINE_LICENCE_LIMIT).map((priceTier) => <tr key={`${priceTier.minQuantity}-${priceTier.maxQuantity ?? 'plus'}`} className={priceTier === tier ? 'active-tier' : ''}><td>{priceTier.minQuantity}{priceTier.maxQuantity ? `–${Math.min(priceTier.maxQuantity, ONLINE_LICENCE_LIMIT)}` : `–${ONLINE_LICENCE_LIMIT}`}</td><td>{formatMoney(priceTier.aptenvoNetPence)}</td><td><strong>{formatMoney(priceTier.aptenvoGrossPence)}</strong></td></tr>)}</tbody></table></div><small>{course.priceSource}</small><Link className="large-order-inline-link" to="/support?topic=large-order">Need {ONLINE_LICENCE_LIMIT + 1} or more licences? Contact Aptenvo →</Link></div>
+        <div className="info-card provider-detail-card"><h3>Authorised reseller arrangement</h3><div className="provider-row"><div className="provider-mark">H</div><div><strong>Highfield Online Training</strong><span>Course provider and LMS operator</span></div></div><p>JA Group Services Ltd, trading as Aptenvo, is the seller and customer-facing business. Highfield fulfils the course and LMS elements behind the Aptenvo service. Customers do not need to contact Highfield directly.</p></div>
+      </aside>
+    </div></section>
+  </main>;
 }
 
 function BusinessPage() {
-  return <main><PageHero eyebrow="Aptenvo Business" title="Training for teams, without the faff" copy="Choose several courses, set the required licence quantity for each and pay through one basket." /><section className="section"><div className="container feature-grid"><Feature icon={<Users />} title="Manage learners" copy="The database includes learners, organisations, assignments and enrolment records." /><Feature icon={<ShoppingBasket />} title="Combine courses" copy="Buy different courses and licence quantities in a single order." /><Feature icon={<Award />} title="Track completion" copy="Completion, certificate and provider-enrolment fields are prepared for integration." /><Feature icon={<Headphones />} title="Get support" copy="First-line support and provider escalation can be managed by JA Group Services." /></div></section><section className="section section-muted"><div className="container prose-card"><h2>Built for multiple providers and multiple courses</h2><p>Each basket line remains linked to its own provider, pricing tier and fulfilment record, while the customer makes one payment.</p><Link className="button button-primary" to="/courses">Browse organisation training <ArrowRight size={18} /></Link></div></section></main>;
+  return <main><PageHero eyebrow="Aptenvo for organisations" title="Online training for your team" copy={`Purchase up to ${ONLINE_LICENCE_LIMIT} licences online. Larger requirements are handled directly by Aptenvo so the courses, learner numbers and fulfilment arrangements can be confirmed with you.`} />
+    <section className="section"><div className="container feature-grid"><Feature icon={<ShoppingBasket />} title={`Up to ${ONLINE_LICENCE_LIMIT} licences online`} copy={`Combine different courses in one basket, provided the total number of licences does not exceed ${ONLINE_LICENCE_LIMIT}.`} /><Feature icon={<Users />} title={`${ONLINE_LICENCE_LIMIT + 1}+ licences by enquiry`} copy="Large requirements are not processed through public checkout for individuals, organisations or any other customer type." /><Feature icon={<Mail />} title="Highfield LMS access email" copy="After Aptenvo enrols each learner, Highfield sends the LMS access instructions to the learner’s email address." /><Feature icon={<Headphones />} title="Aptenvo first-line support" copy="Customers contact Aptenvo for every issue. We escalate to Highfield only when provider assistance is required." /></div></section>
+    <section className="section section-muted"><div className="container large-order-panel"><div><span className="eyebrow blue">Large orders</span><h2>More than {ONLINE_LICENCE_LIMIT} course licences</h2><p>Do not split a larger requirement across several website orders. Contact Aptenvo so the full requirement can be handled as one direct order.</p><ul className="check-list"><li><Check size={18} /> Course and learner quantities confirmed</li><li><Check size={18} /> Direct order arrangements through Aptenvo</li><li><Check size={18} /> Learner enrolment coordinated by Aptenvo</li><li><Check size={18} /> Aptenvo remains your sole support contact</li></ul></div><div className="large-order-contact"><Mail size={30} /><h3>Contact Aptenvo</h3><p>Tell us which courses you require and the number of learner licences needed.</p><a className="button button-primary" href={`mailto:${CONTACT_EMAIL}?subject=Aptenvo%20large%20licence%20order`}>Email {CONTACT_EMAIL}</a></div></div></section>
+  </main>;
 }
 
 function ProvidersPage() {
-  return <main><PageHero eyebrow="Course providers" title="Clear about who provides your training" copy="Every Aptenvo listing identifies the organisation responsible for the course content, delivery and certificate arrangements." /><section className="section"><div className="container provider-card"><div className="provider-mark large">H</div><div><span className="status-pill">Launch provider</span><h2>Highfield e-learning</h2><p>The full reseller-scheme catalogue is represented on Aptenvo, including complete courses, short courses, specialist programmes, Care Certificate standards and individual modules.</p><Link className="button button-primary" to="/courses">View Highfield courses <ArrowRight size={18} /></Link></div></div></section></main>;
+  return <main><PageHero eyebrow="Course delivery" title="Aptenvo customers, Highfield course access" copy="Your purchase, account and support relationship are with JA Group Services Ltd through Aptenvo. Highfield supplies the training content and Learning Management System used to complete the course." />
+    <section className="section"><div className="container relationship-grid">
+      <article className="relationship-card primary-relationship-card"><div className="icon-tile"><Building2 size={25} /></div><span className="status-pill">Your supplier and sole support contact</span><h2>JA Group Services Ltd — Aptenvo</h2><p>Aptenvo markets and sells the courses, takes payment, records the order, arranges learner enrolment and provides first-line support. Customers remain customers of JA Group Services Ltd through Aptenvo.</p><ul className="check-list"><li><Check size={18} /> Aptenvo order and payment</li><li><Check size={18} /> Aptenvo customer account</li><li><Check size={18} /> Aptenvo support and complaints</li><li><Check size={18} /> Aptenvo manages any provider escalation</li></ul></article>
+      <article className="relationship-card"><div className="provider-mark large">H</div><span className="status-pill">Course provider and LMS operator</span><h2>Highfield Online Training</h2><p>Highfield supplies the course content and hosts the learner’s course within its Learning Management System. Once Aptenvo has enrolled the learner, Highfield sends the learner an access email.</p><ul className="check-list"><li><Check size={18} /> Course content and delivery</li><li><Check size={18} /> Learning Management System</li><li><Check size={18} /> Learner access instructions</li><li><Check size={18} /> Assistance to Aptenvo when escalated</li></ul></article>
+    </div></section>
+    <section className="section section-muted"><div className="container process-section"><SectionHeading eyebrow="Support and learner access" title="One point of contact: Aptenvo" description="Highfield’s email gives the learner access to the course. It does not make Highfield the customer’s support contact." /><div className="steps-grid"><Step number="01" title="Aptenvo records the order" copy="The payment, customer record and order remain within Aptenvo." /><Step number="02" title="Aptenvo enrols the learner" copy="The necessary learner details are submitted to Highfield for course fulfilment." /><Step number="03" title="Highfield emails access" copy="The learner receives instructions for accessing the Highfield Learning Management System." /><Step number="04" title="Contact Aptenvo for help" copy="Aptenvo investigates first. If specialist provider help is needed, Aptenvo escalates the issue to Highfield and manages the response." /></div><div className="provider-access-note"><Info size={22} /><div><strong>Waiting for an access email or unable to use the course?</strong><p>Contact Aptenvo. We will check the order and enrolment first, then raise the matter with Highfield ourselves if their assistance is required.</p></div></div></div></section>
+  </main>;
 }
 
 function IndividualsPage() {
-  return <main><PageHero eyebrow="For individuals" title="Learn at your own pace" copy="Choose one or several courses, review what each covers and pay for the whole basket together." /><section className="section"><div className="container steps-grid"><Step number="01" title="Choose" copy="Search the complete catalogue by subject, level and course type." /><Step number="02" title="Add" copy="Choose licence quantities and add different courses to your basket." /><Step number="03" title="Purchase" copy="Review one order summary and complete one secure Stripe checkout." /><Step number="04" title="Learn" copy="Aptenvo passes each enrolment to the relevant provider." /></div></section></main>;
+  return <main><PageHero eyebrow="For individuals" title="Purchase through Aptenvo and learn through Highfield" copy={`Choose one or several courses, review what each course covers and complete one Aptenvo checkout for up to ${ONLINE_LICENCE_LIMIT} licences.`} />
+    <section className="section"><div className="container steps-grid"><Step number="01" title="Choose" copy="Search the catalogue and read the full information for each course." /><Step number="02" title="Purchase from Aptenvo" copy="Add courses to the basket and complete your payment to JA Group Services Ltd through Aptenvo." /><Step number="03" title="Receive Highfield access" copy="After Aptenvo enrols the learner, Highfield emails the LMS sign-in instructions." /><Step number="04" title="Contact Aptenvo for support" copy="For order, enrolment, access or course issues, contact Aptenvo first. We manage any necessary escalation." /></div></section>
+  </main>;
 }
 
 function AboutPage() {
-  return <main><PageHero eyebrow="About Aptenvo" title="A clearer way to choose online training" copy="Aptenvo is a trading division of JA Group Services Ltd, bringing courses from selected providers into one customer-focused platform." /><section className="section"><div className="container content-grid"><article className="content-card"><h2>What Aptenvo does</h2><p>Aptenvo provides the catalogue, basket, pricing journey, customer account structure, organisation tools and first-line support. The relevant provider remains responsible for the course content and delivery.</p><h2>Our launch catalogue</h2><p>The initial catalogue contains {catalogue.length} products drawn from the Highfield reseller scheme, including quantity-based licence pricing.</p></article><aside className="info-card"><Building2 size={28} /><h3>Legal operator</h3><strong>JA Group Services Ltd</strong><p>Company number 16314179<br />Registered in England and Wales</p></aside></div></section></main>;
+  return <main><PageHero eyebrow="About Aptenvo" title="Online training sold and supported by JA Group Services" copy="Aptenvo is a trading division of JA Group Services Ltd and an authorised reseller of Highfield Online Training." />
+    <section className="section"><div className="container content-grid"><article className="content-card company-copy-card"><h2>What Aptenvo does</h2><p>Aptenvo provides a customer-focused catalogue of online training for individuals and organisations. We present the available courses, process purchases, manage Aptenvo customer orders, arrange learner enrolment and provide first-line customer support.</p><h2>Our relationship with customers</h2><p>Customers purchase from JA Group Services Ltd through Aptenvo. The customer account, payment, order, support and complaint relationship remain with Aptenvo. Accessing a course through Highfield’s Learning Management System does not transfer that customer relationship to Highfield.</p><h2>Our authorised reseller arrangement</h2><p>JA Group Services Ltd, trading as Aptenvo, is an authorised reseller of Highfield Online Training. Highfield supplies the course content and learning platform. Aptenvo supplies the customer purchasing journey and coordinates enrolment.</p><h2>How learner access works</h2><p>Once Aptenvo has enrolled the named learner onto the purchased course, Highfield sends an email to that learner with instructions for accessing the Highfield Learning Management System.</p><h2>How support works</h2><p>Customers contact Aptenvo for all support. Aptenvo investigates the order, enrolment and access issue first. Where we cannot resolve a provider-side problem ourselves, we escalate the issue to Highfield and continue managing it for the customer.</p><h2>Online and larger orders</h2><p>The public website accepts orders containing up to {ONLINE_LICENCE_LIMIT} licences in total. Requirements of {ONLINE_LICENCE_LIMIT + 1} licences or more must be arranged directly with Aptenvo and must not be divided across several online orders.</p></article><aside className="info-card company-details-card"><Building2 size={30} /><h3>Legal operator</h3><strong>JA Group Services Ltd</strong><p>Aptenvo is a trading division, not a separate legal entity.</p><dl><div><dt>Company number</dt><dd>16314179</dd></div><div><dt>ICO registration</dt><dd>ZB877370</dd></div><div><dt>Registered in</dt><dd>England and Wales</dd></div><div><dt>Customer contact</dt><dd><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd></div></dl><Link className="button button-primary full-width" to="/support">Contact Aptenvo</Link></aside></div></section>
+  </main>;
 }
 
 function SupportPage() {
-  const [sent, setSent] = useState(false);
-  const submit = (event: FormEvent) => { event.preventDefault(); setSent(true); };
-  return <main><PageHero eyebrow="Help and support" title="We are here when you need us" copy="Get help with course selection, baskets, purchases, learner access and organisation licences." /><section className="section"><div className="container support-grid"><div className="support-options"><Feature icon={<Headphones />} title="Customer support" copy="Aptenvo provides first-line support for baskets, orders, accounts and access queries." /><Feature icon={<ShieldCheck />} title="Privacy and security" copy="Contact JA Group Services about personal data, security or account concerns." /></div><form className="contact-card" onSubmit={submit}><h2>Contact Aptenvo</h2>{sent ? <div className="success-message"><Check size={22} /> Your enquiry has been recorded in this website preview.</div> : <><label>Name<input required name="name" /></label><label>Email<input required type="email" name="email" /></label><label>How can we help?<textarea required name="message" rows={5} /></label><button className="button button-primary" type="submit">Send enquiry <ArrowRight size={18} /></button></>}</form></div></section></main>;
+  const [searchParams] = useSearchParams();
+  const largeOrder = searchParams.get('topic') === 'large-order';
+  const subject = largeOrder ? 'Aptenvo large licence order' : 'Aptenvo customer support';
+
+  return <main><PageHero eyebrow="Aptenvo customer support" title={largeOrder ? 'Arrange a larger licence order' : 'Contact Aptenvo first for every issue'} copy={largeOrder ? `Orders of ${ONLINE_LICENCE_LIMIT + 1} licences or more are arranged directly with Aptenvo and are not accepted through public online checkout.` : 'Aptenvo is your first and only customer-facing support contact for orders, enrolment, LMS access and course issues.'} />
+    <section className="section"><div className="container support-grid"><div className="support-options"><Feature icon={<Headphones />} title="First-line support by Aptenvo" copy="We investigate the customer record, payment, order and enrolment before deciding whether provider assistance is required." /><Feature icon={<Mail />} title="Missing Highfield access email" copy="Contact Aptenvo, not Highfield. We will check the learner details and enrolment status for you." /><Feature icon={<Users />} title="Larger licence requirements" copy={`Contact us before purchasing if the total requirement is above ${ONLINE_LICENCE_LIMIT} licences.`} /><Feature icon={<ShieldCheck />} title="Managed provider escalation" copy="If we cannot resolve a Highfield LMS or course-delivery issue, Aptenvo raises and manages the escalation on the customer’s behalf." /></div><aside className="contact-card support-contact-card"><Mail size={34} /><h2>Contact Aptenvo</h2><p>Include the customer name, order reference, learner email address and a clear description of the issue. Do not send passwords or payment-card details.</p><a className="button button-primary full-width" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`}>Email {CONTACT_EMAIL}</a><div className="support-route-note"><strong>You do not need to contact Highfield.</strong><span>Aptenvo will approach Highfield where escalation is necessary and will remain your point of contact.</span></div></aside></div></section>
+  </main>;
 }
 
 function AccountPage() {
-  return <main><PageHero eyebrow="My Aptenvo" title="Your learning account is coming next" copy="The database is prepared for individual learners, organisation administrators, multi-course orders, enrolments and certificates." /><section className="section"><div className="container prose-card centre"><CircleUserRound size={48} /><h2>JA Group Services ID connection point</h2><p>The next identity phase will connect Aptenvo to Microsoft Entra External ID.</p><Link className="button button-primary" to="/courses">Browse courses</Link></div></section></main>;
+  return <main><PageHero eyebrow="My Aptenvo" title="Your Aptenvo customer account is coming next" copy="The customer account will remain with JA Group Services Ltd through Aptenvo, while course access is provided through the relevant learning platform." /><section className="section"><div className="container prose-card centre"><CircleUserRound size={48} /><h2>JA Group Services ID connection point</h2><p>The next identity phase will connect Aptenvo to Microsoft Entra External ID for Aptenvo customer accounts.</p><Link className="button button-primary" to="/courses">Browse courses</Link></div></section></main>;
 }
 
 function LegalPage({ title }: { title: string }) {
-  return <main><PageHero eyebrow="Legal and trust" title={title} copy="This page is part of the Aptenvo website foundation and is ready for approved JA Group Services wording." /><section className="section"><div className="container prose-card"><h2>Draft placeholder</h2><p>The final document must be reviewed and approved before live customer sales begin.</p></div></section></main>;
+  return <main><PageHero eyebrow="Legal and trust" title={title} copy="Aptenvo is operated by JA Group Services Ltd, which is the customer’s supplier and contractual point of contact." /><section className="section"><div className="container prose-card"><h2>Document preparation in progress</h2><p>The complete approved wording for this document will be published before the relevant customer function is formally launched.</p></div></section></main>;
 }
 
 function NotFoundPage() {
@@ -478,7 +396,7 @@ function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: s
 
 function CourseCard({ course }: { course: Course }) {
   const price = singleLicenceTier(course);
-  return <article className="course-card complete-course-card"><div className="course-card-top"><span>{course.category}</span><span>{course.level}</span></div><div className="course-card-icon"><BookOpen size={26} /></div><h3>{course.title}</h3><p>{course.shortDescription}</p><div className="provider-line"><Award size={16} /> {course.provider}</div><div className="course-card-bottom"><div><strong>{formatMoney(price.aptenvoGrossPence)}</strong><small>inc VAT · 1 licence</small></div><Link to={`/courses/${course.slug}`}>View course <ArrowRight size={16} /></Link></div></article>;
+  return <article className="course-card complete-course-card"><div className="course-card-top"><span>{course.category}</span><span>{course.level}</span></div><div className="course-card-icon"><BookOpen size={26} /></div><h3>{course.title}</h3><p>{course.shortDescription}</p><div className="provider-line"><Award size={16} /> Course by Highfield Online Training</div><div className="course-card-bottom"><div><strong>{formatMoney(price.aptenvoGrossPence)}</strong><small>inc VAT · 1 licence</small></div><Link to={`/courses/${course.slug}`}>View course <ArrowRight size={16} /></Link></div></article>;
 }
 
 function Feature({ icon, title, copy }: { icon: ReactNode; title: string; copy: string }) {
