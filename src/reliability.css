@@ -1,0 +1,105 @@
+:root {
+  --surface: var(--card);
+  --text: var(--foreground);
+}
+
+/* Basket copy previously inherited the pale background token as its text colour. */
+.basket-panel-heading span,
+.basket-item-heading span,
+.basket-item-heading small,
+.basket-item-price span,
+.basket-item-price small,
+.basket-summary-row,
+.basket-vat-note,
+.basket-confidence-list,
+.empty-basket-card p,
+.basket-confirmation-card p {
+  color: var(--muted-foreground);
+}
+
+.basket-item-heading a,
+.basket-item-price strong,
+.basket-summary-row strong,
+.basket-summary-total,
+.button-secondary,
+.basket-header-button {
+  color: var(--foreground);
+}
+
+.basket-header-button,
+.basket-items-panel,
+.basket-summary-card,
+.empty-basket-card,
+.basket-confirmation-card,
+.basket-quantity-control,
+.button-secondary {
+  background: var(--card);
+}
+
+.empty-basket-card p,
+.basket-confirmation-card p {
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+.app-error-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.app-error-card {
+  width: min(620px, 100%);
+  padding: clamp(30px, 5vw, 52px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.app-error-wordmark {
+  color: var(--primary);
+  font: 800 2rem "Plus Jakarta Sans", Inter, sans-serif;
+  letter-spacing: -0.065em;
+}
+
+.app-error-eyebrow {
+  margin-top: 22px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.app-error-card h1 {
+  margin-top: 10px;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+}
+
+.app-error-card > p:last-of-type {
+  max-width: 500px;
+  margin: 16px auto 0;
+  color: var(--muted-foreground);
+}
+
+.app-error-card button {
+  min-height: 48px;
+  margin-top: 26px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.app-error-card button:hover {
+  background: var(--primary-dark);
+}
