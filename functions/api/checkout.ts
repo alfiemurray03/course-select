@@ -1,3 +1,5 @@
+import { catalogue, tierForQuantity } from '../../src/catalogue';
+
 interface Env {
   DB?: D1Database;
   LEARNER_UPLOADS?: R2Bucket;
@@ -7,6 +9,8 @@ interface Env {
 
 const ONLINE_LICENCE_LIMIT = 25;
 const MAXIMUM_UPLOAD_BYTES = 10 * 1024 * 1024;
+const catalogueById = new Map(catalogue.map((course) => [course.id, course]));
+let operationalSchemaChecked = false;
 
 type CheckoutItemRequest = {
   courseId?: string;
@@ -98,6 +102,33 @@ function normaliseItems(items: CheckoutItemRequest[]) {
   }
 
   return [...combined.entries()].map(([courseId, quantity]) => ({ courseId, quantity }));
+}
+
+function priceRowsFromCode(items: { courseId: string; quantity: number }[]): CoursePriceRow[] | null {
+  const rows: CoursePriceRow[] = [];
+
+  for (const [position, item] of items.entries()) {
+    const course = catalogueById.get(item.courseId);
+    if (!course || course.status !== 'published') return null;
+    const tier = tierForQuantity(course, item.quantity);
+    if (!tier || item.quantity < tier.minQuantity || (tier.maxQuantity !== null && item.quantity > tier.maxQuantity)) return null;
+
+    rows.push({
+      position,
+      quantity: item.quantity,
+      course_id: course.id,
+      title: course.title,
+      slug: course.slug,
+      provider_id: 'provider-highfield',
+      tier_id: `${course.id}-tier-${tier.minQuantity}`,
+      unit_net_pence: tier.aptenvoNetPence,
+      unit_vat_pence: tier.vatPence,
+      unit_gross_pence: tier.aptenvoGrossPence,
+      stripe_price_id: null,
+    });
+  }
+
+  return rows;
 }
 
 function cleanText(value: unknown, maximumLength: number) {
@@ -270,81 +301,20 @@ async function parseRequest(request: Request) {
   };
 }
 
-async function ensureLearnerOrderTables(db: D1Database) {
-  await db.batch([
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS order_enrolment_details (
-        order_id TEXT PRIMARY KEY,
-        customer_type TEXT NOT NULL CHECK (customer_type IN ('individual', 'business')),
-        legal_first_name TEXT NOT NULL,
-        legal_last_name TEXT NOT NULL,
-        enrolment_email TEXT NOT NULL,
-        organisation_name TEXT,
-        learner_id TEXT,
-        provider_sharing_consent INTEGER NOT NULL DEFAULT 0 CHECK (provider_sharing_consent IN (0, 1)),
-        consent_recorded_at TEXT,
-        additional_learner_details_required INTEGER NOT NULL DEFAULT 0 CHECK (additional_learner_details_required IN (0, 1)),
-        fulfilment_status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (fulfilment_status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_additional_learners', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
-        ready_for_enrolment_at TEXT,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
+async function assertOperationalSchema(db: D1Database) {
+  if (operationalSchemaChecked) return;
+  const result = await db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM sqlite_master
+    WHERE type = 'table'
+      AND name IN (
+        'customers', 'learners', 'orders', 'order_items',
+        'order_enrolment_details', 'order_learner_submissions',
+        'order_learner_assignments', 'order_learner_uploads'
       )
-    `),
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS order_learner_submissions (
-        order_id TEXT PRIMARY KEY,
-        method TEXT NOT NULL CHECK (method IN ('manual', 'file')),
-        expected_learner_count INTEGER NOT NULL,
-        submitted_learner_count INTEGER NOT NULL DEFAULT 0,
-        authority_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (authority_confirmed IN (0, 1)),
-        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_enrolment', 'awaiting_file_review', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-      )
-    `),
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS order_learner_assignments (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL,
-        order_item_id TEXT NOT NULL,
-        course_id TEXT NOT NULL,
-        learner_id TEXT NOT NULL,
-        position INTEGER NOT NULL,
-        legal_first_name TEXT NOT NULL,
-        legal_last_name TEXT NOT NULL,
-        enrolment_email TEXT NOT NULL,
-        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'file')),
-        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_enrolment', 'enrolling', 'enrolled', 'cancelled', 'payment_failed')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE,
-        FOREIGN KEY (course_id) REFERENCES courses(id),
-        FOREIGN KEY (learner_id) REFERENCES learners(id),
-        UNIQUE (order_item_id, position)
-      )
-    `),
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS order_learner_uploads (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL,
-        storage_key TEXT NOT NULL UNIQUE,
-        original_filename TEXT NOT NULL,
-        content_type TEXT NOT NULL,
-        size_bytes INTEGER NOT NULL,
-        sha256 TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'awaiting_review', 'reviewed', 'cancelled', 'payment_failed')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-      )
-    `),
-    db.prepare(`CREATE INDEX IF NOT EXISTS idx_order_learner_assignments_order ON order_learner_assignments(order_id, status)`),
-    db.prepare(`CREATE INDEX IF NOT EXISTS idx_order_learner_uploads_order ON order_learner_uploads(order_id, status)`),
-  ]);
+  `).first<{ total: number }>();
+  if (Number(result?.total ?? 0) !== 8) throw new Error('Aptenvo operational order schema is incomplete.');
+  operationalSchemaChecked = true;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -442,47 +412,22 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
   }
 
-  const requestedJson = JSON.stringify(items.map((item, position) => ({ ...item, position })));
-  const result = await env.DB.prepare(`
-    WITH requested AS (
-      SELECT
-        CAST(json_extract(value, '$.position') AS INTEGER) AS position,
-        TRIM(json_extract(value, '$.courseId')) AS course_id,
-        CAST(json_extract(value, '$.quantity') AS INTEGER) AS quantity
-      FROM json_each(?)
-    )
-    SELECT
-      r.position,
-      r.quantity,
-      c.id AS course_id,
-      c.title,
-      c.slug,
-      c.provider_id,
-      t.id AS tier_id,
-      t.aptenvo_net_pence AS unit_net_pence,
-      t.vat_pence AS unit_vat_pence,
-      t.aptenvo_gross_pence AS unit_gross_pence,
-      sp.stripe_price_id
-    FROM requested r
-    INNER JOIN courses c ON c.id = r.course_id
-    INNER JOIN course_price_tiers t ON t.course_id = c.id
-    LEFT JOIN stripe_prices sp ON sp.price_tier_id = t.id
-    WHERE c.status = 'published'
-      AND t.status = 'active'
-      AND r.quantity >= t.minimum_quantity
-      AND (t.maximum_quantity IS NULL OR r.quantity <= t.maximum_quantity)
-    ORDER BY r.position ASC
-  `).bind(requestedJson).all<CoursePriceRow>();
-
-  const rows = result.results ?? [];
-  if (rows.length !== items.length) {
+  const rows = priceRowsFromCode(items);
+  if (!rows || rows.length !== items.length) {
     return Response.json({
       error: 'course_or_price_not_found',
       message: 'One or more selected courses or quantity prices could not be found. Please review your basket.',
     }, { status: 404 });
   }
 
-  await ensureLearnerOrderTables(env.DB);
+  try {
+    await assertOperationalSchema(env.DB);
+  } catch {
+    return Response.json({
+      error: 'order_schema_unavailable',
+      message: 'Aptenvo checkout is temporarily unavailable while the operational database is being prepared.',
+    }, { status: 503 });
+  }
 
   const orderId = `order-${crypto.randomUUID()}`;
   const customerId = await identityId('customer', customer.enrolmentEmail);
@@ -538,6 +483,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         last_name = excluded.last_name,
         account_type = excluded.account_type,
         updated_at = CURRENT_TIMESTAMP
+      WHERE customers.email IS NOT excluded.email
+         OR customers.first_name IS NOT excluded.first_name
+         OR customers.last_name IS NOT excluded.last_name
+         OR customers.account_type IS NOT excluded.account_type
+         OR customers.status IS NOT 'active'
     `).bind(
       customerId,
       customer.enrolmentEmail,
@@ -555,6 +505,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         last_name = excluded.last_name,
         status = 'active',
         updated_at = CURRENT_TIMESTAMP
+      WHERE learners.customer_id IS NOT COALESCE(learners.customer_id, excluded.customer_id)
+         OR learners.email IS NOT excluded.email
+         OR learners.first_name IS NOT excluded.first_name
+         OR learners.last_name IS NOT excluded.last_name
+         OR learners.status IS NOT 'active'
     `).bind(
       learnerIdByEmail.get(email),
       email === customer.enrolmentEmail ? customerId : null,
@@ -683,17 +638,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   form.set('payment_intent_data[metadata][aptenvo_order_id]', orderId);
 
   rows.forEach((row, index) => {
-    if (row.stripe_price_id) {
-      form.set(`line_items[${index}][price]`, row.stripe_price_id);
-    } else {
-      form.set(`line_items[${index}][price_data][currency]`, 'gbp');
-      form.set(`line_items[${index}][price_data][unit_amount]`, String(row.unit_gross_pence));
-      form.set(`line_items[${index}][price_data][tax_behavior]`, 'inclusive');
-      form.set(`line_items[${index}][price_data][product_data][name]`, row.title);
-      form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence sold by JA Group Services Ltd through Aptenvo and delivered through the course provider learning platform. Price includes VAT.');
-      form.set(`line_items[${index}][price_data][product_data][metadata][course_id]`, row.course_id);
-      form.set(`line_items[${index}][price_data][product_data][metadata][provider_id]`, row.provider_id);
-    }
+    form.set(`line_items[${index}][price_data][currency]`, 'gbp');
+    form.set(`line_items[${index}][price_data][unit_amount]`, String(row.unit_gross_pence));
+    form.set(`line_items[${index}][price_data][tax_behavior]`, 'inclusive');
+    form.set(`line_items[${index}][price_data][product_data][name]`, row.title);
+    form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence sold by JA Group Services Ltd through Aptenvo and delivered through the course provider learning platform. Price includes VAT.');
+    form.set(`line_items[${index}][price_data][product_data][metadata][course_id]`, row.course_id);
+    form.set(`line_items[${index}][price_data][product_data][metadata][provider_id]`, row.provider_id);
     form.set(`line_items[${index}][quantity]`, String(row.quantity));
   });
 
@@ -741,5 +692,5 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     itemCount: rows.length,
     licenceCount: totalLicences,
     learnerSubmissionMethod: submission.method,
-  }, { headers: { 'Cache-Control': 'no-store' } });
+  }, { headers: { 'Cache-Control': 'no-store', 'X-Aptenvo-Catalogue-Source': 'code' } });
 };
