@@ -15,8 +15,14 @@ import App from './App';
 import AccountDashboard from './AccountDashboard';
 import AgeGate from './AgeGate';
 import { useBasket } from './basket';
+import ContactPage from './ContactPage';
 import DigitalSupplyConsent from './DigitalSupplyConsent';
 import { EnhancedAboutPage, HelpCentrePage, RefundPolicyPage } from './EnhancedPages';
+import {
+  DetailedDeliveryPage,
+  DetailedIndividualsPage,
+  DetailedOrganisationsPage,
+} from './ServiceInformationPages';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -80,11 +86,13 @@ function EnhancedHeader() {
       <Link to="/" className="brand" aria-label="Aptenvo home"><span style={wordmarkStyle}>Aptenvo</span></Link>
       <nav className="desktop-nav" aria-label="Main navigation">
         <NavLink to="/">Home</NavLink>
-        <NavLink to="/courses">Browse courses</NavLink>
+        <NavLink to="/courses">Courses</NavLink>
         <NavLink to="/individuals">Individuals</NavLink>
-        <NavLink to="/business">Organisations</NavLink>
+        <NavLink to="/organisations">Organisations</NavLink>
+        <NavLink to="/how-courses-are-delivered">Delivery</NavLink>
         <NavLink to="/about">About</NavLink>
-        <NavLink to="/support">Help Centre</NavLink>
+        <NavLink to="/support">Help</NavLink>
+        <NavLink to="/contact">Contact</NavLink>
       </nav>
       <div className="header-actions">
         <Link className="basket-header-button" to="/basket" aria-label={`Basket with ${itemCount} courses and ${licenceCount} licences`}>
@@ -101,7 +109,7 @@ function EnhancedHeader() {
     {open && <nav className="mobile-nav" aria-label="Mobile navigation">
       <Link className="mobile-account" to="/account"><CircleUserRound size={19} /> My Aptenvo</Link>
       <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {itemCount > 0 && `(${itemCount})`}</Link>
-      <Link to="/">Home</Link><Link to="/courses">Browse courses</Link><Link to="/individuals">For individuals</Link><Link to="/business">For organisations</Link><Link to="/about">About Aptenvo</Link><Link to="/support">Help Centre</Link>
+      <Link to="/">Home</Link><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/how-courses-are-delivered">How courses are delivered</Link><Link to="/about">About Aptenvo</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link>
     </nav>}
   </header>;
 }
@@ -110,8 +118,8 @@ function EnhancedFooter() {
   return <>
     <footer className="footer"><div className="footer-grid">
       <div className="footer-brand"><span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span><p>Adult online training sold and supported by JA Group Services Ltd through Aptenvo.</p></div>
-      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/basket">Your basket</Link><Link to="/business">For organisations</Link><Link to="/account">My Aptenvo</Link></div>
-      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/support?topic=large-order">Orders of 26+ licences</Link><Link to="/providers">How course access works</Link><Link to="/complaints">Complaints</Link></div>
+      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My Aptenvo</Link></div>
+      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link><Link to="/contact?topic=large-order">Orders of 26+ licences</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms and conditions</Link><Link to="/privacy">Privacy notice</Link><Link to="/cookies">Cookie notice</Link><Link to="/refunds">Refund policy</Link></div>
     </div></footer>
     <div className="corporate-disclosure"><div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
@@ -130,6 +138,7 @@ function WordingEnhancer() {
       ['Browse all 101 courses', 'Explore the course catalogue'],
       ['101 catalogue items', '101 available courses'],
     ]);
+
     const update = () => {
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let node: Node | null;
@@ -137,7 +146,35 @@ function WordingEnhancer() {
         const value = node.nodeValue?.trim();
         if (value && replacements.has(value)) node.nodeValue = node.nodeValue?.replace(value, replacements.get(value) ?? value) ?? null;
       }
+
+      document.querySelectorAll<HTMLAnchorElement>('a[href="/business"]').forEach((anchor) => anchor.setAttribute('href', '/organisations'));
+      document.querySelectorAll<HTMLAnchorElement>('a[href="/providers"]').forEach((anchor) => anchor.setAttribute('href', '/how-courses-are-delivered'));
+
+      const originalDesktopNavigation = document.querySelector<HTMLElement>('.desktop-nav');
+      if (originalDesktopNavigation && !originalDesktopNavigation.querySelector('a[href="/contact"]')) {
+        const contact = document.createElement('a');
+        contact.href = '/contact';
+        contact.textContent = 'Contact';
+        originalDesktopNavigation.append(contact);
+      }
+
+      const originalMobileNavigation = document.querySelector<HTMLElement>('.mobile-nav');
+      if (originalMobileNavigation && !originalMobileNavigation.querySelector('a[href="/contact"]')) {
+        const contact = document.createElement('a');
+        contact.href = '/contact';
+        contact.textContent = 'Contact Aptenvo';
+        originalMobileNavigation.append(contact);
+      }
+
+      const supportColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(3)');
+      if (supportColumn && !supportColumn.querySelector('a[href="/contact"]')) {
+        const contact = document.createElement('a');
+        contact.href = '/contact';
+        contact.textContent = 'Contact Aptenvo';
+        supportColumn.insertBefore(contact, supportColumn.children[1] ?? null);
+      }
     };
+
     update();
     const observer = new MutationObserver(update);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -216,6 +253,10 @@ export default function AppShell() {
   else if (location.pathname === '/support' || location.pathname === '/help-centre') enhancedPage = <HelpCentrePage />;
   else if (location.pathname === '/account') enhancedPage = <AccountDashboard />;
   else if (location.pathname === '/refunds') enhancedPage = <RefundPolicyPage />;
+  else if (location.pathname === '/individuals') enhancedPage = <DetailedIndividualsPage />;
+  else if (location.pathname === '/organisations' || location.pathname === '/business') enhancedPage = <DetailedOrganisationsPage />;
+  else if (location.pathname === '/how-courses-are-delivered' || location.pathname === '/providers') enhancedPage = <DetailedDeliveryPage />;
+  else if (location.pathname === '/contact') enhancedPage = <ContactPage />;
 
   return <>
     <AgeGate />
