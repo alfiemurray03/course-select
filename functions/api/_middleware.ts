@@ -11,6 +11,8 @@ type AgeConfirmation = {
 };
 
 type CheckoutConsentPayload = {
+  adultConfirmed?: boolean;
+  adultConfirmedAt?: string;
   digitalContentConsent?: boolean;
   digitalContentConsentRecordedAt?: string;
 };
@@ -32,37 +34,44 @@ async function checkoutConsent(request: Request): Promise<CheckoutConsentPayload
   return null;
 }
 
+function recentIso(value?: string, maximumAge = 15 * 60 * 1000) {
+  const timestamp = value ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(timestamp) && Math.abs(Date.now() - timestamp) <= maximumAge;
+}
+
 export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, next }) => {
   const url = new URL(request.url);
   const isCheckout = request.method === 'POST' && url.pathname === '/api/checkout';
   if (!isCheckout) return next();
 
-  if (!env.SESSION_SECRET) {
-    return Response.json({
-      error: 'age_confirmation_not_configured',
-      message: 'Aptenvo cannot start checkout until the 18+ confirmation service is configured.',
-    }, { status: 503 });
-  }
-
-  const confirmation = await verifyValue<AgeConfirmation>(
-    readCookie(request, ageCookieName()),
-    env.SESSION_SECRET,
-  );
-
-  if (!confirmation?.isAdult || !confirmation.confirmedAt) {
-    return Response.json({
-      error: 'adult_confirmation_required',
-      message: 'Aptenvo is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
-    }, { status: 403 });
-  }
-
   const consent = await checkoutConsent(request);
-  const recordedAt = consent?.digitalContentConsentRecordedAt
-    ? Date.parse(consent.digitalContentConsentRecordedAt)
-    : Number.NaN;
-  const recentConsent = Number.isFinite(recordedAt) && Math.abs(Date.now() - recordedAt) <= 15 * 60 * 1000;
+  let adultConfirmationTime: number | string | undefined;
 
-  if (consent?.digitalContentConsent !== true || !recentConsent) {
+  if (env.SESSION_SECRET) {
+    const confirmation = await verifyValue<AgeConfirmation>(
+      readCookie(request, ageCookieName()),
+      env.SESSION_SECRET,
+    );
+    if (!confirmation?.isAdult || !confirmation.confirmedAt) {
+      return Response.json({
+        error: 'adult_confirmation_required',
+        message: 'Aptenvo is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
+      }, { status: 403 });
+    }
+    adultConfirmationTime = confirmation.confirmedAt;
+  } else {
+    const recentAdultDeclaration = consent?.adultConfirmed === true
+      && recentIso(consent.adultConfirmedAt, 365 * 24 * 60 * 60 * 1000);
+    if (!recentAdultDeclaration) {
+      return Response.json({
+        error: 'adult_confirmation_required',
+        message: 'Aptenvo is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
+      }, { status: 403 });
+    }
+    adultConfirmationTime = consent?.adultConfirmedAt;
+  }
+
+  if (consent?.digitalContentConsent !== true || !recentIso(consent.digitalContentConsentRecordedAt)) {
     return Response.json({
       error: 'digital_supply_consent_required',
       message: 'Confirm immediate digital supply and acknowledge the cancellation position before proceeding to payment.',
@@ -79,7 +88,8 @@ export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, 
       request.headers.get('CF-Connecting-IP'),
       request.headers.get('User-Agent'),
       JSON.stringify({
-        confirmedAdultAt: confirmation.confirmedAt,
+        confirmedAdultAt: adultConfirmationTime,
+        confirmationProtection: env.SESSION_SECRET ? 'signed_cookie' : 'checkout_declaration',
         digitalContentConsentRecordedAt: consent.digitalContentConsentRecordedAt,
         changeOfMindCancellationAcknowledged: true,
         statutoryRightsPreserved: true,
