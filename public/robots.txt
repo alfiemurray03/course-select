@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-# Add the Aptenvo sitemap URL when the production domain is connected.
+Sitemap: https://aptenvo.jagroupservices.co.uk/sitemap.xml
