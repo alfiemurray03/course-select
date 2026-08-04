@@ -9,6 +9,7 @@ import './catalogue.css';
 import './basket.css';
 import './reliability.css';
 import './learner-details.css';
+import './basket-layout-refinement.css';
 
 function enableReliableInternalNavigation() {
   document.addEventListener('click', (event: MouseEvent) => {
