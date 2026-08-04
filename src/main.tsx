@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App';
 import AppErrorBoundary from './AppErrorBoundary';
+import AppShell from './AppShell';
 import { BasketProvider } from './basket';
 import './styles.css';
 import './catalogue.css';
@@ -10,6 +10,7 @@ import './basket.css';
 import './reliability.css';
 import './learner-details.css';
 import './basket-layout-refinement.css';
+import './site-expansion.css';
 
 function enableReliableInternalNavigation() {
   document.addEventListener('click', (event: MouseEvent) => {
@@ -55,7 +56,7 @@ ReactDOM.createRoot(root).render(
     <AppErrorBoundary>
       <BrowserRouter>
         <BasketProvider>
-          <App />
+          <AppShell />
         </BasketProvider>
       </BrowserRouter>
     </AppErrorBoundary>
