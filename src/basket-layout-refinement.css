@@ -1,0 +1,70 @@
+.customer-details-panel {
+  padding: clamp(24px, 4vw, 34px);
+  border-top: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.customer-details-panel .learner-panel-heading p {
+  max-width: 720px;
+}
+
+.customer-details-panel .customer-type-fieldset {
+  max-width: 720px;
+}
+
+.customer-details-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 18px;
+  max-width: 920px;
+}
+
+.customer-details-fields .enrolment-name-grid {
+  grid-column: 1 / -1;
+}
+
+.customer-details-fields .enrolment-field {
+  min-width: 0;
+}
+
+.customer-declarations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.customer-declarations .provider-consent-field {
+  margin-top: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.basket-secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 14px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.basket-secure-note svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+@media (max-width: 760px) {
+  .customer-details-fields,
+  .customer-declarations {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-details-panel {
+    padding: 22px 16px;
+  }
+}
