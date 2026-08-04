@@ -1,0 +1,1 @@
+Revalidates the adult-access fallback, digital-supply declaration, customer dashboard, enhanced information pages and Cloudflare Functions.
