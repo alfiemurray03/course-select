@@ -1,0 +1,1 @@
+Checks that catalogue routes retain the current Aptenvo navigation, My Aptenvo wording, current mobile menu, and non-fixed catalogue wording.
