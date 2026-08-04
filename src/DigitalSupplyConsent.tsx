@@ -19,6 +19,8 @@ function installCheckoutConsentBridge() {
       if (typeof rawPayload === 'string') {
         try {
           const payload = JSON.parse(rawPayload) as Record<string, unknown>;
+          payload.adultConfirmed = localStorage.getItem('aptenvo-age-confirmed') === 'yes';
+          payload.adultConfirmedAt = localStorage.getItem('aptenvo-age-confirmed-at') ?? new Date().toISOString();
           payload.digitalContentConsent = sessionStorage.getItem(CONSENT_KEY) === 'accepted';
           payload.digitalContentConsentRecordedAt = new Date().toISOString();
           form.set('payload', JSON.stringify(payload));
