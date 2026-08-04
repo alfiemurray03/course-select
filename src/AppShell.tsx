@@ -17,7 +17,13 @@ import AgeGate from './AgeGate';
 import { useBasket } from './basket';
 import ContactPage from './ContactPage';
 import DigitalSupplyConsent from './DigitalSupplyConsent';
-import { EnhancedAboutPage, HelpCentrePage, RefundPolicyPage } from './EnhancedPages';
+import { EnhancedAboutPage, HelpCentrePage } from './EnhancedPages';
+import {
+  AcceptableUsePolicyPage,
+  PrivacyPolicyPage,
+  RefundsPolicyPage,
+  TermsOfUsePage,
+} from './LegalPolicies';
 import {
   DetailedDeliveryPage,
   DetailedIndividualsPage,
@@ -120,9 +126,9 @@ function EnhancedFooter() {
       <div className="footer-brand"><span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span><p>Adult online training sold and supported by JA Group Services Ltd through Aptenvo.</p></div>
       <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My Aptenvo</Link></div>
       <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link><Link to="/contact?topic=large-order">Orders of 26+ licences</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
-      <div><h3>Legal</h3><Link to="/terms">Terms and conditions</Link><Link to="/privacy">Privacy notice</Link><Link to="/cookies">Cookie notice</Link><Link to="/refunds">Refund policy</Link></div>
+      <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/acceptable-use">Acceptable Use Policy</Link><Link to="/cookies">Cookie notice</Link></div>
     </div></footer>
-    <div className="corporate-disclosure"><div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
+    <div className="corporate-disclosure"><div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers and learners must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
   </>;
 }
 
@@ -137,6 +143,9 @@ function WordingEnhancer() {
     const replacements = new Map([
       ['Browse all 101 courses', 'Explore the course catalogue'],
       ['101 catalogue items', '101 available courses'],
+      ['Terms and conditions', 'Terms of Use'],
+      ['Privacy notice', 'Privacy Policy'],
+      ['Refund policy', 'Refunds Policy'],
     ]);
 
     const update = () => {
@@ -172,6 +181,14 @@ function WordingEnhancer() {
         contact.href = '/contact';
         contact.textContent = 'Contact Aptenvo';
         supportColumn.insertBefore(contact, supportColumn.children[1] ?? null);
+      }
+
+      const legalColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(4)');
+      if (legalColumn && !legalColumn.querySelector('a[href="/acceptable-use"]')) {
+        const acceptableUse = document.createElement('a');
+        acceptableUse.href = '/acceptable-use';
+        acceptableUse.textContent = 'Acceptable Use Policy';
+        legalColumn.append(acceptableUse);
       }
     };
 
@@ -252,11 +269,14 @@ export default function AppShell() {
   if (location.pathname === '/about') enhancedPage = <EnhancedAboutPage />;
   else if (location.pathname === '/support' || location.pathname === '/help-centre') enhancedPage = <HelpCentrePage />;
   else if (location.pathname === '/account') enhancedPage = <AccountDashboard />;
-  else if (location.pathname === '/refunds') enhancedPage = <RefundPolicyPage />;
   else if (location.pathname === '/individuals') enhancedPage = <DetailedIndividualsPage />;
   else if (location.pathname === '/organisations' || location.pathname === '/business') enhancedPage = <DetailedOrganisationsPage />;
   else if (location.pathname === '/how-courses-are-delivered' || location.pathname === '/providers') enhancedPage = <DetailedDeliveryPage />;
   else if (location.pathname === '/contact') enhancedPage = <ContactPage />;
+  else if (location.pathname === '/terms' || location.pathname === '/terms-of-use') enhancedPage = <TermsOfUsePage />;
+  else if (location.pathname === '/privacy' || location.pathname === '/privacy-policy') enhancedPage = <PrivacyPolicyPage />;
+  else if (location.pathname === '/refunds' || location.pathname === '/refund-policy') enhancedPage = <RefundsPolicyPage />;
+  else if (location.pathname === '/acceptable-use' || location.pathname === '/acceptable-use-policy' || location.pathname === '/aup') enhancedPage = <AcceptableUsePolicyPage />;
 
   return <>
     <AgeGate />
