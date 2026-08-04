@@ -1,9 +1,8 @@
+import { catalogue } from '../src/catalogue';
+
 interface Env {
-  DB?: D1Database;
   SITE_URL?: string;
 }
-
-type CourseRow = { slug: string; updated_at: string | null };
 
 const staticRoutes = [
   '/',
@@ -42,37 +41,19 @@ function normaliseOrigin(value: string | undefined) {
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const origin = normaliseOrigin(env.SITE_URL);
-  let courses: CourseRow[] = [];
-
-  if (env.DB) {
-    try {
-      const result = await env.DB.prepare(`
-        SELECT slug, updated_at
-        FROM courses
-        WHERE status = 'published'
-        ORDER BY title ASC
-      `).all<CourseRow>();
-      courses = result.results ?? [];
-    } catch {
-      courses = [];
-    }
-  }
-
   const entries = [
-    ...staticRoutes.map((path) => ({ loc: `${origin}${path}`, lastmod: null as string | null })),
-    ...courses.map((course) => ({ loc: `${origin}/courses/${encodeURIComponent(course.slug)}`, lastmod: course.updated_at })),
+    ...staticRoutes.map((path) => `${origin}${path}`),
+    ...catalogue.map((course) => `${origin}/courses/${encodeURIComponent(course.slug)}`),
   ];
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.map((entry) => {
-    const lastmod = entry.lastmod ? `\n    <lastmod>${escapeXml(new Date(entry.lastmod).toISOString())}</lastmod>` : '';
-    return `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>${lastmod}\n  </url>`;
-  }).join('\n')}\n</urlset>\n`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.map((loc) => `  <url>\n    <loc>${escapeXml(loc)}</loc>\n  </url>`).join('\n')}\n</urlset>\n`;
 
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
       'X-Content-Type-Options': 'nosniff',
+      'X-Aptenvo-Sitemap-Source': 'code',
     },
   });
 };
