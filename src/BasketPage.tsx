@@ -288,7 +288,7 @@ export default function BasketPage() {
         <div className="container">
           <div className="eyebrow">Your Aptenvo basket</div>
           <h1>Review your training purchase</h1>
-          <p>Set the licence quantities, provide the learner information and then continue to secure payment.</p>
+          <p>Set the licence quantities, provide the customer and learner information, and then continue to secure payment.</p>
         </div>
       </section>
 
@@ -368,6 +368,61 @@ export default function BasketPage() {
                     );
                   })}
                 </div>
+
+                <section className="customer-details-panel" aria-labelledby="customer-details-heading">
+                  <div className="learner-panel-heading">
+                    <div className="learner-panel-icon"><UserRound size={24} /></div>
+                    <div>
+                      <span>Required before payment</span>
+                      <h2 id="customer-details-heading">Customer details</h2>
+                      <p>Tell us who is purchasing and who Aptenvo should contact about this order.</p>
+                    </div>
+                  </div>
+
+                  <fieldset className="customer-type-fieldset">
+                    <legend>Are you purchasing as? <span aria-hidden="true">*</span></legend>
+                    <div className="customer-type-options">
+                      <label className={customerType === 'individual' ? 'selected' : ''}>
+                        <input type="radio" name="customer-type" value="individual" checked={customerType === 'individual'} onChange={() => setCustomerType('individual')} required />
+                        <UserRound size={20} /><span><strong>Individual</strong><small>Buying personally</small></span>
+                      </label>
+                      <label className={customerType === 'business' ? 'selected' : ''}>
+                        <input type="radio" name="customer-type" value="business" checked={customerType === 'business'} onChange={() => setCustomerType('business')} required />
+                        <Building2 size={20} /><span><strong>Business</strong><small>Buying for an organisation</small></span>
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  <div className="customer-details-fields">
+                    <div className="enrolment-name-grid">
+                      <label>Legal first name <span aria-hidden="true">*</span><input type="text" autoComplete="given-name" maxLength={80} value={legalFirstName} onChange={(event) => setLegalFirstName(event.target.value)} required /></label>
+                      <label>Legal last name <span aria-hidden="true">*</span><input type="text" autoComplete="family-name" maxLength={80} value={legalLastName} onChange={(event) => setLegalLastName(event.target.value)} required /></label>
+                    </div>
+
+                    <label className="enrolment-field">Primary contact or learner email <span aria-hidden="true">*</span>
+                      <input type="email" autoComplete="email" maxLength={254} value={enrolmentEmail} onChange={(event) => setEnrolmentEmail(event.target.value)} required />
+                      <small>This is the Aptenvo order contact. You can use the same details for learner rows where appropriate.</small>
+                    </label>
+
+                    {customerType === 'business' && (
+                      <label className="enrolment-field">Organisation name <span className="optional-label">Optional</span>
+                        <input type="text" autoComplete="organization" maxLength={160} value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="customer-declarations">
+                    <label className="provider-consent-field">
+                      <input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} required />
+                      <span>I confirm that I am authorised to provide the personal information of every learner included in this order.</span>
+                    </label>
+
+                    <label className="provider-consent-field">
+                      <input type="checkbox" checked={providerConsent} onChange={(event) => setProviderConsent(event.target.checked)} required />
+                      <span>I confirm that the learner details may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Aptenvo remains the customer support contact.</span>
+                    </label>
+                  </div>
+                </section>
 
                 <section className="learner-submission-panel" aria-labelledby="learner-information-heading">
                   <div className="learner-panel-heading">
@@ -455,50 +510,6 @@ export default function BasketPage() {
               </div>
 
               <aside className="basket-summary-card">
-                <h2>Customer details</h2>
-                <p className="enrolment-form-intro">These details identify the Aptenvo customer and primary contact for this order.</p>
-
-                <fieldset className="customer-type-fieldset">
-                  <legend>Are you purchasing as? <span aria-hidden="true">*</span></legend>
-                  <div className="customer-type-options">
-                    <label className={customerType === 'individual' ? 'selected' : ''}>
-                      <input type="radio" name="customer-type" value="individual" checked={customerType === 'individual'} onChange={() => setCustomerType('individual')} required />
-                      <UserRound size={20} /><span><strong>Individual</strong><small>Buying personally</small></span>
-                    </label>
-                    <label className={customerType === 'business' ? 'selected' : ''}>
-                      <input type="radio" name="customer-type" value="business" checked={customerType === 'business'} onChange={() => setCustomerType('business')} required />
-                      <Building2 size={20} /><span><strong>Business</strong><small>Buying for an organisation</small></span>
-                    </label>
-                  </div>
-                </fieldset>
-
-                <div className="enrolment-name-grid">
-                  <label>Legal first name <span aria-hidden="true">*</span><input type="text" autoComplete="given-name" maxLength={80} value={legalFirstName} onChange={(event) => setLegalFirstName(event.target.value)} required /></label>
-                  <label>Legal last name <span aria-hidden="true">*</span><input type="text" autoComplete="family-name" maxLength={80} value={legalLastName} onChange={(event) => setLegalLastName(event.target.value)} required /></label>
-                </div>
-
-                <label className="enrolment-field">Primary contact or learner email <span aria-hidden="true">*</span>
-                  <input type="email" autoComplete="email" maxLength={254} value={enrolmentEmail} onChange={(event) => setEnrolmentEmail(event.target.value)} required />
-                  <small>This is the Aptenvo order contact. You can use the same details for learner rows where appropriate.</small>
-                </label>
-
-                {customerType === 'business' && (
-                  <label className="enrolment-field">Organisation name <span className="optional-label">Optional</span>
-                    <input type="text" autoComplete="organization" maxLength={160} value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} />
-                  </label>
-                )}
-
-                <label className="provider-consent-field">
-                  <input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} required />
-                  <span>I confirm that I am authorised to provide the personal information of every learner included in this order.</span>
-                </label>
-
-                <label className="provider-consent-field">
-                  <input type="checkbox" checked={providerConsent} onChange={(event) => setProviderConsent(event.target.checked)} required />
-                  <span>I confirm that the learner details may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Aptenvo remains the customer support contact.</span>
-                </label>
-
-                <div className="basket-summary-divider" />
                 <h2>Basket summary</h2>
                 <div className="basket-summary-row"><span>Different courses</span><strong>{itemCount}</strong></div>
                 <div className="basket-summary-row"><span>Total licences</span><strong>{licenceCount}</strong></div>
@@ -512,13 +523,7 @@ export default function BasketPage() {
                   <ShieldCheck size={18} /> {checkingOut ? 'Preparing checkout…' : 'Continue to secure payment'}
                 </button>
                 {checkoutMessage && <p className="checkout-message" role="status">{checkoutMessage}</p>}
-
-                <ul className="basket-confidence-list">
-                  <li><Check size={16} /> Learners are linked to the exact course licences</li>
-                  <li><Check size={16} /> Uploaded documents remain private</li>
-                  <li><Check size={16} /> Highfield sends LMS access after Aptenvo enrolment</li>
-                  <li><Check size={16} /> Contact Aptenvo first for all support</li>
-                </ul>
+                <p className="basket-secure-note"><ShieldCheck size={16} /> Secure payment is processed by Stripe.</p>
               </aside>
             </form>
           )}
