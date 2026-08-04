@@ -13,7 +13,9 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import './course-enrichment';
 import App from './App';
 import AccountDashboard from './AccountDashboard';
+import AccessibilityTools from './AccessibilityTools';
 import AgeGate from './AgeGate';
+import AptenvoHomePage from './AptenvoHomePage';
 import { useBasket } from './basket';
 import ContactPage from './ContactPage';
 import DigitalSupplyConsent from './DigitalSupplyConsent';
@@ -29,22 +31,9 @@ import {
   DetailedIndividualsPage,
   DetailedOrganisationsPage,
 } from './ServiceInformationPages';
+import { AccessibilityPolicyPage, ComplaintsPolicyPage, SiteMapPage } from './TrustPages';
 
 type ThemeMode = 'light' | 'dark' | 'system';
-
-type StoredProfile = {
-  customerType?: 'individual' | 'business';
-  legalFirstName?: string;
-  legalLastName?: string;
-  email?: string;
-  organisationName?: string;
-};
-
-type StoredLearner = {
-  legalFirstName?: string;
-  legalLastName?: string;
-  enrolmentEmail?: string;
-};
 
 const wordmarkStyle = {
   color: '#2563eb',
@@ -124,8 +113,8 @@ function EnhancedFooter() {
   return <>
     <footer className="footer"><div className="footer-grid">
       <div className="footer-brand"><span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span><p>Adult online training sold and supported by JA Group Services Ltd through Aptenvo.</p></div>
-      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My Aptenvo</Link></div>
-      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link><Link to="/contact?topic=large-order">Orders of 26+ licences</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
+      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My Aptenvo</Link><Link to="/sitemap">Site map</Link></div>
+      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link><Link to="/accessibility">Accessibility</Link><Link to="/complaints">Complaints</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/acceptable-use">Acceptable Use Policy</Link><Link to="/cookies">Cookie notice</Link></div>
     </div></footer>
     <div className="corporate-disclosure"><div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers and learners must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
@@ -147,6 +136,14 @@ function WordingEnhancer() {
       ['Privacy notice', 'Privacy Policy'],
       ['Refund policy', 'Refunds Policy'],
     ]);
+
+    const appendLink = (column: HTMLElement, href: string, text: string) => {
+      if (column.querySelector(`a[href="${href}"]`)) return;
+      const link = document.createElement('a');
+      link.href = href;
+      link.textContent = text;
+      column.append(link);
+    };
 
     const update = () => {
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -176,20 +173,17 @@ function WordingEnhancer() {
       }
 
       const supportColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(3)');
-      if (supportColumn && !supportColumn.querySelector('a[href="/contact"]')) {
-        const contact = document.createElement('a');
-        contact.href = '/contact';
-        contact.textContent = 'Contact Aptenvo';
-        supportColumn.insertBefore(contact, supportColumn.children[1] ?? null);
+      if (supportColumn) {
+        appendLink(supportColumn, '/contact', 'Contact Aptenvo');
+        appendLink(supportColumn, '/accessibility', 'Accessibility');
+        appendLink(supportColumn, '/complaints', 'Complaints');
       }
 
       const legalColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(4)');
-      if (legalColumn && !legalColumn.querySelector('a[href="/acceptable-use"]')) {
-        const acceptableUse = document.createElement('a');
-        acceptableUse.href = '/acceptable-use';
-        acceptableUse.textContent = 'Acceptable Use Policy';
-        legalColumn.append(acceptableUse);
-      }
+      if (legalColumn) appendLink(legalColumn, '/acceptable-use', 'Acceptable Use Policy');
+
+      const exploreColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(2)');
+      if (exploreColumn) appendLink(exploreColumn, '/sitemap', 'Site map');
     };
 
     update();
@@ -200,73 +194,11 @@ function WordingEnhancer() {
   return null;
 }
 
-function parseStored<T>(key: string): T | null {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) as T : null;
-  } catch {
-    return null;
-  }
-}
-
-function setInputValue(input: HTMLInputElement, value: string) {
-  if (!value || input.value) return;
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  setter?.call(input, value);
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
-function SavedDetailPrefill() {
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname !== '/basket') return;
-    const profile = parseStored<StoredProfile>('aptenvo-account-profile');
-    const learners = parseStored<StoredLearner[]>('aptenvo-account-learners') ?? [];
-    if (!profile && !learners.length) return;
-
-    const apply = () => {
-      if (profile) {
-        const typeInput = document.querySelector<HTMLInputElement>(`input[name="customer-type"][value="${profile.customerType ?? 'individual'}"]`);
-        if (typeInput && !document.querySelector<HTMLInputElement>('input[name="customer-type"]:checked')) typeInput.click();
-        const firstName = document.querySelector<HTMLInputElement>('input[autocomplete="given-name"]');
-        const lastName = document.querySelector<HTMLInputElement>('input[autocomplete="family-name"]');
-        const email = document.querySelector<HTMLInputElement>('input[autocomplete="email"]');
-        const organisation = document.querySelector<HTMLInputElement>('input[autocomplete="organization"]');
-        if (firstName) setInputValue(firstName, profile.legalFirstName ?? '');
-        if (lastName) setInputValue(lastName, profile.legalLastName ?? '');
-        if (email) setInputValue(email, profile.email ?? '');
-        if (organisation) setInputValue(organisation, profile.organisationName ?? '');
-      }
-
-      const rows = [...document.querySelectorAll<HTMLElement>('.learner-entry-row')];
-      const available = profile?.customerType === 'individual' && profile.legalFirstName && profile.legalLastName && profile.email
-        ? [{ legalFirstName: profile.legalFirstName, legalLastName: profile.legalLastName, enrolmentEmail: profile.email }, ...learners]
-        : learners;
-      rows.forEach((row, index) => {
-        const learner = available[index];
-        if (!learner) return;
-        const inputs = row.querySelectorAll<HTMLInputElement>('input');
-        if (inputs[0]) setInputValue(inputs[0], learner.legalFirstName ?? '');
-        if (inputs[1]) setInputValue(inputs[1], learner.legalLastName ?? '');
-        if (inputs[2]) setInputValue(inputs[2], learner.enrolmentEmail ?? '');
-      });
-    };
-
-    const timer = window.setTimeout(apply, 100);
-    const observer = new MutationObserver(apply);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => { window.clearTimeout(timer); observer.disconnect(); };
-  }, [location.pathname]);
-
-  return null;
-}
-
 export default function AppShell() {
   const location = useLocation();
   let enhancedPage: ReactNode = null;
-  if (location.pathname === '/about') enhancedPage = <EnhancedAboutPage />;
+  if (location.pathname === '/') enhancedPage = <AptenvoHomePage />;
+  else if (location.pathname === '/about') enhancedPage = <EnhancedAboutPage />;
   else if (location.pathname === '/support' || location.pathname === '/help-centre') enhancedPage = <HelpCentrePage />;
   else if (location.pathname === '/account') enhancedPage = <AccountDashboard />;
   else if (location.pathname === '/individuals') enhancedPage = <DetailedIndividualsPage />;
@@ -277,12 +209,15 @@ export default function AppShell() {
   else if (location.pathname === '/privacy' || location.pathname === '/privacy-policy') enhancedPage = <PrivacyPolicyPage />;
   else if (location.pathname === '/refunds' || location.pathname === '/refund-policy') enhancedPage = <RefundsPolicyPage />;
   else if (location.pathname === '/acceptable-use' || location.pathname === '/acceptable-use-policy' || location.pathname === '/aup') enhancedPage = <AcceptableUsePolicyPage />;
+  else if (location.pathname === '/accessibility' || location.pathname === '/accessibility-policy') enhancedPage = <AccessibilityPolicyPage />;
+  else if (location.pathname === '/complaints' || location.pathname === '/complaints-policy') enhancedPage = <ComplaintsPolicyPage />;
+  else if (location.pathname === '/sitemap' || location.pathname === '/site-map') enhancedPage = <SiteMapPage />;
 
   return <>
     <AgeGate />
     <WordingEnhancer />
-    <SavedDetailPrefill />
     <DigitalSupplyConsent />
+    <AccessibilityTools />
     {enhancedPage ? <EnhancedLayout>{enhancedPage}</EnhancedLayout> : <App />}
   </>;
 }
