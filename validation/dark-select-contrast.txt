@@ -1,0 +1,1 @@
+Validation marker for native select and option contrast in Aptenvo dark mode.
