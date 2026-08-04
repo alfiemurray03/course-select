@@ -1,0 +1,86 @@
+/* Final visual safeguards for dark feature panels and the authenticated account landing page. */
+
+.home-hero-redesign,
+.home-hero-redesign .home-hero-main-copy,
+.home-hero-redesign .home-outcome-panel,
+.home-closing-cta {
+  color: #ffffff;
+}
+
+.home-hero-redesign .home-hero-main-copy h1,
+.home-hero-redesign .home-outcome-panel h2,
+.home-closing-cta h2 {
+  color: #ffffff !important;
+}
+
+.home-hero-redesign .home-outcome-panel strong,
+.home-hero-redesign .home-panel-timeline strong,
+.home-closing-cta strong {
+  color: #ffffff;
+}
+
+.home-hero-redesign .home-hero-main-copy .eyebrow,
+.home-closing-cta .eyebrow {
+  color: #bfdbfe !important;
+  border-color: #60a5fa !important;
+}
+
+.home-hero-redesign .home-panel-label,
+.home-hero-redesign .home-panel-timeline small,
+.home-hero-redesign .home-hero-assurances,
+.home-hero-redesign .home-hero-lead,
+.home-closing-cta p {
+  color: #dbeafe !important;
+}
+
+.home-hero-redesign .home-panel-note p {
+  color: #eff6ff !important;
+}
+
+.account-signin-page,
+.account-signin-copy,
+.account-signin-card,
+.account-signin-benefits article {
+  color: var(--foreground);
+}
+
+.account-signin-copy h1,
+.account-signin-card h2,
+.account-signin-benefits strong {
+  color: var(--foreground) !important;
+}
+
+.account-signin-copy .eyebrow {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.account-signin-copy > p,
+.account-signin-card > p,
+.account-signin-benefits span,
+.account-signin-trust span {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .account-signin-copy .eyebrow {
+  color: #93c5fd !important;
+  border-color: #60a5fa !important;
+}
+
+/* The accessibility control belongs on the lower-right of every viewport. */
+.aptenvo-a11y-widget {
+  left: auto !important;
+  right: max(22px, env(safe-area-inset-right)) !important;
+}
+
+.aptenvo-a11y-panel {
+  left: auto !important;
+  right: 0 !important;
+}
+
+@media (max-width: 560px) {
+  .aptenvo-a11y-widget {
+    left: auto !important;
+    right: 12px !important;
+  }
+}
