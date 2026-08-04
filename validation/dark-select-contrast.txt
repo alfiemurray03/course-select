@@ -1,0 +1,1 @@
+Validation marker for native subject and course-type dropdown contrast in Aptenvo dark mode.
