@@ -1,0 +1,1 @@
+Validation marker for top-aligning the homepage hero and reducing the oversized top padding.
