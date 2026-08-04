@@ -1,0 +1,1 @@
+Validation marker for removing the Highfield footer logo, tightening the final homepage spacing and replacing the fixed course count with evergreen wording.
