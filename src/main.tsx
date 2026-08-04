@@ -19,6 +19,7 @@ import './highfield-branding.css';
 import './home-footer-spacing.css';
 import './home-hero-layout-fix.css';
 import './mobile-responsive.css';
+import './dark-select-fix.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
