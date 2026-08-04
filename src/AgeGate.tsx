@@ -10,7 +10,10 @@ export default function AgeGate() {
   useEffect(() => {
     fetch('/api/age/status', { credentials: 'same-origin' })
       .then((response) => response.json())
-      .then((data: { confirmed?: boolean }) => setState(data.confirmed ? 'confirmed' : 'required'))
+      .then((data: { configured?: boolean; confirmed?: boolean }) => {
+        const locallyConfirmed = localStorage.getItem('aptenvo-age-confirmed') === 'yes';
+        setState(data.confirmed || (!data.configured && locallyConfirmed) ? 'confirmed' : 'required');
+      })
       .catch(() => setState(localStorage.getItem('aptenvo-age-confirmed') === 'yes' ? 'confirmed' : 'required'));
   }, []);
 
@@ -23,8 +26,9 @@ export default function AgeGate() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isAdult: true }),
       });
-      if (!response.ok) throw new Error('Unable to save confirmation');
+      if (!response.ok && response.status !== 503) throw new Error('Unable to save confirmation');
       localStorage.setItem('aptenvo-age-confirmed', 'yes');
+      localStorage.setItem('aptenvo-age-confirmed-at', new Date().toISOString());
       setState('confirmed');
     } catch {
       setMessage('We could not save the confirmation. Refresh the page and try again.');
