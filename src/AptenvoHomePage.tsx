@@ -2,7 +2,6 @@ import {
   ArrowRight,
   Award,
   BookOpen,
-  BriefcaseBusiness,
   Building2,
   Check,
   Clock3,
@@ -16,6 +15,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react';
+import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ONLINE_LICENCE_LIMIT } from './basket';
 import { catalogue } from './catalogue';
@@ -56,7 +56,7 @@ const learningNeeds = [
   ['Construction and specialist safety', 'Focused knowledge for higher-risk workplaces and specialist duties.', 'Construction Safety'],
 ] as const;
 
-function TrustPoint({ icon, title, copy }: { icon: React.ReactNode; title: string; copy: string }) {
+function TrustPoint({ icon, title, copy }: { icon: ReactNode; title: string; copy: string }) {
   return <article className="home-trust-point">{icon}<div><strong>{title}</strong><span>{copy}</span></div></article>;
 }
 
@@ -110,7 +110,7 @@ export default function AptenvoHomePage() {
       <div className="home-needs-introduction">
         <span className="eyebrow blue">Explore by purpose</span>
         <h2>Practical subjects for safer, more confident workplaces and services</h2>
-        <p>The homepage no longer tries to display part of the course catalogue. Instead, choose the subject that matters to you and continue into a focused catalogue view.</p>
+        <p>Choose the subject that matters to you, then compare the courses, audiences and learning outcomes available in that area.</p>
         <Link className="button button-primary" to="/courses">Explore the complete catalogue <ArrowRight size={18} /></Link>
       </div>
       <div className="home-needs-grid">{learningNeeds.map(([title, copy, category]) => <Link key={title} to={`/courses?category=${encodeURIComponent(category)}`}><BookOpen size={22} /><span><strong>{title}</strong><small>{copy}</small></span><ArrowRight size={17} /></Link>)}</div>
@@ -120,7 +120,7 @@ export default function AptenvoHomePage() {
       <div className="section-heading"><span>Why customers choose Aptenvo</span><h2>More than a payment page</h2><p>Your order is supported by a defined customer relationship, structured learner-data collection and a managed route into the Highfield LMS.</p></div>
       <div className="home-benefit-grid">
         <article><GraduationCap size={27} /><h3>Course information before purchase</h3><p>Every course page explains what the learning covers, who it is intended for, the likely certificate position and where practical training or separate assessment may still be needed.</p></article>
-        <article><Users size={27} /><h3>Built for one or several learners</h3><p>Enter learner details against each licence or upload an accepted spreadsheet or PDF. My Aptenvo can store reusable customer details, learners and baskets.</p></article>
+        <article><Users size={27} /><h3>Built for one or several learners</h3><p>Enter learner details against each licence or upload an accepted spreadsheet or PDF. My Aptenvo can store reusable customer details, learners and baskets after secure sign-in.</p></article>
         <article><LockKeyhole size={27} /><h3>Secure purchasing and account access</h3><p>Stripe handles card payments. JA Group Services ID, using Microsoft Entra External ID, provides the customer sign-in foundation for My Aptenvo.</p></article>
         <article><HeartHandshake size={27} /><h3>One accountable support contact</h3><p>Customers contact Aptenvo for ordering, enrolment, access and course issues. Where Highfield assistance is required, Aptenvo manages the escalation.</p></article>
       </div>
