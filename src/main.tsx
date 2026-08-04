@@ -5,6 +5,7 @@ import AppErrorBoundary from './AppErrorBoundary';
 import AppShell from './AppShell';
 import { BasketProvider } from './basket';
 import './legacy-route-normaliser';
+import './customer-websites-menu';
 import './styles.css';
 import './catalogue.css';
 import './basket.css';
@@ -20,6 +21,7 @@ import './home-footer-spacing.css';
 import './home-hero-layout-fix.css';
 import './mobile-responsive.css';
 import './dark-select-fix.css';
+import './customer-websites-menu.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
