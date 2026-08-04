@@ -1,0 +1,1 @@
+Validates Aptenvo's desktop and mobile Our Websites dropdown and the shared five-site customer website list.
