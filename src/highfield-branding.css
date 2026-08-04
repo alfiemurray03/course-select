@@ -49,24 +49,41 @@
 .highfield-provider-lockup-footer {
   align-items: flex-start;
   flex-direction: column;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .highfield-provider-lockup-footer img {
-  width: min(170px, 52vw);
-  max-height: 50px;
+  width: min(250px, 72vw);
+  height: auto;
+  max-height: none;
+  padding: 14px 18px;
+  border: 1px solid #dbe3ec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  object-fit: contain;
+  object-position: center;
 }
 
 .highfield-provider-lockup-footer span {
-  color: #aabfe0;
-  font-size: 0.68rem;
+  max-width: 250px;
+  color: #dbeafe;
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 @media (max-width: 600px) {
   .highfield-provider-lockup-home {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .highfield-provider-lockup-footer img {
+    width: min(230px, 76vw);
+    padding: 12px 15px;
   }
 }
