@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppErrorBoundary from './AppErrorBoundary';
 import AppShell from './AppShell';
 import { BasketProvider } from './basket';
+import './legacy-route-normaliser';
 import './styles.css';
 import './catalogue.css';
 import './basket.css';
