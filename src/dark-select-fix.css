@@ -1,0 +1,49 @@
+/* Keep native select menus readable in Aptenvo dark mode.
+   Chromium/Windows otherwise opens a light popup while retaining light text. */
+
+select {
+  color-scheme: light;
+}
+
+:root.dark select,
+.dark select {
+  color-scheme: dark;
+  border-color: #334766;
+  background-color: #0f1d35;
+  color: #f8fafc;
+}
+
+:root.dark select option,
+:root.dark select optgroup,
+.dark select option,
+.dark select optgroup {
+  background-color: #0f1d35;
+  color: #f8fafc;
+}
+
+:root.dark select option:checked,
+.dark select option:checked {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+:root.dark .select-filter,
+.dark .select-filter {
+  border-color: #334766;
+  background: #0f1d35;
+  color: #cbd5e1;
+}
+
+:root.dark .select-filter select,
+.dark .select-filter select {
+  background-color: #0f1d35;
+  color: #f8fafc;
+}
+
+@media (forced-colors: active) {
+  select,
+  select option,
+  select optgroup {
+    forced-color-adjust: auto;
+  }
+}
