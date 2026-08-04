@@ -31,6 +31,7 @@ const allowedEnquiryTypes = new Set([
 ]);
 
 const allowedImpacts = new Set(['general', 'minor', 'major', 'critical']);
+let contactSchemaChecked = false;
 
 function cleanText(value: unknown, maximumLength: number, minimumLength = 1) {
   if (typeof value !== 'string') return null;
@@ -71,39 +72,19 @@ function priorityForImpact(impact: string) {
 }
 
 async function ensureContactTable(db: D1Database) {
-  await db.batch([
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS contact_requests (
-        id TEXT PRIMARY KEY,
-        reference TEXT NOT NULL UNIQUE,
-        account_id TEXT,
-        enquiry_type TEXT NOT NULL,
-        customer_type TEXT NOT NULL CHECK (customer_type IN ('individual', 'business')),
-        legal_first_name TEXT NOT NULL,
-        legal_last_name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        organisation_name TEXT,
-        order_reference TEXT,
-        learner_email TEXT,
-        reported_impact TEXT NOT NULL,
-        initial_priority TEXT NOT NULL CHECK (initial_priority IN ('P1', 'P2', 'P3', 'P4')),
-        final_priority TEXT CHECK (final_priority IN ('P1', 'P2', 'P3', 'P4')),
-        subject TEXT NOT NULL,
-        message TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'triaged', 'in_progress', 'awaiting_customer', 'escalated', 'resolved', 'closed')),
-        adult_confirmed_at TEXT NOT NULL,
-        privacy_accepted_at TEXT NOT NULL,
-        ip_hash TEXT NOT NULL,
-        user_agent TEXT,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_contact_requests_status_created ON contact_requests(status, created_at)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_contact_requests_ip_created ON contact_requests(ip_hash, created_at)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_contact_requests_email_created ON contact_requests(email, created_at)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_contact_requests_account_created ON contact_requests(account_id, created_at)'),
-  ]);
+  if (contactSchemaChecked) return;
+
+  const result = await db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM sqlite_master
+    WHERE type = 'table' AND name = 'contact_requests'
+  `).first<{ total: number }>();
+
+  if (Number(result?.total ?? 0) !== 1) {
+    throw new Error('Aptenvo contact schema is incomplete.');
+  }
+
+  contactSchemaChecked = true;
 }
 
 export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, env }) => {
@@ -157,7 +138,11 @@ export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, e
     return Response.json({ ok: false, error: 'validation_failed', message: 'Complete all required contact fields and declarations before submitting.' }, { status: 400 });
   }
 
-  await ensureContactTable(env.DB);
+  try {
+    await ensureContactTable(env.DB);
+  } catch {
+    return Response.json({ ok: false, error: 'contact_service_unavailable', message: 'The Aptenvo contact service is temporarily unavailable. Email contact@jagroupservices.co.uk instead.' }, { status: 503 });
+  }
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
   const ipHash = await sha256(`${env.SESSION_SECRET ?? 'aptenvo-contact'}:${ip}`);
