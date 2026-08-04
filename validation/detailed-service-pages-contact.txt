@@ -1,0 +1,1 @@
+Validates the expanded Individuals, Organisations and How courses are delivered pages, plus the functional Aptenvo D1 contact form and responsive styles.
