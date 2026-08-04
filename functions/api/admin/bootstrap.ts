@@ -1,4 +1,4 @@
-export const onRequest: PagesFunction = async () => Response.json({
+const retiredBootstrap: PagesFunction = async () => Response.json({
   error: 'catalogue_bootstrap_retired',
   message: 'Aptenvo course content, categories, learning outcomes and standard prices are now deployed from the codebase. This endpoint no longer writes the catalogue into D1.',
 }, {
@@ -8,3 +8,6 @@ export const onRequest: PagesFunction = async () => Response.json({
     'X-Aptenvo-Catalogue-Source': 'code',
   },
 });
+
+export const onRequestPost = retiredBootstrap;
+export const onRequest = retiredBootstrap;
