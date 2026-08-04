@@ -11,6 +11,7 @@ import './reliability.css';
 import './learner-details.css';
 import './basket-layout-refinement.css';
 import './site-expansion.css';
+import './digital-consent.css';
 
 function enableReliableInternalNavigation() {
   document.addEventListener('click', (event: MouseEvent) => {
