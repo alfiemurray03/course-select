@@ -1,0 +1,1 @@
+Validates the final code-first catalogue, checkout and D1 runtime optimisation including compatibility exports for retired setup routes.
