@@ -16,6 +16,7 @@ import './service-information.css';
 import './visual-contrast-fixes.css';
 import './highfield-branding.css';
 import './home-footer-spacing.css';
+import './home-hero-layout-fix.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
