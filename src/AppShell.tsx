@@ -16,9 +16,11 @@ import AccountDashboard from './AccountDashboard';
 import AccessibilityTools from './AccessibilityTools';
 import AgeGate from './AgeGate';
 import AptenvoHomePage from './AptenvoHomePage';
+import AuthenticatedAccountPrefill from './AuthenticatedAccountPrefill';
 import { useBasket } from './basket';
 import ContactPage from './ContactPage';
 import DigitalSupplyConsent from './DigitalSupplyConsent';
+import EnrolmentTargetNotice from './EnrolmentTargetNotice';
 import { EnhancedAboutPage, HelpCentrePage } from './EnhancedPages';
 import {
   AcceptableUsePolicyPage,
@@ -201,9 +203,9 @@ export default function AppShell() {
   else if (location.pathname === '/about') enhancedPage = <EnhancedAboutPage />;
   else if (location.pathname === '/support' || location.pathname === '/help-centre') enhancedPage = <HelpCentrePage />;
   else if (location.pathname === '/account') enhancedPage = <AccountDashboard />;
-  else if (location.pathname === '/individuals') enhancedPage = <DetailedIndividualsPage />;
-  else if (location.pathname === '/organisations' || location.pathname === '/business') enhancedPage = <DetailedOrganisationsPage />;
-  else if (location.pathname === '/how-courses-are-delivered' || location.pathname === '/providers') enhancedPage = <DetailedDeliveryPage />;
+  else if (location.pathname === '/individuals') enhancedPage = <><DetailedIndividualsPage /><EnrolmentTargetNotice /></>;
+  else if (location.pathname === '/organisations' || location.pathname === '/business') enhancedPage = <><DetailedOrganisationsPage /><EnrolmentTargetNotice /></>;
+  else if (location.pathname === '/how-courses-are-delivered' || location.pathname === '/providers') enhancedPage = <><DetailedDeliveryPage /><EnrolmentTargetNotice /></>;
   else if (location.pathname === '/contact') enhancedPage = <ContactPage />;
   else if (location.pathname === '/terms' || location.pathname === '/terms-of-use') enhancedPage = <TermsOfUsePage />;
   else if (location.pathname === '/privacy' || location.pathname === '/privacy-policy') enhancedPage = <PrivacyPolicyPage />;
@@ -216,6 +218,7 @@ export default function AppShell() {
   return <>
     <AgeGate />
     <WordingEnhancer />
+    <AuthenticatedAccountPrefill />
     <DigitalSupplyConsent />
     <AccessibilityTools />
     {enhancedPage ? <EnhancedLayout>{enhancedPage}</EnhancedLayout> : <App />}
