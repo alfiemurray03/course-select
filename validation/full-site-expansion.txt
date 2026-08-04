@@ -1,0 +1,1 @@
+Validates enriched course content, 18+ access, customer accounts, saved baskets, learner directory, About page, Help Centre, support priorities and refund safeguards.
