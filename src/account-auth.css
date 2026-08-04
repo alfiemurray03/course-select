@@ -1,0 +1,30 @@
+.account-signin-page { min-height: calc(100vh - 160px); background: linear-gradient(180deg, var(--background), var(--muted)); }
+.account-signin-shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr); gap: clamp(30px, 6vw, 82px); align-items: center; padding-top: clamp(70px, 9vw, 120px); padding-bottom: clamp(70px, 9vw, 120px); }
+.account-signin-copy .eyebrow { display: inline-flex; align-items: center; gap: 8px; }
+.account-signin-copy h1 { max-width: 780px; margin-top: 18px; font-size: clamp(3rem, 6.5vw, 5.8rem); line-height: 0.98; letter-spacing: -0.06em; }
+.account-signin-copy > p { max-width: 720px; margin-top: 22px; color: var(--muted-foreground); font-size: 1.08rem; line-height: 1.75; }
+.account-signin-benefits { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 13px; margin-top: 33px; }
+.account-signin-benefits article { padding: 18px; border: 1px solid var(--border); border-radius: 17px; background: var(--card); }
+.account-signin-benefits svg { color: var(--primary); }
+.account-signin-benefits strong { display: block; margin-top: 13px; }
+.account-signin-benefits span { display: block; margin-top: 6px; color: var(--muted-foreground); font-size: 0.82rem; line-height: 1.45; }
+.account-signin-card { padding: clamp(28px, 4vw, 43px); border: 1px solid var(--border); border-radius: 28px; background: var(--card); box-shadow: 0 30px 80px -45px rgba(15,23,42,0.72); }
+.account-signin-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; background: var(--primary-soft); color: var(--primary); }
+.account-signin-card h2 { margin-top: 24px; font-size: 1.8rem; }
+.account-signin-card > p { margin-top: 12px; color: var(--muted-foreground); line-height: 1.65; }
+.account-signin-button { width: 100%; justify-content: center; margin-top: 25px; min-height: 52px; }
+.account-signin-trust { display: grid; gap: 11px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.account-signin-trust span { display: flex; align-items: flex-start; gap: 9px; color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; }
+.account-signin-trust svg { flex: 0 0 auto; margin-top: 2px; color: var(--primary); }
+.account-signin-config-note { margin-top: 18px; padding: 12px; border-radius: 12px; background: var(--muted); color: var(--muted-foreground); font-size: 0.78rem; line-height: 1.5; }
+.account-loading-screen { display: grid; place-items: center; min-height: 55vh; text-align: center; }
+.account-loading-screen div { display: grid; gap: 12px; justify-items: center; }
+.account-loading-screen svg { color: var(--primary); }
+
+@media (max-width: 930px) {
+  .account-signin-shell { grid-template-columns: 1fr; }
+  .account-signin-card { max-width: 620px; }
+}
+@media (max-width: 650px) {
+  .account-signin-benefits { grid-template-columns: 1fr; }
+}
