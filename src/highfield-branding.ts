@@ -1,9 +1,14 @@
 const HIGHFIELD_LOGO_URL = 'https://www.sfbbplus.co.uk/wp-content/uploads/2022/02/Picture3-1.png';
+const HIGHFIELD_LMS_URL = 'https://lms.highfieldelearning.com/';
 
 function createHighfieldLockup(context: 'home' | 'service' | 'footer') {
-  const wrapper = document.createElement('div');
+  const wrapper = document.createElement('a');
   wrapper.className = `highfield-provider-lockup highfield-provider-lockup-${context}`;
   wrapper.dataset.highfieldBranding = context;
+  wrapper.href = HIGHFIELD_LMS_URL;
+  wrapper.target = '_blank';
+  wrapper.rel = 'noopener noreferrer';
+  wrapper.setAttribute('aria-label', 'Open the Highfield Learning Management System in a new tab');
 
   const image = document.createElement('img');
   image.src = HIGHFIELD_LOGO_URL;
@@ -15,8 +20,8 @@ function createHighfieldLockup(context: 'home' | 'service' | 'footer') {
 
   const label = document.createElement('span');
   label.textContent = context === 'footer'
-    ? 'Course provider and learning management system'
-    : 'Course provider and LMS';
+    ? 'Open the Highfield Learning Management System'
+    : 'Course provider and LMS · Open Highfield LMS';
 
   wrapper.append(image, label);
   return wrapper;
