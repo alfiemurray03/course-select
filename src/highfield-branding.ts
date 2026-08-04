@@ -1,7 +1,7 @@
 const HIGHFIELD_LOGO_URL = 'https://www.sfbbplus.co.uk/wp-content/uploads/2022/02/Picture3-1.png';
 const HIGHFIELD_LMS_URL = 'https://lms.highfieldelearning.com/';
 
-function createHighfieldLockup(context: 'home' | 'service' | 'footer') {
+function createHighfieldLockup(context: 'home' | 'service') {
   const wrapper = document.createElement('a');
   wrapper.className = `highfield-provider-lockup highfield-provider-lockup-${context}`;
   wrapper.dataset.highfieldBranding = context;
@@ -12,22 +12,23 @@ function createHighfieldLockup(context: 'home' | 'service' | 'footer') {
 
   const image = document.createElement('img');
   image.src = HIGHFIELD_LOGO_URL;
-  image.alt = 'Highfield';
+  image.alt = 'Highfield Online Training reseller';
   image.loading = context === 'home' ? 'eager' : 'lazy';
   image.decoding = 'async';
   image.referrerPolicy = 'no-referrer';
   image.addEventListener('error', () => wrapper.remove(), { once: true });
 
   const label = document.createElement('span');
-  label.textContent = context === 'footer'
-    ? 'Open the Highfield Learning Management System'
-    : 'Course provider and LMS · Open Highfield LMS';
+  label.textContent = 'Course provider and LMS · Open Highfield LMS';
 
   wrapper.append(image, label);
   return wrapper;
 }
 
 function addHighfieldBranding() {
+  // Remove any footer logo left behind by an older deployed bundle.
+  document.querySelectorAll<HTMLElement>('[data-highfield-branding="footer"]').forEach((node) => node.remove());
+
   const homePanel = document.querySelector<HTMLElement>('.home-outcome-panel');
   if (homePanel && !homePanel.querySelector('[data-highfield-branding="home"]')) {
     homePanel.prepend(createHighfieldLockup('home'));
@@ -39,11 +40,6 @@ function addHighfieldBranding() {
       copy.prepend(createHighfieldLockup('service'));
     }
   });
-
-  const footerBrand = document.querySelector<HTMLElement>('.footer-brand');
-  if (footerBrand && !footerBrand.querySelector('[data-highfield-branding="footer"]')) {
-    footerBrand.append(createHighfieldLockup('footer'));
-  }
 }
 
 function startHighfieldBranding() {
