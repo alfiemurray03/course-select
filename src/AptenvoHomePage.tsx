@@ -18,7 +18,6 @@ import {
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ONLINE_LICENCE_LIMIT } from './basket';
-import { catalogue } from './catalogue';
 import './home-refresh.css';
 
 const ENROLMENT_TARGET = '3–5 business working days';
@@ -68,7 +67,7 @@ export default function AptenvoHomePage() {
         <div className="home-hero-main-copy">
           <div className="eyebrow"><Sparkles size={16} /> Adult online learning, sold and supported by Aptenvo</div>
           <h1>Build knowledge that helps you move forward.</h1>
-          <p className="home-hero-lead">Choose from {catalogue.length} Highfield Online Training courses available through JA Group Services Ltd. Aptenvo handles your purchase, learner information, enrolment and first-line support from one clear place.</p>
+          <p className="home-hero-lead">Choose from a wide range of Highfield Online Training courses available through JA Group Services Ltd. Aptenvo handles your purchase, learner information, enrolment and first-line support from one clear place.</p>
           <div className="button-row home-primary-actions">
             <Link className="button button-light" to="/courses">Find your course <ArrowRight size={18} /></Link>
             <Link className="button button-ghost" to="/organisations">Train your team</Link>
