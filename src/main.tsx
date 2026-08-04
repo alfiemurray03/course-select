@@ -14,7 +14,9 @@ import './site-expansion.css';
 import './digital-consent.css';
 import './service-information.css';
 import './visual-contrast-fixes.css';
+import './highfield-branding.css';
 import './public-wording-fixes';
+import './highfield-branding';
 
 function enableReliableInternalNavigation() {
   document.addEventListener('click', (event: MouseEvent) => {
