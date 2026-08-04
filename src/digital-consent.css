@@ -1,0 +1,25 @@
+.digital-supply-consent {
+  margin-top: 15px;
+  padding: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 14px;
+  background: var(--primary-soft);
+}
+
+.digital-supply-consent > span {
+  display: grid;
+  gap: 6px;
+}
+
+.digital-supply-consent strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--foreground);
+  font-size: 0.82rem;
+}
+
+.digital-supply-consent strong svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
