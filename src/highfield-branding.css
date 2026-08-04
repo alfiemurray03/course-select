@@ -2,6 +2,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.highfield-provider-lockup:hover span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .highfield-provider-lockup img {
