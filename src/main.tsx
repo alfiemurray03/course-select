@@ -13,6 +13,7 @@ import './basket-layout-refinement.css';
 import './site-expansion.css';
 import './digital-consent.css';
 import './service-information.css';
+import './visual-contrast-fixes.css';
 
 function enableReliableInternalNavigation() {
   document.addEventListener('click', (event: MouseEvent) => {
