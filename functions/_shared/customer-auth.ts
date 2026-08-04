@@ -24,6 +24,7 @@ const encoder = new TextEncoder();
 const SESSION_COOKIE = 'aptenvo_session';
 const AUTH_COOKIE = 'aptenvo_auth';
 const AGE_COOKIE = 'aptenvo_age';
+let accountSchemaChecked = false;
 
 function base64UrlEncodeBytes(bytes: Uint8Array) {
   let binary = '';
@@ -178,50 +179,20 @@ export async function requireSession(request: Request, env: CustomerAuthEnv) {
 }
 
 export async function ensureAccountTables(db: D1Database) {
-  await db.batch([
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS customer_accounts (
-        id TEXT PRIMARY KEY,
-        entra_subject TEXT NOT NULL UNIQUE,
-        email TEXT NOT NULL,
-        display_name TEXT,
-        legal_first_name TEXT,
-        legal_last_name TEXT,
-        customer_type TEXT CHECK (customer_type IN ('individual', 'business')),
-        organisation_name TEXT,
-        age_confirmed_at TEXT,
-        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'restricted', 'closed')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `),
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS customer_saved_learners (
-        id TEXT PRIMARY KEY,
-        account_id TEXT NOT NULL,
-        label TEXT,
-        legal_first_name TEXT NOT NULL,
-        legal_last_name TEXT NOT NULL,
-        enrolment_email TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE CASCADE
-      )
-    `),
-    db.prepare(`
-      CREATE TABLE IF NOT EXISTS customer_saved_baskets (
-        id TEXT PRIMARY KEY,
-        account_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        items_json TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE CASCADE
-      )
-    `),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_customer_saved_learners_account ON customer_saved_learners(account_id, updated_at)'),
-    db.prepare('CREATE INDEX IF NOT EXISTS idx_customer_saved_baskets_account ON customer_saved_baskets(account_id, updated_at)'),
-  ]);
+  if (accountSchemaChecked) return;
+
+  const result = await db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM sqlite_master
+    WHERE type = 'table'
+      AND name IN ('customer_accounts', 'customer_saved_learners', 'customer_saved_baskets')
+  `).first<{ total: number }>();
+
+  if (Number(result?.total ?? 0) !== 3) {
+    throw new Error('Aptenvo customer account schema is incomplete.');
+  }
+
+  accountSchemaChecked = true;
 }
 
 export function cleanText(value: unknown, maximumLength: number) {
