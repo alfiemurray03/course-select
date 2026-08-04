@@ -1,0 +1,603 @@
+/* Final responsive layer for Aptenvo.
+   Keeps the wordmark away from the viewport edge and standardises the
+   mobile experience across the public site, account, basket and policies. */
+
+html,
+body,
+#app {
+  max-width: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+.site-header .brand {
+  transform: translateX(7px);
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+.pricing-table-wrap,
+.priority-table-wrap,
+.policy-table-wrap {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1120px) {
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .mobile-menu-button {
+    display: inline-flex !important;
+  }
+
+  .mobile-nav {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    max-height: calc(100dvh - 72px);
+    padding: 12px max(16px, env(safe-area-inset-right)) 18px max(16px, env(safe-area-inset-left));
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: 0 22px 40px -30px rgba(15, 23, 42, 0.65);
+  }
+
+  .mobile-nav a {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    color: var(--foreground);
+    font-weight: 750;
+    line-height: 1.35;
+  }
+
+  .mobile-nav a:hover,
+  .mobile-nav a:focus-visible {
+    background: var(--muted);
+  }
+
+  .home-hero-redesign-grid,
+  .home-needs-layout,
+  .home-process-block,
+  .service-hero-grid,
+  .contact-hero-grid,
+  .service-split-grid,
+  .service-two-column-detail,
+  .contact-layout,
+  .organisation-route-grid,
+  .delivery-responsibility-grid,
+  .about-introduction-grid,
+  .refund-layout,
+  .help-article-layout,
+  .account-signin-shell,
+  .account-dashboard-grid,
+  .account-hero-grid,
+  .policy-hero-grid,
+  .policy-layout,
+  .basket-layout,
+  .course-detail-layout,
+  .split-panel,
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-process-heading,
+  .service-callout-card,
+  .about-operator-card,
+  .help-contact-card,
+  .refund-side-card,
+  .policy-toc-card,
+  .basket-summary-card,
+  .course-side-content,
+  .complete-purchase-card {
+    position: static !important;
+    top: auto !important;
+  }
+
+  .account-signin-card {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .container,
+  .header-inner,
+  .footer-grid,
+  .corporate-disclosure {
+    width: min(100% - 24px, 1180px) !important;
+  }
+
+  .header-inner {
+    min-height: 66px;
+    height: auto !important;
+    gap: 7px;
+    padding: 8px 0;
+  }
+
+  .site-header .brand {
+    transform: translateX(4px);
+  }
+
+  .site-header .brand > span {
+    font-size: 1.58rem !important;
+    letter-spacing: -0.055em !important;
+  }
+
+  .header-actions {
+    gap: 5px !important;
+    margin-left: auto;
+  }
+
+  .desktop-account {
+    display: none !important;
+  }
+
+  .icon-button,
+  .basket-header-button {
+    width: 40px !important;
+    min-width: 40px;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+  }
+
+  .basket-header-label {
+    display: none !important;
+  }
+
+  .basket-count-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+  }
+
+  .mobile-nav {
+    max-height: calc(100dvh - 66px);
+    padding-inline: 12px;
+  }
+
+  .section {
+    padding: 50px 0;
+  }
+
+  .page-hero,
+  .hero,
+  .enhanced-page-hero,
+  .service-page-hero,
+  .contact-page-hero,
+  .policy-hero {
+    padding-top: 48px !important;
+    padding-bottom: 48px !important;
+  }
+
+  .home-hero-redesign {
+    padding-top: 34px !important;
+    padding-bottom: 48px !important;
+  }
+
+  .home-hero-redesign-grid {
+    gap: 28px !important;
+  }
+
+  .home-hero-main-copy {
+    padding-top: 0 !important;
+  }
+
+  .home-hero-main-copy h1,
+  .account-signin-copy h1,
+  .page-hero h1,
+  .hero h1 {
+    max-width: 100%;
+    font-size: clamp(2.45rem, 13vw, 4rem) !important;
+    line-height: 1 !important;
+    letter-spacing: -0.05em !important;
+    overflow-wrap: anywhere;
+  }
+
+  .home-hero-lead,
+  .hero-copy > p,
+  .account-signin-copy > p {
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+  }
+
+  .home-outcome-panel,
+  .account-signin-card,
+  .service-hero-assurance,
+  .contact-hero-grid > aside,
+  .policy-version-card {
+    padding: 21px !important;
+    border-radius: 20px !important;
+  }
+
+  .home-outcome-panel h2 {
+    font-size: clamp(1.65rem, 8vw, 2.25rem) !important;
+  }
+
+  .home-panel-timeline > div {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .button-row {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .button-row .button,
+  .home-closing-cta .button,
+  .service-hero-actions .button,
+  .contact-success-card .button,
+  .account-signin-button {
+    width: 100%;
+    min-height: 50px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .home-closing-cta {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 24px !important;
+    padding: 28px 22px !important;
+    border-radius: 22px !important;
+  }
+
+  .home-closing-cta h2 {
+    font-size: clamp(2rem, 10vw, 3rem) !important;
+  }
+
+  .facts,
+  .category-grid,
+  .feature-grid,
+  .course-grid,
+  .steps-grid,
+  .home-trust-strip-grid,
+  .home-pathway-grid,
+  .home-needs-grid,
+  .home-benefit-grid,
+  .enhanced-feature-grid,
+  .about-standards-grid,
+  .about-journey-grid,
+  .help-start-cards,
+  .priority-notes,
+  .service-card-grid.four,
+  .service-card-grid.three,
+  .contact-route-grid,
+  .service-journey-list.compact,
+  .service-faq-list,
+  .organisation-method-grid,
+  .policy-role-grid,
+  .policy-data-grid,
+  .account-signin-benefits,
+  .account-field-grid,
+  .account-type-options,
+  .contact-two-fields,
+  .contact-customer-type > div,
+  .age-gate-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-pathway-card,
+  .course-card {
+    min-height: 0 !important;
+  }
+
+  .course-card,
+  .category-card,
+  .feature-card,
+  .service-info-card,
+  .contact-route-grid article,
+  .account-panel {
+    padding: 21px !important;
+  }
+
+  .course-card-bottom,
+  .basket-item-controls,
+  .account-connection-banner,
+  .corporate-disclosure {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .course-card-bottom {
+    gap: 14px;
+  }
+
+  .course-card-bottom a {
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+  }
+
+  .expanded-toolbar {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .expanded-toolbar .search-box {
+    grid-column: auto !important;
+  }
+
+  .course-definition-list > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .pricing-table,
+  .policy-table,
+  .priority-table {
+    min-width: 660px;
+  }
+
+  .basket-section {
+    min-height: 0;
+  }
+
+  .basket-panel-heading,
+  .basket-item {
+    padding-inline: 17px !important;
+  }
+
+  .basket-item {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .basket-item-icon {
+    display: none !important;
+  }
+
+  .basket-item-heading {
+    align-items: flex-start;
+  }
+
+  .basket-item-price {
+    text-align: left !important;
+  }
+
+  .basket-summary-card {
+    padding: 20px !important;
+  }
+
+  .basket-summary-card .button {
+    width: 100%;
+  }
+
+  .account-signin-shell {
+    gap: 30px !important;
+    padding-top: 44px !important;
+    padding-bottom: 50px !important;
+  }
+
+  .account-signin-benefits {
+    margin-top: 25px !important;
+  }
+
+  .account-signin-card h2 {
+    font-size: 1.55rem;
+  }
+
+  .account-status-card {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .account-connection-banner > .button,
+  .save-basket-row .button,
+  .account-form .button {
+    width: 100%;
+  }
+
+  .save-basket-row,
+  .saved-record-list article,
+  .saved-basket-list article {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .saved-basket-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+  }
+
+  .help-search-box {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .help-search-box input {
+    grid-column: 1 / -1 !important;
+  }
+
+  .help-article summary {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    padding: 16px !important;
+  }
+
+  .help-article summary > svg:last-child {
+    display: none;
+  }
+
+  .help-article-content {
+    padding: 18px !important;
+  }
+
+  .service-journey-step,
+  .large-order-help-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .support-escalation-flow {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .support-escalation-flow > div {
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .support-escalation-flow > svg {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .policy-navigation-section {
+    position: static !important;
+  }
+
+  .policy-suite-nav {
+    margin-inline: -2px;
+    padding-bottom: 10px;
+  }
+
+  .policy-document,
+  .policy-toc-card {
+    padding: 21px !important;
+    border-radius: 18px !important;
+  }
+
+  .policy-introduction-note,
+  .refund-callout,
+  .service-warning,
+  .delivery-relationship-note,
+  .contact-form-status,
+  .contact-success-detail {
+    padding: 15px !important;
+  }
+
+  .footer {
+    padding-top: 48px !important;
+    padding-bottom: 40px !important;
+  }
+
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 30px !important;
+  }
+
+  .footer-grid > div {
+    min-width: 0;
+  }
+
+  .corporate-disclosure {
+    gap: 14px !important;
+    padding-top: 22px !important;
+    padding-bottom: 22px !important;
+    text-align: left;
+  }
+
+  .corporate-disclosure > span:last-child {
+    align-self: flex-start;
+  }
+
+  .age-gate-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .age-gate-card {
+    max-height: calc(100dvh - 24px);
+    padding: 25px 20px !important;
+    overflow-y: auto;
+    border-radius: 22px 22px 14px 14px !important;
+  }
+
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .container,
+  .header-inner,
+  .footer-grid,
+  .corporate-disclosure {
+    width: min(100% - 18px, 1180px) !important;
+  }
+
+  .site-header .brand {
+    transform: translateX(2px);
+  }
+
+  .site-header .brand > span {
+    font-size: 1.45rem !important;
+  }
+
+  .header-actions {
+    gap: 4px !important;
+  }
+
+  .theme-button,
+  .mobile-menu-button,
+  .basket-header-button {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .home-hero-main-copy h1,
+  .account-signin-copy h1,
+  .page-hero h1,
+  .hero h1 {
+    font-size: clamp(2.2rem, 13vw, 3.25rem) !important;
+  }
+
+  .home-outcome-panel,
+  .account-signin-card,
+  .account-panel,
+  .contact-form-card,
+  .service-long-card,
+  .service-callout-card,
+  .organisation-route-card,
+  .delivery-party-card {
+    padding: 19px !important;
+  }
+
+  .basket-panel-heading,
+  .basket-item-heading,
+  .basket-item-controls {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .basket-quantity-control {
+    grid-template-columns: 40px minmax(60px, 1fr) 40px !important;
+    width: 100%;
+  }
+
+  .contact-character-count {
+    position: static !important;
+    justify-self: end;
+  }
+}
+
+@media (hover: none) {
+  .button:hover,
+  .course-card:hover,
+  .category-card:hover,
+  .basket-header-button:hover {
+    transform: none !important;
+  }
+}
