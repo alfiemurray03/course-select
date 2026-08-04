@@ -1,0 +1,11 @@
+.refreshed-home > .section:last-child {
+  padding-top: clamp(38px, 4vw, 54px);
+  padding-bottom: 24px;
+}
+
+@media (max-width: 760px) {
+  .refreshed-home > .section:last-child {
+    padding-top: 30px;
+    padding-bottom: 18px;
+  }
+}
