@@ -15,6 +15,7 @@ import App from './App';
 import AccountDashboard from './AccountDashboard';
 import AgeGate from './AgeGate';
 import { useBasket } from './basket';
+import DigitalSupplyConsent from './DigitalSupplyConsent';
 import { EnhancedAboutPage, HelpCentrePage, RefundPolicyPage } from './EnhancedPages';
 
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -220,6 +221,7 @@ export default function AppShell() {
     <AgeGate />
     <WordingEnhancer />
     <SavedDetailPrefill />
+    <DigitalSupplyConsent />
     {enhancedPage ? <EnhancedLayout>{enhancedPage}</EnhancedLayout> : <App />}
   </>;
 }
