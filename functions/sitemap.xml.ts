@@ -53,7 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
       'X-Content-Type-Options': 'nosniff',
-      'X-Sousa Murray eLearning-Sitemap-Source': 'code',
+      'X-Aptenvo-Sitemap-Source': 'code',
     },
   });
 };
