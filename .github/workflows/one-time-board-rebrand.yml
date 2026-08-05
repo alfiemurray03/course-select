@@ -29,19 +29,20 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
-          replacements = [
+          literal_replacements = [
               ('aptenvo.jagroupservices.co.uk', 'sousamurrayelearning.jagroupservices.co.uk'),
               ('profilecentre.jagroupservices.co.uk', 'sousamurrayprofiles.jagroupservices.co.uk'),
               ('profilecenter.jagroupservices.co.uk', 'sousamurrayprofiles.jagroupservices.co.uk'),
               ('planyx.jagroupservices.co.uk', 'sousamurrayplaneia.jagroupservices.co.uk'),
               ('aptenvo@jagroupservices.co.uk', 'contact@jagroupservices.co.uk'),
-              ('CourseSelect', 'Sousa Murray eLearning'),
-              ('Course Select', 'Sousa Murray eLearning'),
-              ('Aptenvo', 'Sousa Murray eLearning'),
-              ('APTENVO', 'SOUSA MURRAY ELEARNING'),
               ('Profile Centre', 'Sousa Murray Profiles'),
-              ('Planyx', 'Sousa Murray Planeia'),
+          ]
+          word_replacements = [
+              (r'\bAptenvo\b', 'Sousa Murray eLearning'),
+              (r'\bAPTENVO\b', 'SOUSA MURRAY ELEARNING'),
+              (r'\bPlanyx\b', 'Sousa Murray Planeia'),
           ]
 
           excluded_dirs = {'.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.cache'}
@@ -61,20 +62,54 @@ jobs:
                   original = path.read_text(encoding='utf-8')
               except (UnicodeDecodeError, OSError):
                   continue
+
               updated = original
-              for old, new in replacements:
+              for old, new in literal_replacements:
                   updated = updated.replace(old, new)
+              for pattern, replacement in word_replacements:
+                  updated = re.sub(pattern, replacement, updated)
+
+              if path.as_posix() in {'src/App.tsx', 'src/AppShell.tsx'}:
+                  updated = updated.replace("fontSize: '2rem',", "fontSize: '1.42rem',")
+                  updated = updated.replace("letterSpacing: '-0.065em',", "letterSpacing: '-0.035em',")
+                  updated = updated.replace("fontSize: '2.15rem'", "fontSize: '1.65rem'")
+                  updated = updated.replace('My Sousa Murray eLearning', 'My learning account')
+
+              if path.as_posix() == 'src/styles.css':
+                  updated = re.sub(r"\n\.brand picture \{[^\n]*\}", '', updated)
+                  updated = re.sub(r"\n\.brand-logo \{[^\n]*\}", '', updated)
+                  updated = re.sub(r"\n\.dark \.light-logo \{[^\n]*\}", '', updated)
+
               if updated != original:
                   path.write_text(updated, encoding='utf-8')
                   changed.append(str(path))
+
+          favicon = Path('public/favicon.svg')
+          favicon.write_text('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+            <title id="title">Sousa Murray eLearning</title>
+            <rect width="256" height="256" rx="38" fill="#ffffff"/>
+            <text x="128" y="102" text-anchor="middle" fill="#0f172a" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="30" font-weight="800">Sousa Murray</text>
+            <text x="128" y="151" text-anchor="middle" fill="#2563eb" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="34" font-weight="800">eLearning</text>
+          </svg>\n''', encoding='utf-8')
+          if str(favicon) not in changed:
+              changed.append(str(favicon))
+
+          retired_assets = [
+              Path('public/course-select-logo-light.svg'),
+              Path('public/course-select-logo-dark.svg'),
+              Path('public/aptenvo-wordmark.svg'),
+          ]
+          for asset in retired_assets:
+              if asset.exists():
+                  asset.unlink()
+                  changed.append(f'deleted {asset}')
 
           print('Changed files:')
           for item in changed:
               print(f' - {item}')
 
-          old_markers = ['Aptenvo', 'CourseSelect', 'Course Select', 'aptenvo.jagroupservices.co.uk']
           remaining = []
-          logo_lines = []
+          legacy_asset_names = {asset.name for asset in retired_assets}
           for path in Path('.').rglob('*'):
               if not path.is_file() or any(part in excluded_dirs for part in path.parts):
                   continue
@@ -84,33 +119,43 @@ jobs:
                   content = path.read_text(encoding='utf-8')
               except (UnicodeDecodeError, OSError):
                   continue
-              for marker in old_markers:
-                  if marker in content:
-                      remaining.append((str(path), marker))
-              if path.suffix.lower() in {'.ts', '.tsx', '.js', '.jsx', '.html', '.css', '.scss', '.svg'}:
-                  for number, line in enumerate(content.splitlines(), 1):
-                      if 'logo' in line.lower():
-                          logo_lines.append((str(path), number, line.strip()[:300]))
+              if re.search(r'\bAptenvo\b', content):
+                  remaining.append((str(path), 'Aptenvo'))
+              if 'aptenvo.jagroupservices.co.uk' in content:
+                  remaining.append((str(path), 'retired domain'))
+              for asset_name in legacy_asset_names:
+                  if asset_name in content:
+                      remaining.append((str(path), asset_name))
 
-          print('\nRemaining retired brand markers:')
           if remaining:
+              print('Remaining retired customer-facing markers:')
               for path, marker in remaining:
                   print(f' - {path}: {marker}')
-              raise SystemExit('Retired Aptenvo customer-facing wording remains.')
-          print(' - none')
+              raise SystemExit('Retired Aptenvo customer-facing material remains.')
 
-          print('\nLogo audit candidates:')
-          for path, number, line in logo_lines:
-              print(f' - {path}:{number}: {line}')
+          for path in ('src/App.tsx', 'src/AppShell.tsx'):
+              content = Path(path).read_text(encoding='utf-8')
+              if '>Sousa Murray eLearning</span>' not in content:
+                  raise SystemExit(f'Text-only word mark missing from {path}.')
+              if '<img' in content and ('brand-logo' in content or 'aptenvo-wordmark' in content):
+                  raise SystemExit(f'Graphic customer brand mark remains in {path}.')
+
+          readme = Path('README.md').read_text(encoding='utf-8')
+          if 'Highfield' not in readme or 'JA Group Services Ltd' not in readme:
+              raise SystemExit('Provider and legal-operator wording was not preserved.')
+
+          print('Retired brand audit passed.')
+          print('Text-only word mark enforcement passed.')
+          print('Highfield provider and JA Group Services legal wording preserved.')
           PY
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Type-check
         run: npm run check
 
-      - name: Build
+      - name: Build production application
         run: npm run build
 
       - name: Commit repository-wide rebrand
