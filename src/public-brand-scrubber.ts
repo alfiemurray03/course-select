@@ -1,4 +1,9 @@
+const LEGACY_NAMES = '(?:JA Domain Hub|JA Plan Studio|Planyx|JA Profile Studio|Profile Centre|Aptenvo)';
+
 const LEGACY_REPLACEMENTS: Array<[RegExp, string]> = [
+  [new RegExp(`\\s*\\((?:formerly|previously)(?: known as)?\\s+${LEGACY_NAMES}\\)`, 'gi'), ''],
+  [new RegExp(`\\s*[–—-]\\s*(?:formerly|previously)(?: known as)?\\s+${LEGACY_NAMES}`, 'gi'), ''],
+  [new RegExp(`\\b(?:formerly|previously)(?: known as)?\\s+${LEGACY_NAMES}\\b`, 'gi'), ''],
   [/[A-Z0-9._%+-]+@(?:planyx|aptenvo|profilecentre|profilecenter|jadomainhub)\.jagroupservices\.co\.uk/gi, 'contact@jagroupservices.co.uk'],
   [/\b(?:planyx|aptenvo|profilecentre|profilecenter|jadomainhub)@jagroupservices\.co\.uk\b/gi, 'contact@jagroupservices.co.uk'],
   [/https?:\/\/(?:www\.)?planyx\.jagroupservices\.co\.uk/gi, 'https://sousamurrayplaneia.jagroupservices.co.uk'],
@@ -17,11 +22,7 @@ const LEGACY_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bAptenvo\b/gi, 'Sousa Murray eLearning'],
 ];
 
-const VISIBLE_ATTRIBUTES = new Set([
-  'alt', 'aria-description', 'aria-label', 'content', 'href', 'placeholder',
-  'poster', 'src', 'srcset', 'style', 'title', 'value', 'action',
-  'data-label', 'data-title', 'data-description', 'data-tooltip',
-]);
+const VISIBLE_ATTRIBUTES = new Set(['alt','aria-description','aria-label','content','href','placeholder','poster','src','srcset','style','title','value','action','data-label','data-title','data-description','data-tooltip']);
 
 function replaceLegacyBranding(value: string) {
   return LEGACY_REPLACEMENTS.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), value);
