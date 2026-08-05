@@ -1,6 +1,6 @@
 # Sousa Murray eLearning D1 and Stripe setup
 
-This guide connects the existing `course-select` Cloudflare Pages project to the Sousa Murray eLearning database and Stripe.
+This guide connects the existing `course-select` Cloudflare Pages project to the technical `aptenvo` D1 database and Stripe for the Sousa Murray eLearning website.
 
 ## 1. Create the D1 database
 
@@ -10,7 +10,7 @@ In Cloudflare, create a D1 database named:
 aptenvo
 ```
 
-The customer-facing brand is Sousa Murray eLearning. The Pages project may continue to use the technical name `course-select`.
+The customer-facing brand is Sousa Murray eLearning. The Pages project may continue to use the technical name `course-select`, and the D1 database may retain the technical name `aptenvo`.
 
 ## 2. Add the Pages binding
 
@@ -54,7 +54,7 @@ BOOTSTRAP_TOKEN
 After the next deployment is live, call:
 
 ```bash
-curl -X POST "https://<YOUR-SOUSA MURRAY ELEARNING-DOMAIN>/api/admin/bootstrap" \
+curl -X POST "https://sousamurrayelearning.jagroupservices.co.uk/api/admin/bootstrap" \
   -H "Authorization: Bearer <BOOTSTRAP_TOKEN>"
 ```
 
@@ -96,7 +96,11 @@ STRIPE_WEBHOOK_SECRET
 SITE_URL
 ```
 
-`SITE_URL` must be the public Sousa Murray eLearning origin, without a trailing slash.
+Set `SITE_URL` to the approved public origin, without a trailing slash:
+
+```text
+https://sousamurrayelearning.jagroupservices.co.uk
+```
 
 The website sends:
 
@@ -128,7 +132,7 @@ If a Stripe Price ID has been stored for the tier, the endpoint uses it. Otherwi
 Create a Stripe webhook endpoint for:
 
 ```text
-https://<YOUR-SOUSA MURRAY ELEARNING-DOMAIN>/api/stripe/webhook
+https://sousamurrayelearning.jagroupservices.co.uk/api/stripe/webhook
 ```
 
 Subscribe at minimum to:
