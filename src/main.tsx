@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppErrorBoundary from './AppErrorBoundary';
 import AppShell from './AppShell';
 import { BasketProvider } from './basket';
+import { installPublicBrandScrubber } from './public-brand-scrubber';
 import './legacy-route-normaliser';
 import './customer-websites-menu';
 import './styles.css';
@@ -75,3 +76,5 @@ ReactDOM.createRoot(root).render(
     </AppErrorBoundary>
   </React.StrictMode>,
 );
+
+installPublicBrandScrubber();
