@@ -133,7 +133,7 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
     || transaction.state !== returnedState
     || Date.now() - transaction.createdAt > 10 * 60 * 1000
   ) {
-    return new Response('The sign-in request is invalid or has expired. Please start again from My Aptenvo.', {
+    return new Response('The sign-in request is invalid or has expired. Please start again from My Sousa Murray eLearning.', {
       status: 400,
       headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Set-Cookie': clearCookie(authCookieName(), '/api/auth') },
     });

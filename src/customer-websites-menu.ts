@@ -5,10 +5,10 @@ type CustomerWebsite = {
 
 const customerWebsites: CustomerWebsite[] = [
   { name: 'JA Group Services', href: 'https://jagroupservices.co.uk/' },
-  { name: 'Profile Centre', href: 'https://profilecentre.jagroupservices.co.uk/' },
-  { name: 'Planyx', href: 'https://planyx.jagroupservices.co.uk/' },
+  { name: 'Sousa Murray Profiles', href: 'https://sousamurrayprofiles.jagroupservices.co.uk/' },
+  { name: 'Sousa Murray Planeia', href: 'https://sousamurrayplaneia.jagroupservices.co.uk/' },
   { name: 'JA Domain Hub', href: 'https://jadomainhub.jagroupservices.co.uk/' },
-  { name: 'Aptenvo', href: 'https://aptenvo.jagroupservices.co.uk/' },
+  { name: 'Sousa Murray eLearning', href: 'https://sousamurrayelearning.jagroupservices.co.uk/' },
 ];
 
 const desktopMenuSelector = '[data-aptenvo-customer-websites-menu]';

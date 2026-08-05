@@ -100,7 +100,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {
   } catch (error) {
     return Response.json({
       error: 'course_unavailable',
-      message: error instanceof Error ? error.message : 'Unable to load this Aptenvo course.',
+      message: error instanceof Error ? error.message : 'Unable to load this Sousa Murray eLearning course.',
     }, { status: 503 });
   }
 };

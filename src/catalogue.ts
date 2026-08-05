@@ -152,7 +152,7 @@ function createCourse(seed: CourseSeed): Course {
         : TRAINING_NOT_QUALIFICATION),
     pricingTiers: seed.tiers,
     featured: seed.featured ?? false,
-    priceSource: 'Highfield E-learning Reseller Scheme, prices effective August 2025, plus Aptenvo 30% markup and VAT.',
+    priceSource: 'Highfield E-learning Reseller Scheme, prices effective August 2025, plus Sousa Murray eLearning 30% markup and VAT.',
     priceVerified: false,
     status: 'published',
   };
@@ -626,7 +626,7 @@ export const catalogue: Course[] = [
 ].map(createCourse);
 
 if (catalogue.length !== 101) {
-  throw new Error(`Aptenvo catalogue integrity check failed: expected 101 courses, found ${catalogue.length}.`);
+  throw new Error(`Sousa Murray eLearning catalogue integrity check failed: expected 101 courses, found ${catalogue.length}.`);
 }
 
 export const categories = Array.from(new Set(catalogue.map((course) => course.category))).sort();

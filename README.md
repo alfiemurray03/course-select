@@ -1,10 +1,10 @@
-# Aptenvo
+# Sousa Murray eLearning
 
-Aptenvo is the multi-provider online learning division of JA Group Services Ltd. This repository contains the responsive Vite and React storefront together with Cloudflare Pages Functions for catalogue data, D1 bootstrapping, Stripe Checkout and payment webhooks.
+Sousa Murray eLearning is the customer-facing e-learning brand operated by JA Group Services Ltd. This repository contains the responsive Vite and React storefront together with Cloudflare Pages Functions for catalogue data, D1 bootstrapping, Stripe Checkout and payment webhooks.
 
 ## Current catalogue
 
-The Aptenvo launch catalogue contains **101 products** from the Highfield E-learning Reseller Scheme:
+The Sousa Murray eLearning launch catalogue contains **101 products** supplied through the Highfield E-learning Reseller Scheme:
 
 - 23 complete courses across Highfield price scales 1–3
 - 26 short courses
@@ -14,9 +14,11 @@ The Aptenvo launch catalogue contains **101 products** from the Highfield E-lear
 - 18 individual Level 2 modules
 - 12 individual Level 3 modules
 
+Highfield is the learning provider. JA Group Services Ltd sells and administers access as an authorised reseller through the Sousa Murray eLearning brand; it does not present itself as the course creator, awarding organisation or qualification issuer.
+
 Each product has:
 
-- a unique Aptenvo course ID and URL slug;
+- a unique Sousa Murray eLearning course ID and URL slug;
 - a full customer-facing page;
 - overview, audience and learning outcomes;
 - delivery, certificate and qualification notices;
@@ -27,10 +29,10 @@ Each product has:
 
 ## Pricing model
 
-Aptenvo pricing is calculated from the **original Highfield retail price**, not the reseller price:
+Sousa Murray eLearning pricing is calculated from the **original Highfield retail price**, not the reseller price:
 
 1. Highfield retail price excluding VAT;
-2. Aptenvo markup of 30%;
+2. Sousa Murray eLearning markup of 30%;
 3. VAT at 20%;
 4. customer-facing gross price including VAT.
 
@@ -62,11 +64,17 @@ Use:
 - Root directory: `/`
 - Node.js version: `20` or later
 
-The GitHub repository and Cloudflare Pages project retain the technical identifier `course-select` so the existing deployment connection is not broken. The customer-facing brand is Aptenvo.
+The GitHub repository and Cloudflare Pages project retain the technical identifier `course-select` so the existing deployment connection is not broken. The customer-facing brand is Sousa Murray eLearning.
+
+Approved public origin:
+
+```text
+https://sousamurrayelearning.jagroupservices.co.uk
+```
 
 ## D1 database
 
-Recommended database name:
+The existing technical database name remains:
 
 ```text
 aptenvo
@@ -87,7 +95,7 @@ npx wrangler d1 execute aptenvo --remote --file=database/schema.sql
 Then set a secret named `BOOTSTRAP_TOKEN` and call the protected bootstrap endpoint once. It imports all 101 catalogue items, categories, learning outcomes, price tiers and empty Stripe mappings from the same catalogue used by the website.
 
 ```bash
-curl -X POST "https://<YOUR-APTENVO-DOMAIN>/api/admin/bootstrap" \
+curl -X POST "https://sousamurrayelearning.jagroupservices.co.uk/api/admin/bootstrap" \
   -H "Authorization: Bearer <BOOTSTRAP_TOKEN>"
 ```
 

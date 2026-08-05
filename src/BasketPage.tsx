@@ -249,9 +249,9 @@ export default function BasketPage() {
         return;
       }
 
-      setCheckoutMessage(data.message ?? 'Checkout could not be prepared. Please contact Aptenvo if the problem continues.');
+      setCheckoutMessage(data.message ?? 'Checkout could not be prepared. Please contact Sousa Murray eLearning if the problem continues.');
     } catch {
-      setCheckoutMessage('Checkout is temporarily unavailable. Your basket and learner information remain on this page. Please contact Aptenvo if you need assistance.');
+      setCheckoutMessage('Checkout is temporarily unavailable. Your basket and learner information remain on this page. Please contact Sousa Murray eLearning if you need assistance.');
     } finally {
       setCheckingOut(false);
     }
@@ -262,18 +262,18 @@ export default function BasketPage() {
       <main>
         <section className="page-hero basket-page-hero">
           <div className="container">
-            <div className="eyebrow">Aptenvo order received</div>
+            <div className="eyebrow">Sousa Murray eLearning order received</div>
             <h1>Thank you for your purchase</h1>
-            <p>Your payment has been received by Aptenvo. The submitted learner information is now attached to the paid order for enrolment processing.</p>
+            <p>Your payment has been received by Sousa Murray eLearning. The submitted learner information is now attached to the paid order for enrolment processing.</p>
           </div>
         </section>
         <section className="section">
           <div className="container basket-confirmation-card">
             <div className="basket-confirmation-icon"><Check size={34} /></div>
-            <h2>Your Aptenvo purchase is awaiting enrolment</h2>
-            <p>Aptenvo will review the learner information and complete enrolment. Highfield will then email each learner with instructions for accessing its Learning Management System. Contact Aptenvo for all support.</p>
+            <h2>Your Sousa Murray eLearning purchase is awaiting enrolment</h2>
+            <p>Sousa Murray eLearning will review the learner information and complete enrolment. Highfield will then email each learner with instructions for accessing its Learning Management System. Contact Sousa Murray eLearning for all support.</p>
             <div className="button-row basket-confirmation-actions">
-              <Link className="button button-primary" to="/account">View My Aptenvo</Link>
+              <Link className="button button-primary" to="/account">View My Sousa Murray eLearning</Link>
               <Link className="button button-secondary" to="/courses">Browse more courses</Link>
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function BasketPage() {
     <main>
       <section className="page-hero basket-page-hero">
         <div className="container">
-          <div className="eyebrow">Your Aptenvo basket</div>
+          <div className="eyebrow">Your Sousa Murray eLearning basket</div>
           <h1>Review your training purchase</h1>
           <p>Set the licence quantities, provide the customer and learner information, and then continue to secure payment.</p>
         </div>
@@ -338,7 +338,7 @@ export default function BasketPage() {
                             <div>
                               <span>{course.category} · {course.level}</span>
                               <Link to={`/courses/${course.slug}`}>{course.title}</Link>
-                              <small>Sold by Aptenvo · Course delivered through Highfield Online Training</small>
+                              <small>Sold by Sousa Murray eLearning · Course delivered through Highfield Online Training</small>
                             </div>
                             <button className="basket-remove-button" type="button" onClick={() => removeItem(course.id)} aria-label={`Remove ${course.title}`}>
                               <Trash2 size={18} />
@@ -375,7 +375,7 @@ export default function BasketPage() {
                     <div>
                       <span>Required before payment</span>
                       <h2 id="customer-details-heading">Customer details</h2>
-                      <p>Tell us who is purchasing and who Aptenvo should contact about this order.</p>
+                      <p>Tell us who is purchasing and who Sousa Murray eLearning should contact about this order.</p>
                     </div>
                   </div>
 
@@ -401,7 +401,7 @@ export default function BasketPage() {
 
                     <label className="enrolment-field">Primary contact or learner email <span aria-hidden="true">*</span>
                       <input type="email" autoComplete="email" maxLength={254} value={enrolmentEmail} onChange={(event) => setEnrolmentEmail(event.target.value)} required />
-                      <small>This is the Aptenvo order contact. You can use the same details for learner rows where appropriate.</small>
+                      <small>This is the Sousa Murray eLearning order contact. You can use the same details for learner rows where appropriate.</small>
                     </label>
 
                     {customerType === 'business' && (
@@ -419,7 +419,7 @@ export default function BasketPage() {
 
                     <label className="provider-consent-field">
                       <input type="checkbox" checked={providerConsent} onChange={(event) => setProviderConsent(event.target.checked)} required />
-                      <span>I confirm that the learner details may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Aptenvo remains the customer support contact.</span>
+                      <span>I confirm that the learner details may be provided to Highfield Online Training solely for course enrolment, LMS access and course delivery. Sousa Murray eLearning remains the customer support contact.</span>
                     </label>
                   </div>
                 </section>
@@ -501,7 +501,7 @@ export default function BasketPage() {
                         </div>
                       )}
                       {fileError && <p className="learner-file-error" role="alert">{fileError}</p>}
-                      <p className="upload-security-note"><ShieldCheck size={17} /> The file will be stored privately and linked to the Aptenvo order. It will not be publicly accessible.</p>
+                      <p className="upload-security-note"><ShieldCheck size={17} /> The file will be stored privately and linked to the Sousa Murray eLearning order. It will not be publicly accessible.</p>
                     </div>
                   )}
                 </section>

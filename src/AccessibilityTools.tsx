@@ -149,7 +149,7 @@ function AccessibilityBubble() {
           })}
         </div>
 
-        <p className="aptenvo-a11y-note">These controls change Aptenvo’s presentation in this browser. They do not change the separate Highfield Learning Management System.</p>
+        <p className="aptenvo-a11y-note">These controls change Sousa Murray eLearning’s presentation in this browser. They do not change the separate Highfield Learning Management System.</p>
 
         {hasActiveSetting && <button type="button" className="aptenvo-a11y-reset" onClick={reset}><RotateCcw size={16} /> Reset all tools</button>}
         <a className="aptenvo-a11y-policy-link" href="/accessibility">Read the Accessibility Policy</a>

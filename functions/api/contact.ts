@@ -81,7 +81,7 @@ async function ensureContactTable(db: D1Database) {
   `).first<{ total: number }>();
 
   if (Number(result?.total ?? 0) !== 1) {
-    throw new Error('Aptenvo contact schema is incomplete.');
+    throw new Error('Sousa Murray eLearning contact schema is incomplete.');
   }
 
   contactSchemaChecked = true;
@@ -89,7 +89,7 @@ async function ensureContactTable(db: D1Database) {
 
 export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, env }) => {
   if (!env.DB) {
-    return Response.json({ ok: false, error: 'contact_service_unavailable', message: 'The Aptenvo contact service is temporarily unavailable. Email contact@jagroupservices.co.uk instead.' }, { status: 503 });
+    return Response.json({ ok: false, error: 'contact_service_unavailable', message: 'The Sousa Murray eLearning contact service is temporarily unavailable. Email contact@jagroupservices.co.uk instead.' }, { status: 503 });
   }
 
   const contentType = request.headers.get('Content-Type') ?? '';
@@ -141,7 +141,7 @@ export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, e
   try {
     await ensureContactTable(env.DB);
   } catch {
-    return Response.json({ ok: false, error: 'contact_service_unavailable', message: 'The Aptenvo contact service is temporarily unavailable. Email contact@jagroupservices.co.uk instead.' }, { status: 503 });
+    return Response.json({ ok: false, error: 'contact_service_unavailable', message: 'The Sousa Murray eLearning contact service is temporarily unavailable. Email contact@jagroupservices.co.uk instead.' }, { status: 503 });
   }
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
@@ -195,12 +195,12 @@ export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, e
     ok: true,
     reference,
     priority,
-    message: 'Aptenvo has recorded your enquiry securely. Keep this reference for future contact.',
+    message: 'Sousa Murray eLearning has recorded your enquiry securely. Keep this reference for future contact.',
   }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
 };
 
 export const onRequestGet: PagesFunction = async () => Response.json({
-  service: 'Aptenvo Contact',
+  service: 'Sousa Murray eLearning Contact',
   status: 'ready',
   method: 'POST',
 }, { headers: { 'Cache-Control': 'no-store' } });

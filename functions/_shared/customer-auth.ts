@@ -172,7 +172,7 @@ export async function requireSession(request: Request, env: CustomerAuthEnv) {
   if (!session) {
     return {
       session: null,
-      response: Response.json({ error: 'authentication_required', message: 'Sign in to My Aptenvo to continue.' }, { status: 401 }),
+      response: Response.json({ error: 'authentication_required', message: 'Sign in to My Sousa Murray eLearning to continue.' }, { status: 401 }),
     } as const;
   }
   return { session, response: null } as const;
@@ -189,7 +189,7 @@ export async function ensureAccountTables(db: D1Database) {
   `).first<{ total: number }>();
 
   if (Number(result?.total ?? 0) !== 3) {
-    throw new Error('Aptenvo customer account schema is incomplete.');
+    throw new Error('Sousa Murray eLearning customer account schema is incomplete.');
   }
 
   accountSchemaChecked = true;

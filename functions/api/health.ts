@@ -23,7 +23,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   }
 
   return Response.json({
-    service: 'Aptenvo',
+    service: 'Sousa Murray eLearning',
     status: database === 'unavailable-or-schema-missing' ? 'degraded' : 'ok',
     database,
     catalogue,

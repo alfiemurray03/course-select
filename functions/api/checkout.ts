@@ -313,7 +313,7 @@ async function assertOperationalSchema(db: D1Database) {
         'order_learner_assignments', 'order_learner_uploads'
       )
   `).first<{ total: number }>();
-  if (Number(result?.total ?? 0) !== 8) throw new Error('Aptenvo operational order schema is incomplete.');
+  if (Number(result?.total ?? 0) !== 8) throw new Error('Sousa Murray eLearning operational order schema is incomplete.');
   operationalSchemaChecked = true;
 }
 
@@ -321,7 +321,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (!env.DB) {
     return Response.json({
       error: 'database_not_bound',
-      message: 'The Aptenvo database is not connected yet. Add the D1 binding named DB.',
+      message: 'The Sousa Murray eLearning database is not connected yet. Add the D1 binding named DB.',
     }, { status: 503 });
   }
 
@@ -367,7 +367,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (totalLicences > ONLINE_LICENCE_LIMIT) {
     return Response.json({
       error: 'large_order_required',
-      message: `Online checkout is limited to ${ONLINE_LICENCE_LIMIT} licences in total. Please contact Aptenvo so we can arrange an order of ${ONLINE_LICENCE_LIMIT + 1} licences or more directly.`,
+      message: `Online checkout is limited to ${ONLINE_LICENCE_LIMIT} licences in total. Please contact Sousa Murray eLearning so we can arrange an order of ${ONLINE_LICENCE_LIMIT + 1} licences or more directly.`,
     }, { status: 400 });
   }
 
@@ -400,7 +400,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (!env.LEARNER_UPLOADS) {
       return Response.json({
         error: 'learner_storage_not_connected',
-        message: 'Private learner-file storage has not been connected to Aptenvo yet. Please contact Aptenvo or enter the learner details manually.',
+        message: 'Private learner-file storage has not been connected to Sousa Murray eLearning yet. Please contact Sousa Murray eLearning or enter the learner details manually.',
       }, { status: 503 });
     }
     validatedUpload = await validateLearnerFile(uploadedFile);
@@ -425,7 +425,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   } catch {
     return Response.json({
       error: 'order_schema_unavailable',
-      message: 'Aptenvo checkout is temporarily unavailable while the operational database is being prepared.',
+      message: 'Sousa Murray eLearning checkout is temporarily unavailable while the operational database is being prepared.',
     }, { status: 503 });
   }
 
@@ -616,7 +616,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (uploadedStorageKey && env.LEARNER_UPLOADS) await env.LEARNER_UPLOADS.delete(uploadedStorageKey).catch(() => undefined);
     return Response.json({
       error: 'order_creation_failed',
-      message: 'Aptenvo could not save the order and learner information. Nothing has been charged.',
+      message: 'Sousa Murray eLearning could not save the order and learner information. Nothing has been charged.',
       detail: error instanceof Error ? error.message : undefined,
     }, { status: 500 });
   }
@@ -642,7 +642,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     form.set(`line_items[${index}][price_data][unit_amount]`, String(row.unit_gross_pence));
     form.set(`line_items[${index}][price_data][tax_behavior]`, 'inclusive');
     form.set(`line_items[${index}][price_data][product_data][name]`, row.title);
-    form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence sold by JA Group Services Ltd through Aptenvo and delivered through the course provider learning platform. Price includes VAT.');
+    form.set(`line_items[${index}][price_data][product_data][description]`, 'Online training licence sold by JA Group Services Ltd through Sousa Murray eLearning and delivered through the course provider learning platform. Price includes VAT.');
     form.set(`line_items[${index}][price_data][product_data][metadata][course_id]`, row.course_id);
     form.set(`line_items[${index}][price_data][product_data][metadata][provider_id]`, row.provider_id);
     form.set(`line_items[${index}][quantity]`, String(row.quantity));
@@ -692,5 +692,5 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     itemCount: rows.length,
     licenceCount: totalLicences,
     learnerSubmissionMethod: submission.method,
-  }, { headers: { 'Cache-Control': 'no-store', 'X-Aptenvo-Catalogue-Source': 'code' } });
+  }, { headers: { 'Cache-Control': 'no-store', 'X-Sousa Murray eLearning-Catalogue-Source': 'code' } });
 };

@@ -259,19 +259,19 @@ function enrichCourse(course: Course) {
     : `Develop practical understanding of ${subject}, including key responsibilities, common risks and examples of good practice.`;
 
   course.overview = source
-    ? `${source.overview} The course is completed online through the Highfield Learning Management System after Aptenvo has processed the learner's enrolment. Structured modules and knowledge checks help the learner understand and apply the subject.`
-    : `${course.overview} The content is organised into focused online modules that explain the subject, provide practical examples and check understanding as the learner progresses. After Aptenvo completes enrolment, Highfield sends the learner instructions for accessing the Learning Management System.`;
+    ? `${source.overview} The course is completed online through the Highfield Learning Management System after Sousa Murray eLearning has processed the learner's enrolment. Structured modules and knowledge checks help the learner understand and apply the subject.`
+    : `${course.overview} The content is organised into focused online modules that explain the subject, provide practical examples and check understanding as the learner progresses. After Sousa Murray eLearning completes enrolment, Highfield sends the learner instructions for accessing the Learning Management System.`;
 
   course.audience = source?.audience
-    ? `${source.audience} Aptenvo only accepts purchases from adults aged 18 or over.`
-    : `${course.audience} Aptenvo only accepts purchases from adults aged 18 or over.`;
+    ? `${source.audience} Sousa Murray eLearning only accepts purchases from adults aged 18 or over.`
+    : `${course.audience} Sousa Murray eLearning only accepts purchases from adults aged 18 or over.`;
 
   course.delivery = source?.duration
     ? `Self-paced online learning through the Highfield Learning Management System. The supplied provider fact sheet gives an estimated learning time of ${source.duration}; actual completion time varies by learner.`
     : 'Self-paced online learning through the Highfield Learning Management System. Completion time varies according to the course and the learner.';
 
   if (!course.qualificationNotice.includes('18+')) {
-    course.qualificationNotice = `${course.qualificationNotice} Aptenvo is an 18+ service and does not sell courses to anyone under the age of 18.`;
+    course.qualificationNotice = `${course.qualificationNotice} Sousa Murray eLearning is an 18+ service and does not sell courses to anyone under the age of 18.`;
   }
 }
 

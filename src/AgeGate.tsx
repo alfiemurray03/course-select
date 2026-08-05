@@ -41,17 +41,17 @@ export default function AgeGate() {
     <div className="age-gate-backdrop" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
       <section className="age-gate-card">
         <div className="age-gate-mark"><ShieldCheck size={30} /></div>
-        <span className="age-gate-brand">Aptenvo</span>
+        <span className="age-gate-brand">Sousa Murray eLearning</span>
         {state === 'underage' ? (
           <>
-            <h1 id="age-gate-title">Aptenvo is an 18+ service</h1>
-            <p>We do not sell online training to anyone under the age of 18. You cannot continue to the Aptenvo website or checkout.</p>
-            <a className="button button-primary" href="https://jagroupservices.co.uk/">Leave Aptenvo</a>
+            <h1 id="age-gate-title">Sousa Murray eLearning is an 18+ service</h1>
+            <p>We do not sell online training to anyone under the age of 18. You cannot continue to the Sousa Murray eLearning website or checkout.</p>
+            <a className="button button-primary" href="https://jagroupservices.co.uk/">Leave Sousa Murray eLearning</a>
           </>
         ) : (
           <>
             <h1 id="age-gate-title">Are you aged 18 or over?</h1>
-            <p>Aptenvo only accepts customers and purchasers who are at least 18 years old. Confirm your age to browse courses and use checkout.</p>
+            <p>Sousa Murray eLearning only accepts customers and purchasers who are at least 18 years old. Confirm your age to browse courses and use checkout.</p>
             <div className="age-gate-actions">
               <button className="button button-primary" type="button" onClick={confirmAdult}>Yes, I am 18 or over</button>
               <button className="button button-secondary" type="button" onClick={() => setState('underage')}>No, I am under 18</button>
