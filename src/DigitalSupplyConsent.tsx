@@ -72,7 +72,7 @@ export default function DigitalSupplyConsent() {
           else sessionStorage.removeItem(CONSENT_KEY);
         }}
       />
-      <span><strong><FileCheck2 size={16} /> Immediate digital supply and cancellation acknowledgement</strong>I request Aptenvo to begin course enrolment and digital supply without waiting for the normal cancellation period. I understand that my change-of-mind cancellation right ends once course access is activated or learning begins. My statutory rights where digital content is faulty, misdescribed or improperly supplied remain unaffected.</span>
+      <span><strong><FileCheck2 size={16} /> Immediate digital supply and cancellation acknowledgement</strong>I request Sousa Murray eLearning to begin course enrolment and digital supply without waiting for the normal cancellation period. I understand that my change-of-mind cancellation right ends once course access is activated or learning begins. My statutory rights where digital content is faulty, misdescribed or improperly supplied remain unaffected.</span>
     </label>,
     target,
   );

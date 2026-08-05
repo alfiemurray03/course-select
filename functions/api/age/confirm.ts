@@ -17,7 +17,7 @@ export const onRequestPost: PagesFunction<CustomerAuthEnv> = async ({ request, e
   }
 
   if (input.isAdult !== true) {
-    return Response.json({ confirmed: false, message: 'Aptenvo is only available to customers aged 18 or over.' }, { status: 403 });
+    return Response.json({ confirmed: false, message: 'Sousa Murray eLearning is only available to customers aged 18 or over.' }, { status: 403 });
   }
 
   const token = await signValue({ isAdult: true, confirmedAt: Date.now() }, env.SESSION_SECRET);

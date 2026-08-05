@@ -84,7 +84,7 @@ function SignInLanding({ configured }: { configured: boolean }) {
   return <main className="account-signin-page">
     <section className="container account-signin-shell">
       <div className="account-signin-copy">
-        <div className="eyebrow"><CircleUserRound size={17} /> My Aptenvo</div>
+        <div className="eyebrow"><CircleUserRound size={17} /> My Sousa Murray eLearning</div>
         <h1>Your training account, protected by JA Group Services ID.</h1>
         <p>Sign in before viewing or saving customer details, learner information or reusable training baskets. No account forms or saved personal information are shown to visitors who are not authenticated.</p>
         <div className="account-signin-benefits">
@@ -96,13 +96,13 @@ function SignInLanding({ configured }: { configured: boolean }) {
 
       <aside className="account-signin-card">
         <div className="account-signin-icon"><KeyRound size={31} /></div>
-        <h2>Sign in to My Aptenvo</h2>
-        <p>JA Group Services ID uses Microsoft Entra External ID to authenticate Aptenvo customers securely. You may sign in or create an eligible customer account through the same protected journey.</p>
+        <h2>Sign in to My Sousa Murray eLearning</h2>
+        <p>JA Group Services ID uses Microsoft Entra External ID to authenticate Sousa Murray eLearning customers securely. You may sign in or create an eligible customer account through the same protected journey.</p>
         <a className="button button-primary account-signin-button" href="/api/auth/login?returnTo=/account"><LogIn size={18} /> Sign in with JA Group Services ID</a>
         <div className="account-signin-trust">
-          <span><LockKeyhole size={17} /> Aptenvo does not display customer, learner or saved-basket fields before authentication.</span>
-          <span><ShieldCheck size={17} /> Your authenticated My Aptenvo data is stored against your Aptenvo account, not as an unsigned device profile.</span>
-          <span><CircleUserRound size={17} /> Aptenvo is an adult-only service for customers and learners aged 18 or over.</span>
+          <span><LockKeyhole size={17} /> Sousa Murray eLearning does not display customer, learner or saved-basket fields before authentication.</span>
+          <span><ShieldCheck size={17} /> Your authenticated My Sousa Murray eLearning data is stored against your Sousa Murray eLearning account, not as an unsigned device profile.</span>
+          <span><CircleUserRound size={17} /> Sousa Murray eLearning is an adult-only service for customers and learners aged 18 or over.</span>
         </div>
         {!configured && <div className="account-signin-config-note">JA Group Services ID configuration has not yet been completed in the production environment. The sign-in page remains locked and no local saving fallback is available.</div>}
       </aside>
@@ -130,9 +130,9 @@ export default function AccountDashboard() {
     ]);
     if ([profileResponse, learnerResponse, basketResponse].some((response) => response.status === 401)) {
       setSession((current) => current ? { ...current, authenticated: false, user: null } : current);
-      throw new Error('Your session has ended. Sign in again to use My Aptenvo.');
+      throw new Error('Your session has ended. Sign in again to use My Sousa Murray eLearning.');
     }
-    if (!profileResponse.ok || !learnerResponse.ok || !basketResponse.ok) throw new Error('Your My Aptenvo data is temporarily unavailable.');
+    if (!profileResponse.ok || !learnerResponse.ok || !basketResponse.ok) throw new Error('Your My Sousa Murray eLearning data is temporarily unavailable.');
 
     const profileData = await profileResponse.json() as { profile?: Record<string, unknown> };
     const learnerData = await learnerResponse.json() as { learners?: Record<string, unknown>[] };
@@ -175,7 +175,7 @@ export default function AccountDashboard() {
       });
       if (!response.ok) throw new Error((await response.json() as { message?: string }).message ?? 'Unable to save customer details.');
       await loadServerData();
-      setStatus('Customer details saved to your authenticated My Aptenvo account.');
+      setStatus('Customer details saved to your authenticated My Sousa Murray eLearning account.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Customer details could not be saved.');
     }
@@ -194,7 +194,7 @@ export default function AccountDashboard() {
       if (!response.ok) throw new Error((await response.json() as { message?: string }).message ?? 'Unable to save learner.');
       await loadServerData();
       setLearnerDraft({ label: '', legalFirstName: '', legalLastName: '', enrolmentEmail: '' });
-      setStatus('Learner saved to your authenticated My Aptenvo account.');
+      setStatus('Learner saved to your authenticated My Sousa Murray eLearning account.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Learner could not be saved.');
     }
@@ -226,7 +226,7 @@ export default function AccountDashboard() {
       });
       if (!response.ok) throw new Error((await response.json() as { message?: string }).message ?? 'Unable to save basket.');
       await loadServerData();
-      setStatus('Basket saved to your authenticated My Aptenvo account.');
+      setStatus('Basket saved to your authenticated My Sousa Murray eLearning account.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Basket could not be saved.');
     }
@@ -251,20 +251,20 @@ export default function AccountDashboard() {
 
   return <main>
     <section className="page-hero account-hero"><div className="container account-hero-grid">
-      <div><div className="eyebrow">My Aptenvo</div><h1>Your authenticated customer and training dashboard</h1><p>Save reusable customer details, maintain an authorised adult learner directory and keep training baskets ready for future purchases.</p></div>
+      <div><div className="eyebrow">My Sousa Murray eLearning</div><h1>Your authenticated customer and training dashboard</h1><p>Save reusable customer details, maintain an authorised adult learner directory and keep training baskets ready for future purchases.</p></div>
       <div className="account-status-card"><CircleUserRound size={28} /><div><strong>{session.user.name}</strong><span>{session.user.email}</span></div></div>
     </div></section>
 
     <section className="section account-section"><div className="container">
       <div className="account-connection-banner connected">
-        <div><Check size={22} /><span><strong>Connected through JA Group Services ID</strong><small>Your profile, learners and saved baskets are stored against this authenticated Aptenvo account.</small></span></div>
+        <div><Check size={22} /><span><strong>Connected through JA Group Services ID</strong><small>Your profile, learners and saved baskets are stored against this authenticated Sousa Murray eLearning account.</small></span></div>
         <a className="button button-secondary" href="/api/auth/logout"><LogOut size={17} /> Sign out</a>
       </div>
       {status && <div className="account-message" role="status">{status}</div>}
 
       <div className="account-dashboard-grid">
         <section className="account-panel account-profile-panel">
-          <div className="account-panel-heading"><UserRound size={23} /><div><h2>Customer details</h2><p>Save the purchaser information Aptenvo should use as a starting point for future orders.</p></div></div>
+          <div className="account-panel-heading"><UserRound size={23} /><div><h2>Customer details</h2><p>Save the purchaser information Sousa Murray eLearning should use as a starting point for future orders.</p></div></div>
           <form className="account-form" onSubmit={saveProfile}>
             <fieldset><legend>Customer type</legend><div className="account-type-options">
               <label className={profile.customerType === 'individual' ? 'selected' : ''}><input type="radio" name="account-customer-type" checked={profile.customerType === 'individual'} onChange={() => setProfile({ ...profile, customerType: 'individual' })} /><UserRound size={18} /> Individual</label>

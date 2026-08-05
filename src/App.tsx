@@ -53,9 +53,9 @@ const CONTACT_EMAIL = 'contact@jagroupservices.co.uk';
 const wordmarkStyle = {
   color: '#2563eb',
   fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
-  fontSize: '2rem',
+  fontSize: '1.42rem',
   fontWeight: 800,
-  letterSpacing: '-0.065em',
+  letterSpacing: '-0.035em',
   lineHeight: 1,
   whiteSpace: 'nowrap' as const,
 };
@@ -105,7 +105,7 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link to="/" className="brand" aria-label="Aptenvo home"><span style={wordmarkStyle}>Aptenvo</span></Link>
+        <Link to="/" className="brand" aria-label="Sousa Murray eLearning home"><span style={wordmarkStyle}>Sousa Murray eLearning</span></Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
           <NavLink to="/">Home</NavLink>
@@ -116,7 +116,7 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
               <div className="dropdown-panel">
                 <Link to="/individuals"><strong>For individuals</strong><span>Choose training for yourself</span></Link>
                 <Link to="/business"><strong>For organisations</strong><span>Workforce training and larger orders</span></Link>
-                <Link to="/providers"><strong>How courses are delivered</strong><span>Aptenvo support and Highfield LMS access</span></Link>
+                <Link to="/providers"><strong>How courses are delivered</strong><span>Sousa Murray eLearning support and Highfield LMS access</span></Link>
               </div>
             )}
           </div>
@@ -144,7 +144,7 @@ function Header({ mode, setMode }: { mode: ThemeMode; setMode: (value: ThemeMode
           <Link className="mobile-account" to="/account"><CircleUserRound size={19} /> Sign in to JA Group Services ID</Link>
           <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {itemCount > 0 && `(${itemCount})`}</Link>
           <Link to="/">Home</Link><Link to="/courses">Browse courses</Link><Link to="/individuals">For individuals</Link>
-          <Link to="/business">For organisations</Link><Link to="/providers">How courses are delivered</Link><Link to="/about">About Aptenvo</Link><Link to="/support">Help and support</Link>
+          <Link to="/business">For organisations</Link><Link to="/providers">How courses are delivered</Link><Link to="/about">About Sousa Murray eLearning</Link><Link to="/support">Help and support</Link>
         </nav>
       )}
     </header>
@@ -157,16 +157,16 @@ function Footer() {
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-brand">
-            <span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span>
+            <span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '1.65rem' }}>Sousa Murray eLearning</span>
             <p>An authorised reseller of Highfield Online Training, operated by JA Group Services Ltd.</p>
           </div>
-          <div><h3>Aptenvo</h3><Link to="/courses">Browse courses</Link><Link to="/basket">Your basket</Link><Link to="/individuals">For individuals</Link><Link to="/business">For organisations</Link></div>
+          <div><h3>Sousa Murray eLearning</h3><Link to="/courses">Browse courses</Link><Link to="/basket">Your basket</Link><Link to="/individuals">For individuals</Link><Link to="/business">For organisations</Link></div>
           <div><h3>Support</h3><Link to="/support">Help centre</Link><Link to="/support?topic=large-order">Large orders</Link><Link to="/accessibility">Accessibility</Link><Link to="/complaints">Complaints</Link></div>
           <div><h3>Legal</h3><Link to="/terms">Terms and conditions</Link><Link to="/privacy">Privacy notice</Link><Link to="/cookies">Cookie notice</Link><Link to="/refunds">Refund policy</Link></div>
         </div>
       </footer>
       <div className="corporate-disclosure">
-        <div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370.</span></div>
+        <div><strong>Sousa Murray eLearning is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370.</span></div>
         <span>© {new Date().getFullYear()} JA Group Services Ltd.</span>
       </div>
     </>
@@ -188,14 +188,14 @@ function HomePage() {
         <div className="hero-glow hero-glow-one" /><div className="hero-glow hero-glow-two" />
         <div className="container hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow">Authorised reseller · Aptenvo customer support · Highfield course access</div>
+            <div className="eyebrow">Authorised reseller · Sousa Murray eLearning customer support · Highfield course access</div>
             <h1>Choose the right course.<br /><span>Build what comes next.</span></h1>
-            <p>Aptenvo is operated by JA Group Services Ltd and is an authorised reseller of Highfield Online Training. You purchase from Aptenvo and remain an Aptenvo customer throughout.</p>
+            <p>Sousa Murray eLearning is operated by JA Group Services Ltd and is an authorised reseller of Highfield Online Training. You purchase from Sousa Murray eLearning and remain an Sousa Murray eLearning customer throughout.</p>
             <div className="button-row"><Link className="button button-light" to="/courses">Browse all {catalogue.length} courses <ArrowRight size={18} /></Link><Link className="button button-ghost" to="/business">Training for organisations</Link></div>
-            <div className="trust-list"><span><Check size={16} /> Customer relationship with Aptenvo</span><span><Check size={16} /> Clear VAT-inclusive pricing</span><span><Check size={16} /> Up to {ONLINE_LICENCE_LIMIT} licences online</span></div>
+            <div className="trust-list"><span><Check size={16} /> Customer relationship with Sousa Murray eLearning</span><span><Check size={16} /> Clear VAT-inclusive pricing</span><span><Check size={16} /> Up to {ONLINE_LICENCE_LIMIT} licences online</span></div>
           </div>
           <aside className="hero-panel">
-            <div className="hero-panel-heading"><span>One clear customer journey</span><h2>Purchase through Aptenvo. Learn through Highfield.</h2></div>
+            <div className="hero-panel-heading"><span>One clear customer journey</span><h2>Purchase through Sousa Murray eLearning. Learn through Highfield.</h2></div>
             <div className="hero-stats"><div><strong>{catalogue.length}</strong><span>catalogue items</span></div><div><strong>{catalogueCategories.length}</strong><span>subjects</span></div><div><strong>{ONLINE_LICENCE_LIMIT}</strong><span>online limit</span></div></div>
             <div className="hero-provider"><div className="provider-mark">H</div><div><strong>Highfield Online Training</strong><span>Course content and Learning Management System</span></div><Award size={22} /></div>
           </aside>
@@ -203,36 +203,36 @@ function HomePage() {
       </section>
 
       <section className="fact-strip"><div className="container facts">
-        <Fact icon={<Building2 />} label="Your supplier" value="JA Group Services Ltd through Aptenvo" />
+        <Fact icon={<Building2 />} label="Your supplier" value="JA Group Services Ltd through Sousa Murray eLearning" />
         <Fact icon={<ShoppingBasket />} label="Online orders" value={`Up to ${ONLINE_LICENCE_LIMIT} licences in total`} />
         <Fact icon={<Mail />} label="Course access" value="Highfield emails the enrolled learner" />
-        <Fact icon={<Headphones />} label="All support" value="Contact Aptenvo first" />
+        <Fact icon={<Headphones />} label="All support" value="Contact Sousa Murray eLearning first" />
       </div></section>
 
       <section className="section"><div className="container">
-        <SectionHeading eyebrow="Browse by subject" title="Training that fits your next step" description="Search the Highfield Online Training catalogue available to purchase through Aptenvo." />
+        <SectionHeading eyebrow="Browse by subject" title="Training that fits your next step" description="Search the Highfield Online Training catalogue available to purchase through Sousa Murray eLearning." />
         <div className="category-grid">{featuredCategories.map(({ name, icon: Icon, copy }) => <Link className="category-card" to={`/courses?category=${encodeURIComponent(name)}`} key={name}><div className="icon-tile"><Icon size={24} /></div><h3>{name}</h3><p>{copy}</p><span>Explore courses <ArrowRight size={16} /></span></Link>)}</div>
       </div></section>
 
       <section className="section section-muted"><div className="container">
-        <SectionHeading eyebrow="Featured courses" title="Popular places to start" description="Review the course information, choose the required licences and combine different courses in one Aptenvo basket." />
+        <SectionHeading eyebrow="Featured courses" title="Popular places to start" description="Review the course information, choose the required licences and combine different courses in one Sousa Murray eLearning basket." />
         <div className="course-grid">{featured.map((course) => <CourseCard course={course} key={course.slug} />)}</div>
         <div className="centre-action"><Link className="button button-primary" to="/courses">View the full catalogue <ArrowRight size={18} /></Link></div>
       </div></section>
 
       <section className="section"><div className="container process-section">
-        <SectionHeading eyebrow="What happens after purchase" title="Your Aptenvo order and Highfield course access" description="The customer relationship stays with Aptenvo. Highfield supplies the course and Learning Management System access needed to fulfil your purchase." />
+        <SectionHeading eyebrow="What happens after purchase" title="Your Sousa Murray eLearning order and Highfield course access" description="The customer relationship stays with Sousa Murray eLearning. Highfield supplies the course and Learning Management System access needed to fulfil your purchase." />
         <div className="steps-grid">
-          <Step number="01" title="Purchase from Aptenvo" copy="Choose your courses and complete one secure payment to JA Group Services Ltd through Aptenvo." />
-          <Step number="02" title="Aptenvo processes enrolment" copy="Aptenvo records your order and enrols the named learner onto the course purchased." />
+          <Step number="01" title="Purchase from Sousa Murray eLearning" copy="Choose your courses and complete one secure payment to JA Group Services Ltd through Sousa Murray eLearning." />
+          <Step number="02" title="Sousa Murray eLearning processes enrolment" copy="Sousa Murray eLearning records your order and enrols the named learner onto the course purchased." />
           <Step number="03" title="Highfield emails the learner" copy="Highfield sends the enrolled learner instructions for accessing its Learning Management System." />
-          <Step number="04" title="Aptenvo supports you" copy="For any issue, contact Aptenvo first. We investigate and only escalate to Highfield when provider assistance is required." />
+          <Step number="04" title="Sousa Murray eLearning supports you" copy="For any issue, contact Sousa Murray eLearning first. We investigate and only escalate to Highfield when provider assistance is required." />
         </div>
       </div></section>
 
       <section className="section section-muted"><div className="container large-order-banner">
-        <div><span className="eyebrow blue">Large licence requirements</span><h2>Need more than {ONLINE_LICENCE_LIMIT} licences?</h2><p>Public online checkout is limited to {ONLINE_LICENCE_LIMIT} licences in total. Orders of {ONLINE_LICENCE_LIMIT + 1} licences or more are handled directly by Aptenvo for every customer type, including individuals and organisations.</p></div>
-        <Link className="button button-primary" to="/support?topic=large-order">Contact Aptenvo <ArrowRight size={18} /></Link>
+        <div><span className="eyebrow blue">Large licence requirements</span><h2>Need more than {ONLINE_LICENCE_LIMIT} licences?</h2><p>Public online checkout is limited to {ONLINE_LICENCE_LIMIT} licences in total. Orders of {ONLINE_LICENCE_LIMIT + 1} licences or more are handled directly by Sousa Murray eLearning for every customer type, including individuals and organisations.</p></div>
+        <Link className="button button-primary" to="/support?topic=large-order">Contact Sousa Murray eLearning <ArrowRight size={18} /></Link>
       </div></section>
     </main>
   );
@@ -262,7 +262,7 @@ function CoursesPage() {
     });
   }, [query, category, type]);
 
-  return <main><PageHero eyebrow="Course catalogue" title="Find your next online course" copy={`Search ${catalogue.length} Highfield Online Training courses and focused modules available to purchase through Aptenvo.`} />
+  return <main><PageHero eyebrow="Course catalogue" title="Find your next online course" copy={`Search ${catalogue.length} Highfield Online Training courses and focused modules available to purchase through Sousa Murray eLearning.`} />
     <section className="section"><div className="container">
       <div className="catalogue-toolbar expanded-toolbar">
         <label className="search-box"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search course title, subject or level" /></label>
@@ -292,8 +292,8 @@ function CoursePage() {
   const addToBasket = () => {
     if (quantity > remainingCapacity) {
       setBasketMessage(remainingCapacity > 0
-        ? `Only ${remainingCapacity} more ${remainingCapacity === 1 ? 'licence can' : 'licences can'} be added online. Contact Aptenvo for an order above ${ONLINE_LICENCE_LIMIT} licences.`
-        : `Your basket has reached the ${ONLINE_LICENCE_LIMIT}-licence online limit. Contact Aptenvo for a larger order.`);
+        ? `Only ${remainingCapacity} more ${remainingCapacity === 1 ? 'licence can' : 'licences can'} be added online. Contact Sousa Murray eLearning for an order above ${ONLINE_LICENCE_LIMIT} licences.`
+        : `Your basket has reached the ${ONLINE_LICENCE_LIMIT}-licence online limit. Contact Sousa Murray eLearning for a larger order.`);
       return;
     }
     addItem(course.id, quantity);
@@ -311,7 +311,7 @@ function CoursePage() {
         <label className="quantity-field">Number of licences<input type="number" min="1" max={ONLINE_LICENCE_LIMIT} value={quantity} onChange={(event) => setQuantity(Math.min(ONLINE_LICENCE_LIMIT, Math.max(1, Number(event.target.value) || 1)))} /></label>
         <button className="button button-primary full-width" type="button" onClick={addToBasket} disabled={remainingCapacity === 0}><ShoppingBasket size={18} /> {remainingCapacity === 0 ? 'Online basket limit reached' : 'Add to basket'}</button>
         {basketMessage && <div className="basket-added-message" role="status"><Info size={17} /><span>{basketMessage}</span><Link to={needsLargeOrderContact ? '/support?topic=large-order' : '/basket'}>{needsLargeOrderContact ? 'Contact us' : 'View basket'}</Link></div>}
-        <ul><li><Check size={16} /> Customer relationship stays with Aptenvo</li><li><Check size={16} /> Highfield emails LMS access after enrolment</li><li><Check size={16} /> Contact Aptenvo for all support</li></ul>
+        <ul><li><Check size={16} /> Customer relationship stays with Sousa Murray eLearning</li><li><Check size={16} /> Highfield emails LMS access after enrolment</li><li><Check size={16} /> Contact Sousa Murray eLearning for all support</li></ul>
       </aside>
     </div></section>
 
@@ -319,63 +319,63 @@ function CoursePage() {
       <div className="course-main-content">
         <article className="content-card course-copy-card"><h2>Course overview</h2><p>{course.overview}</p><h2>Who this course is for</h2><p>{course.audience}</p><h2>What learners will cover</h2><ul className="outcome-list">{course.learningOutcomes.map((outcome) => <li key={outcome}><Check size={18} /><span>{outcome}</span></li>)}</ul></article>
         <article className="content-card"><h2>Purchase, delivery and certification</h2>
-          <dl className="course-definition-list"><div><dt>Your supplier</dt><dd>JA Group Services Ltd, trading as Aptenvo</dd></div><div><dt>Customer relationship</dt><dd>Your order, payment, account, customer service and support relationship remain with Aptenvo.</dd></div><div><dt>Course provider</dt><dd>Highfield Online Training</dd></div><div><dt>Learning platform</dt><dd>Highfield Learning Management System</dd></div><div><dt>Access arrangements</dt><dd>After Aptenvo enrols the named learner, Highfield emails that learner with LMS access instructions.</dd></div><div><dt>Support route</dt><dd>Contact Aptenvo first for every issue. If we cannot resolve a provider-side issue, we will escalate it to Highfield on your behalf.</dd></div><div><dt>Certificate</dt><dd>{course.certificate}</dd></div><div><dt>Course type</dt><dd>{course.courseType.replace(/-/g, ' ')}</dd></div></dl>
+          <dl className="course-definition-list"><div><dt>Your supplier</dt><dd>JA Group Services Ltd, trading as Sousa Murray eLearning</dd></div><div><dt>Customer relationship</dt><dd>Your order, payment, account, customer service and support relationship remain with Sousa Murray eLearning.</dd></div><div><dt>Course provider</dt><dd>Highfield Online Training</dd></div><div><dt>Learning platform</dt><dd>Highfield Learning Management System</dd></div><div><dt>Access arrangements</dt><dd>After Sousa Murray eLearning enrols the named learner, Highfield emails that learner with LMS access instructions.</dd></div><div><dt>Support route</dt><dd>Contact Sousa Murray eLearning first for every issue. If we cannot resolve a provider-side issue, we will escalate it to Highfield on your behalf.</dd></div><div><dt>Certificate</dt><dd>{course.certificate}</dd></div><div><dt>Course type</dt><dd>{course.courseType.replace(/-/g, ' ')}</dd></div></dl>
           <div className="qualification-notice"><Info size={20} /><div><strong>Important qualification information</strong><p>{course.qualificationNotice}</p></div></div>
         </article>
       </div>
       <aside className="course-side-content">
-        <div className="info-card pricing-card"><h2>Licence pricing</h2><p>Online checkout supports a maximum of {ONLINE_LICENCE_LIMIT} licences in total. Larger requirements are processed directly by Aptenvo.</p><div className="pricing-table-wrap"><table className="pricing-table"><thead><tr><th>Quantity</th><th>Ex VAT</th><th>Inc VAT</th></tr></thead><tbody>{course.pricingTiers.filter((priceTier) => priceTier.minQuantity <= ONLINE_LICENCE_LIMIT).map((priceTier) => <tr key={`${priceTier.minQuantity}-${priceTier.maxQuantity ?? 'plus'}`} className={priceTier === tier ? 'active-tier' : ''}><td>{priceTier.minQuantity}{priceTier.maxQuantity ? `–${Math.min(priceTier.maxQuantity, ONLINE_LICENCE_LIMIT)}` : `–${ONLINE_LICENCE_LIMIT}`}</td><td>{formatMoney(priceTier.aptenvoNetPence)}</td><td><strong>{formatMoney(priceTier.aptenvoGrossPence)}</strong></td></tr>)}</tbody></table></div><small>{course.priceSource}</small><Link className="large-order-inline-link" to="/support?topic=large-order">Need {ONLINE_LICENCE_LIMIT + 1} or more licences? Contact Aptenvo →</Link></div>
-        <div className="info-card provider-detail-card"><h3>Authorised reseller arrangement</h3><div className="provider-row"><div className="provider-mark">H</div><div><strong>Highfield Online Training</strong><span>Course provider and LMS operator</span></div></div><p>JA Group Services Ltd, trading as Aptenvo, is the seller and customer-facing business. Highfield fulfils the course and LMS elements behind the Aptenvo service. Customers do not need to contact Highfield directly.</p></div>
+        <div className="info-card pricing-card"><h2>Licence pricing</h2><p>Online checkout supports a maximum of {ONLINE_LICENCE_LIMIT} licences in total. Larger requirements are processed directly by Sousa Murray eLearning.</p><div className="pricing-table-wrap"><table className="pricing-table"><thead><tr><th>Quantity</th><th>Ex VAT</th><th>Inc VAT</th></tr></thead><tbody>{course.pricingTiers.filter((priceTier) => priceTier.minQuantity <= ONLINE_LICENCE_LIMIT).map((priceTier) => <tr key={`${priceTier.minQuantity}-${priceTier.maxQuantity ?? 'plus'}`} className={priceTier === tier ? 'active-tier' : ''}><td>{priceTier.minQuantity}{priceTier.maxQuantity ? `–${Math.min(priceTier.maxQuantity, ONLINE_LICENCE_LIMIT)}` : `–${ONLINE_LICENCE_LIMIT}`}</td><td>{formatMoney(priceTier.aptenvoNetPence)}</td><td><strong>{formatMoney(priceTier.aptenvoGrossPence)}</strong></td></tr>)}</tbody></table></div><small>{course.priceSource}</small><Link className="large-order-inline-link" to="/support?topic=large-order">Need {ONLINE_LICENCE_LIMIT + 1} or more licences? Contact Sousa Murray eLearning →</Link></div>
+        <div className="info-card provider-detail-card"><h3>Authorised reseller arrangement</h3><div className="provider-row"><div className="provider-mark">H</div><div><strong>Highfield Online Training</strong><span>Course provider and LMS operator</span></div></div><p>JA Group Services Ltd, trading as Sousa Murray eLearning, is the seller and customer-facing business. Highfield fulfils the course and LMS elements behind the Sousa Murray eLearning service. Customers do not need to contact Highfield directly.</p></div>
       </aside>
     </div></section>
   </main>;
 }
 
 function BusinessPage() {
-  return <main><PageHero eyebrow="Aptenvo for organisations" title="Online training for your team" copy={`Purchase up to ${ONLINE_LICENCE_LIMIT} licences online. Larger requirements are handled directly by Aptenvo so the courses, learner numbers and fulfilment arrangements can be confirmed with you.`} />
-    <section className="section"><div className="container feature-grid"><Feature icon={<ShoppingBasket />} title={`Up to ${ONLINE_LICENCE_LIMIT} licences online`} copy={`Combine different courses in one basket, provided the total number of licences does not exceed ${ONLINE_LICENCE_LIMIT}.`} /><Feature icon={<Users />} title={`${ONLINE_LICENCE_LIMIT + 1}+ licences by enquiry`} copy="Large requirements are not processed through public checkout for individuals, organisations or any other customer type." /><Feature icon={<Mail />} title="Highfield LMS access email" copy="After Aptenvo enrols each learner, Highfield sends the LMS access instructions to the learner’s email address." /><Feature icon={<Headphones />} title="Aptenvo first-line support" copy="Customers contact Aptenvo for every issue. We escalate to Highfield only when provider assistance is required." /></div></section>
-    <section className="section section-muted"><div className="container large-order-panel"><div><span className="eyebrow blue">Large orders</span><h2>More than {ONLINE_LICENCE_LIMIT} course licences</h2><p>Do not split a larger requirement across several website orders. Contact Aptenvo so the full requirement can be handled as one direct order.</p><ul className="check-list"><li><Check size={18} /> Course and learner quantities confirmed</li><li><Check size={18} /> Direct order arrangements through Aptenvo</li><li><Check size={18} /> Learner enrolment coordinated by Aptenvo</li><li><Check size={18} /> Aptenvo remains your sole support contact</li></ul></div><div className="large-order-contact"><Mail size={30} /><h3>Contact Aptenvo</h3><p>Tell us which courses you require and the number of learner licences needed.</p><a className="button button-primary" href={`mailto:${CONTACT_EMAIL}?subject=Aptenvo%20large%20licence%20order`}>Email {CONTACT_EMAIL}</a></div></div></section>
+  return <main><PageHero eyebrow="Sousa Murray eLearning for organisations" title="Online training for your team" copy={`Purchase up to ${ONLINE_LICENCE_LIMIT} licences online. Larger requirements are handled directly by Sousa Murray eLearning so the courses, learner numbers and fulfilment arrangements can be confirmed with you.`} />
+    <section className="section"><div className="container feature-grid"><Feature icon={<ShoppingBasket />} title={`Up to ${ONLINE_LICENCE_LIMIT} licences online`} copy={`Combine different courses in one basket, provided the total number of licences does not exceed ${ONLINE_LICENCE_LIMIT}.`} /><Feature icon={<Users />} title={`${ONLINE_LICENCE_LIMIT + 1}+ licences by enquiry`} copy="Large requirements are not processed through public checkout for individuals, organisations or any other customer type." /><Feature icon={<Mail />} title="Highfield LMS access email" copy="After Sousa Murray eLearning enrols each learner, Highfield sends the LMS access instructions to the learner’s email address." /><Feature icon={<Headphones />} title="Sousa Murray eLearning first-line support" copy="Customers contact Sousa Murray eLearning for every issue. We escalate to Highfield only when provider assistance is required." /></div></section>
+    <section className="section section-muted"><div className="container large-order-panel"><div><span className="eyebrow blue">Large orders</span><h2>More than {ONLINE_LICENCE_LIMIT} course licences</h2><p>Do not split a larger requirement across several website orders. Contact Sousa Murray eLearning so the full requirement can be handled as one direct order.</p><ul className="check-list"><li><Check size={18} /> Course and learner quantities confirmed</li><li><Check size={18} /> Direct order arrangements through Sousa Murray eLearning</li><li><Check size={18} /> Learner enrolment coordinated by Sousa Murray eLearning</li><li><Check size={18} /> Sousa Murray eLearning remains your sole support contact</li></ul></div><div className="large-order-contact"><Mail size={30} /><h3>Contact Sousa Murray eLearning</h3><p>Tell us which courses you require and the number of learner licences needed.</p><a className="button button-primary" href={`mailto:${CONTACT_EMAIL}?subject=Sousa Murray eLearning%20large%20licence%20order`}>Email {CONTACT_EMAIL}</a></div></div></section>
   </main>;
 }
 
 function ProvidersPage() {
-  return <main><PageHero eyebrow="Course delivery" title="Aptenvo customers, Highfield course access" copy="Your purchase, account and support relationship are with JA Group Services Ltd through Aptenvo. Highfield supplies the training content and Learning Management System used to complete the course." />
+  return <main><PageHero eyebrow="Course delivery" title="Sousa Murray eLearning customers, Highfield course access" copy="Your purchase, account and support relationship are with JA Group Services Ltd through Sousa Murray eLearning. Highfield supplies the training content and Learning Management System used to complete the course." />
     <section className="section"><div className="container relationship-grid">
-      <article className="relationship-card primary-relationship-card"><div className="icon-tile"><Building2 size={25} /></div><span className="status-pill">Your supplier and sole support contact</span><h2>JA Group Services Ltd — Aptenvo</h2><p>Aptenvo markets and sells the courses, takes payment, records the order, arranges learner enrolment and provides first-line support. Customers remain customers of JA Group Services Ltd through Aptenvo.</p><ul className="check-list"><li><Check size={18} /> Aptenvo order and payment</li><li><Check size={18} /> Aptenvo customer account</li><li><Check size={18} /> Aptenvo support and complaints</li><li><Check size={18} /> Aptenvo manages any provider escalation</li></ul></article>
-      <article className="relationship-card"><div className="provider-mark large">H</div><span className="status-pill">Course provider and LMS operator</span><h2>Highfield Online Training</h2><p>Highfield supplies the course content and hosts the learner’s course within its Learning Management System. Once Aptenvo has enrolled the learner, Highfield sends the learner an access email.</p><ul className="check-list"><li><Check size={18} /> Course content and delivery</li><li><Check size={18} /> Learning Management System</li><li><Check size={18} /> Learner access instructions</li><li><Check size={18} /> Assistance to Aptenvo when escalated</li></ul></article>
+      <article className="relationship-card primary-relationship-card"><div className="icon-tile"><Building2 size={25} /></div><span className="status-pill">Your supplier and sole support contact</span><h2>JA Group Services Ltd — Sousa Murray eLearning</h2><p>Sousa Murray eLearning markets and sells the courses, takes payment, records the order, arranges learner enrolment and provides first-line support. Customers remain customers of JA Group Services Ltd through Sousa Murray eLearning.</p><ul className="check-list"><li><Check size={18} /> Sousa Murray eLearning order and payment</li><li><Check size={18} /> Sousa Murray eLearning customer account</li><li><Check size={18} /> Sousa Murray eLearning support and complaints</li><li><Check size={18} /> Sousa Murray eLearning manages any provider escalation</li></ul></article>
+      <article className="relationship-card"><div className="provider-mark large">H</div><span className="status-pill">Course provider and LMS operator</span><h2>Highfield Online Training</h2><p>Highfield supplies the course content and hosts the learner’s course within its Learning Management System. Once Sousa Murray eLearning has enrolled the learner, Highfield sends the learner an access email.</p><ul className="check-list"><li><Check size={18} /> Course content and delivery</li><li><Check size={18} /> Learning Management System</li><li><Check size={18} /> Learner access instructions</li><li><Check size={18} /> Assistance to Sousa Murray eLearning when escalated</li></ul></article>
     </div></section>
-    <section className="section section-muted"><div className="container process-section"><SectionHeading eyebrow="Support and learner access" title="One point of contact: Aptenvo" description="Highfield’s email gives the learner access to the course. It does not make Highfield the customer’s support contact." /><div className="steps-grid"><Step number="01" title="Aptenvo records the order" copy="The payment, customer record and order remain within Aptenvo." /><Step number="02" title="Aptenvo enrols the learner" copy="The necessary learner details are submitted to Highfield for course fulfilment." /><Step number="03" title="Highfield emails access" copy="The learner receives instructions for accessing the Highfield Learning Management System." /><Step number="04" title="Contact Aptenvo for help" copy="Aptenvo investigates first. If specialist provider help is needed, Aptenvo escalates the issue to Highfield and manages the response." /></div><div className="provider-access-note"><Info size={22} /><div><strong>Waiting for an access email or unable to use the course?</strong><p>Contact Aptenvo. We will check the order and enrolment first, then raise the matter with Highfield ourselves if their assistance is required.</p></div></div></div></section>
+    <section className="section section-muted"><div className="container process-section"><SectionHeading eyebrow="Support and learner access" title="One point of contact: Sousa Murray eLearning" description="Highfield’s email gives the learner access to the course. It does not make Highfield the customer’s support contact." /><div className="steps-grid"><Step number="01" title="Sousa Murray eLearning records the order" copy="The payment, customer record and order remain within Sousa Murray eLearning." /><Step number="02" title="Sousa Murray eLearning enrols the learner" copy="The necessary learner details are submitted to Highfield for course fulfilment." /><Step number="03" title="Highfield emails access" copy="The learner receives instructions for accessing the Highfield Learning Management System." /><Step number="04" title="Contact Sousa Murray eLearning for help" copy="Sousa Murray eLearning investigates first. If specialist provider help is needed, Sousa Murray eLearning escalates the issue to Highfield and manages the response." /></div><div className="provider-access-note"><Info size={22} /><div><strong>Waiting for an access email or unable to use the course?</strong><p>Contact Sousa Murray eLearning. We will check the order and enrolment first, then raise the matter with Highfield ourselves if their assistance is required.</p></div></div></div></section>
   </main>;
 }
 
 function IndividualsPage() {
-  return <main><PageHero eyebrow="For individuals" title="Purchase through Aptenvo and learn through Highfield" copy={`Choose one or several courses, review what each course covers and complete one Aptenvo checkout for up to ${ONLINE_LICENCE_LIMIT} licences.`} />
-    <section className="section"><div className="container steps-grid"><Step number="01" title="Choose" copy="Search the catalogue and read the full information for each course." /><Step number="02" title="Purchase from Aptenvo" copy="Add courses to the basket and complete your payment to JA Group Services Ltd through Aptenvo." /><Step number="03" title="Receive Highfield access" copy="After Aptenvo enrols the learner, Highfield emails the LMS sign-in instructions." /><Step number="04" title="Contact Aptenvo for support" copy="For order, enrolment, access or course issues, contact Aptenvo first. We manage any necessary escalation." /></div></section>
+  return <main><PageHero eyebrow="For individuals" title="Purchase through Sousa Murray eLearning and learn through Highfield" copy={`Choose one or several courses, review what each course covers and complete one Sousa Murray eLearning checkout for up to ${ONLINE_LICENCE_LIMIT} licences.`} />
+    <section className="section"><div className="container steps-grid"><Step number="01" title="Choose" copy="Search the catalogue and read the full information for each course." /><Step number="02" title="Purchase from Sousa Murray eLearning" copy="Add courses to the basket and complete your payment to JA Group Services Ltd through Sousa Murray eLearning." /><Step number="03" title="Receive Highfield access" copy="After Sousa Murray eLearning enrols the learner, Highfield emails the LMS sign-in instructions." /><Step number="04" title="Contact Sousa Murray eLearning for support" copy="For order, enrolment, access or course issues, contact Sousa Murray eLearning first. We manage any necessary escalation." /></div></section>
   </main>;
 }
 
 function AboutPage() {
-  return <main><PageHero eyebrow="About Aptenvo" title="Online training sold and supported by JA Group Services" copy="Aptenvo is a trading division of JA Group Services Ltd and an authorised reseller of Highfield Online Training." />
-    <section className="section"><div className="container content-grid"><article className="content-card company-copy-card"><h2>What Aptenvo does</h2><p>Aptenvo provides a customer-focused catalogue of online training for individuals and organisations. We present the available courses, process purchases, manage Aptenvo customer orders, arrange learner enrolment and provide first-line customer support.</p><h2>Our relationship with customers</h2><p>Customers purchase from JA Group Services Ltd through Aptenvo. The customer account, payment, order, support and complaint relationship remain with Aptenvo. Accessing a course through Highfield’s Learning Management System does not transfer that customer relationship to Highfield.</p><h2>Our authorised reseller arrangement</h2><p>JA Group Services Ltd, trading as Aptenvo, is an authorised reseller of Highfield Online Training. Highfield supplies the course content and learning platform. Aptenvo supplies the customer purchasing journey and coordinates enrolment.</p><h2>How learner access works</h2><p>Once Aptenvo has enrolled the named learner onto the purchased course, Highfield sends an email to that learner with instructions for accessing the Highfield Learning Management System.</p><h2>How support works</h2><p>Customers contact Aptenvo for all support. Aptenvo investigates the order, enrolment and access issue first. Where we cannot resolve a provider-side problem ourselves, we escalate the issue to Highfield and continue managing it for the customer.</p><h2>Online and larger orders</h2><p>The public website accepts orders containing up to {ONLINE_LICENCE_LIMIT} licences in total. Requirements of {ONLINE_LICENCE_LIMIT + 1} licences or more must be arranged directly with Aptenvo and must not be divided across several online orders.</p></article><aside className="info-card company-details-card"><Building2 size={30} /><h3>Legal operator</h3><strong>JA Group Services Ltd</strong><p>Aptenvo is a trading division, not a separate legal entity.</p><dl><div><dt>Company number</dt><dd>16314179</dd></div><div><dt>ICO registration</dt><dd>ZB877370</dd></div><div><dt>Registered in</dt><dd>England and Wales</dd></div><div><dt>Customer contact</dt><dd><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd></div></dl><Link className="button button-primary full-width" to="/support">Contact Aptenvo</Link></aside></div></section>
+  return <main><PageHero eyebrow="About Sousa Murray eLearning" title="Online training sold and supported by JA Group Services" copy="Sousa Murray eLearning is a trading division of JA Group Services Ltd and an authorised reseller of Highfield Online Training." />
+    <section className="section"><div className="container content-grid"><article className="content-card company-copy-card"><h2>What Sousa Murray eLearning does</h2><p>Sousa Murray eLearning provides a customer-focused catalogue of online training for individuals and organisations. We present the available courses, process purchases, manage Sousa Murray eLearning customer orders, arrange learner enrolment and provide first-line customer support.</p><h2>Our relationship with customers</h2><p>Customers purchase from JA Group Services Ltd through Sousa Murray eLearning. The customer account, payment, order, support and complaint relationship remain with Sousa Murray eLearning. Accessing a course through Highfield’s Learning Management System does not transfer that customer relationship to Highfield.</p><h2>Our authorised reseller arrangement</h2><p>JA Group Services Ltd, trading as Sousa Murray eLearning, is an authorised reseller of Highfield Online Training. Highfield supplies the course content and learning platform. Sousa Murray eLearning supplies the customer purchasing journey and coordinates enrolment.</p><h2>How learner access works</h2><p>Once Sousa Murray eLearning has enrolled the named learner onto the purchased course, Highfield sends an email to that learner with instructions for accessing the Highfield Learning Management System.</p><h2>How support works</h2><p>Customers contact Sousa Murray eLearning for all support. Sousa Murray eLearning investigates the order, enrolment and access issue first. Where we cannot resolve a provider-side problem ourselves, we escalate the issue to Highfield and continue managing it for the customer.</p><h2>Online and larger orders</h2><p>The public website accepts orders containing up to {ONLINE_LICENCE_LIMIT} licences in total. Requirements of {ONLINE_LICENCE_LIMIT + 1} licences or more must be arranged directly with Sousa Murray eLearning and must not be divided across several online orders.</p></article><aside className="info-card company-details-card"><Building2 size={30} /><h3>Legal operator</h3><strong>JA Group Services Ltd</strong><p>Sousa Murray eLearning is a trading division, not a separate legal entity.</p><dl><div><dt>Company number</dt><dd>16314179</dd></div><div><dt>ICO registration</dt><dd>ZB877370</dd></div><div><dt>Registered in</dt><dd>England and Wales</dd></div><div><dt>Customer contact</dt><dd><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd></div></dl><Link className="button button-primary full-width" to="/support">Contact Sousa Murray eLearning</Link></aside></div></section>
   </main>;
 }
 
 function SupportPage() {
   const [searchParams] = useSearchParams();
   const largeOrder = searchParams.get('topic') === 'large-order';
-  const subject = largeOrder ? 'Aptenvo large licence order' : 'Aptenvo customer support';
+  const subject = largeOrder ? 'Sousa Murray eLearning large licence order' : 'Sousa Murray eLearning customer support';
 
-  return <main><PageHero eyebrow="Aptenvo customer support" title={largeOrder ? 'Arrange a larger licence order' : 'Contact Aptenvo first for every issue'} copy={largeOrder ? `Orders of ${ONLINE_LICENCE_LIMIT + 1} licences or more are arranged directly with Aptenvo and are not accepted through public online checkout.` : 'Aptenvo is your first and only customer-facing support contact for orders, enrolment, LMS access and course issues.'} />
-    <section className="section"><div className="container support-grid"><div className="support-options"><Feature icon={<Headphones />} title="First-line support by Aptenvo" copy="We investigate the customer record, payment, order and enrolment before deciding whether provider assistance is required." /><Feature icon={<Mail />} title="Missing Highfield access email" copy="Contact Aptenvo, not Highfield. We will check the learner details and enrolment status for you." /><Feature icon={<Users />} title="Larger licence requirements" copy={`Contact us before purchasing if the total requirement is above ${ONLINE_LICENCE_LIMIT} licences.`} /><Feature icon={<ShieldCheck />} title="Managed provider escalation" copy="If we cannot resolve a Highfield LMS or course-delivery issue, Aptenvo raises and manages the escalation on the customer’s behalf." /></div><aside className="contact-card support-contact-card"><Mail size={34} /><h2>Contact Aptenvo</h2><p>Include the customer name, order reference, learner email address and a clear description of the issue. Do not send passwords or payment-card details.</p><a className="button button-primary full-width" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`}>Email {CONTACT_EMAIL}</a><div className="support-route-note"><strong>You do not need to contact Highfield.</strong><span>Aptenvo will approach Highfield where escalation is necessary and will remain your point of contact.</span></div></aside></div></section>
+  return <main><PageHero eyebrow="Sousa Murray eLearning customer support" title={largeOrder ? 'Arrange a larger licence order' : 'Contact Sousa Murray eLearning first for every issue'} copy={largeOrder ? `Orders of ${ONLINE_LICENCE_LIMIT + 1} licences or more are arranged directly with Sousa Murray eLearning and are not accepted through public online checkout.` : 'Sousa Murray eLearning is your first and only customer-facing support contact for orders, enrolment, LMS access and course issues.'} />
+    <section className="section"><div className="container support-grid"><div className="support-options"><Feature icon={<Headphones />} title="First-line support by Sousa Murray eLearning" copy="We investigate the customer record, payment, order and enrolment before deciding whether provider assistance is required." /><Feature icon={<Mail />} title="Missing Highfield access email" copy="Contact Sousa Murray eLearning, not Highfield. We will check the learner details and enrolment status for you." /><Feature icon={<Users />} title="Larger licence requirements" copy={`Contact us before purchasing if the total requirement is above ${ONLINE_LICENCE_LIMIT} licences.`} /><Feature icon={<ShieldCheck />} title="Managed provider escalation" copy="If we cannot resolve a Highfield LMS or course-delivery issue, Sousa Murray eLearning raises and manages the escalation on the customer’s behalf." /></div><aside className="contact-card support-contact-card"><Mail size={34} /><h2>Contact Sousa Murray eLearning</h2><p>Include the customer name, order reference, learner email address and a clear description of the issue. Do not send passwords or payment-card details.</p><a className="button button-primary full-width" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`}>Email {CONTACT_EMAIL}</a><div className="support-route-note"><strong>You do not need to contact Highfield.</strong><span>Sousa Murray eLearning will approach Highfield where escalation is necessary and will remain your point of contact.</span></div></aside></div></section>
   </main>;
 }
 
 function AccountPage() {
-  return <main><PageHero eyebrow="My Aptenvo" title="Your Aptenvo customer account is coming next" copy="The customer account will remain with JA Group Services Ltd through Aptenvo, while course access is provided through the relevant learning platform." /><section className="section"><div className="container prose-card centre"><CircleUserRound size={48} /><h2>JA Group Services ID connection point</h2><p>The next identity phase will connect Aptenvo to Microsoft Entra External ID for Aptenvo customer accounts.</p><Link className="button button-primary" to="/courses">Browse courses</Link></div></section></main>;
+  return <main><PageHero eyebrow="My learning account" title="Your Sousa Murray eLearning customer account is coming next" copy="The customer account will remain with JA Group Services Ltd through Sousa Murray eLearning, while course access is provided through the relevant learning platform." /><section className="section"><div className="container prose-card centre"><CircleUserRound size={48} /><h2>JA Group Services ID connection point</h2><p>The next identity phase will connect Sousa Murray eLearning to Microsoft Entra External ID for Sousa Murray eLearning customer accounts.</p><Link className="button button-primary" to="/courses">Browse courses</Link></div></section></main>;
 }
 
 function LegalPage({ title }: { title: string }) {
-  return <main><PageHero eyebrow="Legal and trust" title={title} copy="Aptenvo is operated by JA Group Services Ltd, which is the customer’s supplier and contractual point of contact." /><section className="section"><div className="container prose-card"><h2>Document preparation in progress</h2><p>The complete approved wording for this document will be published before the relevant customer function is formally launched.</p></div></section></main>;
+  return <main><PageHero eyebrow="Legal and trust" title={title} copy="Sousa Murray eLearning is operated by JA Group Services Ltd, which is the customer’s supplier and contractual point of contact." /><section className="section"><div className="container prose-card"><h2>Document preparation in progress</h2><p>The complete approved wording for this document will be published before the relevant customer function is formally launched.</p></div></section></main>;
 }
 
 function NotFoundPage() {

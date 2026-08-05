@@ -49,7 +49,7 @@ function normaliseAccountButton() {
   const icon = account.querySelector('svg');
   account.replaceChildren();
   if (icon) account.append(icon);
-  account.append(document.createTextNode(' My Aptenvo'));
+  account.append(document.createTextNode(' My Sousa Murray eLearning'));
   account.href = '/account';
   account.dataset.aptenvoUnified = 'true';
 }
@@ -61,7 +61,7 @@ function normaliseMobileNavigation() {
   const oldCourseLink = navigation.querySelector<HTMLAnchorElement>('a[href="/courses"]');
   if (!oldCourseLink?.textContent?.toLowerCase().includes('browse')) return;
 
-  const account = makeLink('/account', 'My Aptenvo');
+  const account = makeLink('/account', 'My Sousa Murray eLearning');
   account.className = 'mobile-account';
 
   const basket = makeLink('/basket', 'Basket');

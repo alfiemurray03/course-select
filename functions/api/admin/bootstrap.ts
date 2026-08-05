@@ -1,11 +1,11 @@
 const retiredBootstrap: PagesFunction = async () => Response.json({
   error: 'catalogue_bootstrap_retired',
-  message: 'Aptenvo course content, categories, learning outcomes and standard prices are now deployed from the codebase. This endpoint no longer writes the catalogue into D1.',
+  message: 'Sousa Murray eLearning course content, categories, learning outcomes and standard prices are now deployed from the codebase. This endpoint no longer writes the catalogue into D1.',
 }, {
   status: 410,
   headers: {
     'Cache-Control': 'no-store',
-    'X-Aptenvo-Catalogue-Source': 'code',
+    'X-Sousa Murray eLearning-Catalogue-Source': 'code',
   },
 });
 

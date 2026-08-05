@@ -1,6 +1,6 @@
-# Aptenvo D1 operating mode
+# Sousa Murray eLearning D1 operating mode
 
-Aptenvo uses a code-first catalogue and an operational-only D1 database.
+Sousa Murray eLearning uses a code-first catalogue and an operational-only D1 database.
 
 ## Stored in the codebase
 
@@ -21,7 +21,7 @@ The following are deployed with the application and must not be seeded or synchr
 
 D1 is reserved for records that change because a customer or staff member takes an action:
 
-- authenticated Aptenvo customer accounts;
+- authenticated Sousa Murray eLearning customer accounts;
 - saved customer profiles, authorised adult learners and reusable baskets;
 - orders, order items and Stripe references;
 - learner submissions, licence allocations and enrolment status;

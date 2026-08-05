@@ -32,10 +32,10 @@ function escapeXml(value: string) {
 
 function normaliseOrigin(value: string | undefined) {
   try {
-    const url = new URL(value || 'https://aptenvo.jagroupservices.co.uk');
+    const url = new URL(value || 'https://sousamurrayelearning.jagroupservices.co.uk');
     return url.origin;
   } catch {
-    return 'https://aptenvo.jagroupservices.co.uk';
+    return 'https://sousamurrayelearning.jagroupservices.co.uk';
   }
 }
 
@@ -53,7 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
       'X-Content-Type-Options': 'nosniff',
-      'X-Aptenvo-Sitemap-Source': 'code',
+      'X-Sousa Murray eLearning-Sitemap-Source': 'code',
     },
   });
 };

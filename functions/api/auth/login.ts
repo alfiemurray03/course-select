@@ -21,7 +21,7 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
   if (!env.ENTRA_AUTHORITY || !env.ENTRA_CLIENT_ID || !env.SESSION_SECRET) {
     return Response.json({
       error: 'identity_not_configured',
-      message: 'My Aptenvo sign-in has not yet been connected to JA Group Services ID.',
+      message: 'My Sousa Murray eLearning sign-in has not yet been connected to JA Group Services ID.',
     }, { status: 503 });
   }
 

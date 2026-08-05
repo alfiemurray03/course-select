@@ -32,7 +32,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   } catch (error) {
     return Response.json({
       error: 'schema_initialisation_failed',
-      message: error instanceof Error ? error.message : 'Unable to create the Aptenvo database schema.',
+      message: error instanceof Error ? error.message : 'Unable to create the Sousa Murray eLearning database schema.',
     }, { status: 500 });
   }
 

@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
--- Aptenvo D1 schema
+-- Sousa Murray eLearning D1 schema
 -- Designed for Cloudflare Pages/Workers, multiple course providers,
 -- Stripe Checkout, JA Group Services ID and provider enrolment tracking.
 

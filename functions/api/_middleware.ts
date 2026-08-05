@@ -55,7 +55,7 @@ export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, 
     if (!confirmation?.isAdult || !confirmation.confirmedAt) {
       return Response.json({
         error: 'adult_confirmation_required',
-        message: 'Aptenvo is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
+        message: 'Sousa Murray eLearning is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
       }, { status: 403 });
     }
     adultConfirmationTime = confirmation.confirmedAt;
@@ -65,7 +65,7 @@ export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, 
     if (!recentAdultDeclaration) {
       return Response.json({
         error: 'adult_confirmation_required',
-        message: 'Aptenvo is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
+        message: 'Sousa Murray eLearning is an 18+ service. Confirm that you are aged 18 or over before proceeding to payment.',
       }, { status: 403 });
     }
     adultConfirmationTime = consent?.adultConfirmedAt;

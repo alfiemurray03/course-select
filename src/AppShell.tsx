@@ -40,9 +40,9 @@ type ThemeMode = 'light' | 'dark' | 'system';
 const wordmarkStyle = {
   color: '#2563eb',
   fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
-  fontSize: '2rem',
+  fontSize: '1.42rem',
   fontWeight: 800,
-  letterSpacing: '-0.065em',
+  letterSpacing: '-0.035em',
   lineHeight: 1,
   whiteSpace: 'nowrap' as const,
 };
@@ -80,7 +80,7 @@ function EnhancedHeader() {
 
   return <header className="site-header">
     <div className="header-inner">
-      <Link to="/" className="brand" aria-label="Aptenvo home"><span style={wordmarkStyle}>Aptenvo</span></Link>
+      <Link to="/" className="brand" aria-label="Sousa Murray eLearning home"><span style={wordmarkStyle}>Sousa Murray eLearning</span></Link>
       <nav className="desktop-nav" aria-label="Main navigation">
         <NavLink to="/">Home</NavLink>
         <NavLink to="/courses">Courses</NavLink>
@@ -96,7 +96,7 @@ function EnhancedHeader() {
           <ShoppingBasket size={19} /><span className="basket-header-label">Basket</span>
           {itemCount > 0 && <span className="basket-count-badge">{itemCount}</span>}
         </Link>
-        <Link className="account-button desktop-account" to="/account"><CircleUserRound size={18} /> My Aptenvo</Link>
+        <Link className="account-button desktop-account" to="/account"><CircleUserRound size={18} /> My learning account</Link>
         <button className="icon-button theme-button" type="button" onClick={rotateTheme} aria-label={`Theme: ${mode}`}>
           {mode === 'dark' ? <Moon size={19} /> : mode === 'light' ? <Sun size={19} /> : <Sparkles size={19} />}
         </button>
@@ -104,9 +104,9 @@ function EnhancedHeader() {
       </div>
     </div>
     {open && <nav className="mobile-nav" aria-label="Mobile navigation">
-      <Link className="mobile-account" to="/account"><CircleUserRound size={19} /> My Aptenvo</Link>
+      <Link className="mobile-account" to="/account"><CircleUserRound size={19} /> My learning account</Link>
       <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {itemCount > 0 && `(${itemCount})`}</Link>
-      <Link to="/">Home</Link><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/how-courses-are-delivered">How courses are delivered</Link><Link to="/about">About Aptenvo</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link>
+      <Link to="/">Home</Link><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/how-courses-are-delivered">How courses are delivered</Link><Link to="/about">About Sousa Murray eLearning</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact Sousa Murray eLearning</Link>
     </nav>}
   </header>;
 }
@@ -114,12 +114,12 @@ function EnhancedHeader() {
 function EnhancedFooter() {
   return <>
     <footer className="footer"><div className="footer-grid">
-      <div className="footer-brand"><span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '2.15rem' }}>Aptenvo</span><p>Adult online training sold and supported by JA Group Services Ltd through Aptenvo.</p></div>
-      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My Aptenvo</Link><Link to="/sitemap">Site map</Link></div>
-      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Aptenvo</Link><Link to="/accessibility">Accessibility</Link><Link to="/complaints">Complaints</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
+      <div className="footer-brand"><span style={{ ...wordmarkStyle, color: '#4f7cff', fontSize: '1.65rem' }}>Sousa Murray eLearning</span><p>Adult online training sold and supported by JA Group Services Ltd through Sousa Murray eLearning.</p></div>
+      <div><h3>Explore</h3><Link to="/courses">Course catalogue</Link><Link to="/individuals">For individuals</Link><Link to="/organisations">For organisations</Link><Link to="/account">My learning account</Link><Link to="/sitemap">Site map</Link></div>
+      <div><h3>Help</h3><Link to="/support">Help Centre</Link><Link to="/contact">Contact Sousa Murray eLearning</Link><Link to="/accessibility">Accessibility</Link><Link to="/complaints">Complaints</Link><Link to="/how-courses-are-delivered">How course access works</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/acceptable-use">Acceptable Use Policy</Link><Link to="/cookies">Cookie notice</Link></div>
     </div></footer>
-    <div className="corporate-disclosure"><div><strong>Aptenvo is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers and learners must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
+    <div className="corporate-disclosure"><div><strong>Sousa Murray eLearning is a trading division of JA Group Services Ltd.</strong><span>Registered in England and Wales. Company number 16314179. ICO registration ZB877370. Customers and learners must be aged 18 or over.</span></div><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
   </>;
 }
 
@@ -170,13 +170,13 @@ function WordingEnhancer() {
       if (originalMobileNavigation && !originalMobileNavigation.querySelector('a[href="/contact"]')) {
         const contact = document.createElement('a');
         contact.href = '/contact';
-        contact.textContent = 'Contact Aptenvo';
+        contact.textContent = 'Contact Sousa Murray eLearning';
         originalMobileNavigation.append(contact);
       }
 
       const supportColumn = document.querySelector<HTMLElement>('.footer-grid > div:nth-child(3)');
       if (supportColumn) {
-        appendLink(supportColumn, '/contact', 'Contact Aptenvo');
+        appendLink(supportColumn, '/contact', 'Contact Sousa Murray eLearning');
         appendLink(supportColumn, '/accessibility', 'Accessibility');
         appendLink(supportColumn, '/complaints', 'Complaints');
       }

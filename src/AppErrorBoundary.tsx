@@ -16,7 +16,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Aptenvo application error', error, info);
+    console.error('Sousa Murray eLearning application error', error, info);
   }
 
   render() {
@@ -25,12 +25,12 @@ export default class AppErrorBoundary extends Component<Props, State> {
     return (
       <main className="app-error-screen">
         <section className="app-error-card" role="alert">
-          <div className="app-error-wordmark">Aptenvo</div>
+          <div className="app-error-wordmark">Sousa Murray eLearning</div>
           <p className="app-error-eyebrow">Temporary page error</p>
           <h1>We could not open that page correctly.</h1>
           <p>Your basket and course selections are still saved on this device. Reload the page to continue.</p>
           <button type="button" onClick={() => window.location.reload()}>
-            Reload Aptenvo
+            Reload Sousa Murray eLearning
           </button>
         </section>
       </main>

@@ -1,4 +1,4 @@
-/* Accessibility controls adapted from the Planyx public accessibility widget. */
+/* Accessibility controls adapted from the Sousa Murray Planeia public accessibility widget. */
 
 :where(a, button, input, select, textarea, summary, [role='button'], [role='link'], [tabindex]):focus-visible {
   outline: 3px solid #60a5fa !important;
