@@ -1,8 +1,9 @@
 {
-  "name": "Aptenvo",
-  "short_name": "Aptenvo",
+  "name": "Sousa Murray eLearning",
+  "short_name": "eLearning",
   "description": "Online learning from trusted course providers.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#081c3e",
   "theme_color": "#2563eb",
