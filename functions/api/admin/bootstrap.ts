@@ -5,7 +5,7 @@ const retiredBootstrap: PagesFunction = async () => Response.json({
   status: 410,
   headers: {
     'Cache-Control': 'no-store',
-    'X-Sousa Murray eLearning-Catalogue-Source': 'code',
+    'X-Aptenvo-Catalogue-Source': 'code',
   },
 });
 
