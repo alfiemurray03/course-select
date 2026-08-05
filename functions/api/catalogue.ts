@@ -23,6 +23,6 @@ export const onRequestGet: PagesFunction = async () => Response.json({
 }, {
   headers: {
     'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
-    'X-Sousa Murray eLearning-Catalogue-Source': 'code',
+    'X-Aptenvo-Catalogue-Source': 'code',
   },
 });
