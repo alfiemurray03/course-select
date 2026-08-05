@@ -46,6 +46,7 @@ jobs:
           ]
 
           excluded_dirs = {'.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.cache'}
+          migration_workflow = '.github/workflows/one-time-board-rebrand.yml'
           text_suffixes = {
               '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.html', '.css', '.scss', '.json',
               '.md', '.txt', '.yml', '.yaml', '.xml', '.svg', '.sql', '.toml', '.env', '.sh'
@@ -123,9 +124,10 @@ jobs:
                   remaining.append((str(path), 'Aptenvo'))
               if 'aptenvo.jagroupservices.co.uk' in content:
                   remaining.append((str(path), 'retired domain'))
-              for asset_name in legacy_asset_names:
-                  if asset_name in content:
-                      remaining.append((str(path), asset_name))
+              if path.as_posix() != migration_workflow:
+                  for asset_name in legacy_asset_names:
+                      if asset_name in content:
+                          remaining.append((str(path), asset_name))
 
           if remaining:
               print('Remaining retired customer-facing markers:')
