@@ -40,6 +40,7 @@ type TokenResponse = {
 type IdClaims = {
   sub?: string;
   oid?: string;
+  tid?: string;
   iss?: string;
   aud?: string | string[];
   exp?: number;
@@ -174,11 +175,19 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
   if (!tokenData.id_token) return Response.json({ error: 'missing_id_token' }, { status: 502 });
 
   const claims = await verifyIdToken(tokenData.id_token, configuration, env.ENTRA_CLIENT_ID, transaction.nonce);
-  const subject = claims?.sub ?? claims?.oid;
+  const objectId = claims?.oid ?? claims?.sub;
+  const tenantId = claims?.tid;
   const email = claims?.email ?? claims?.preferred_username ?? claims?.emails?.[0];
-  if (!claims || !subject || !email) {
-    return Response.json({ error: 'invalid_identity_token', message: 'The identity token could not be verified.' }, { status: 401 });
+  if (!claims || !tenantId || !objectId || !email) {
+    return Response.json({
+      error: 'invalid_identity_token',
+      message: 'The verified JA Group Services ID token did not contain the required tenant and object identifiers.',
+    }, { status: 401 });
   }
+
+  // A customer is identified by the Entra tenant and object IDs together.
+  // Email remains mutable contact data and is never the primary account key.
+  const subject = `${tenantId}:${objectId}`;
 
   await ensureAccountTables(env.DB);
   const accountId = await accountIdForSubject(subject);
