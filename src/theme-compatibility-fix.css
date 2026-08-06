@@ -1,0 +1,250 @@
+/*
+ * Sousa Murray eLearning theme compatibility layer.
+ *
+ * The subscription/LMS components originally referenced a second set of CSS
+ * custom properties (--surface, --text, --line, --bg). The established site
+ * theme uses --card, --foreground, --border and --background instead. These
+ * overrides deliberately map every public and LMS surface back to the single
+ * site theme so light and dark modes retain readable contrast.
+ */
+
+.lp-header {
+  border-color: var(--border);
+  background: var(--header);
+  color: var(--foreground);
+}
+
+:root.dark .lp-header {
+  background: var(--header);
+}
+
+.lp-desktop-nav a,
+.lp-mobile-nav a {
+  color: var(--muted-foreground);
+}
+
+.lp-desktop-nav a:hover,
+.lp-desktop-nav a.active,
+.lp-mobile-nav a:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.lp-header-actions a,
+.lp-header-actions button {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.lp-header-actions a:hover,
+.lp-header-actions button:hover {
+  background: var(--muted);
+}
+
+.lp-mobile-nav {
+  border-color: var(--border);
+  background: var(--card);
+}
+
+.lp-hero h1,
+.lp-page-hero h1,
+.lp-route-panel h2,
+.lms-page-hero h1,
+.lms-signin-intro h1 {
+  color: #ffffff;
+}
+
+.lp-strip,
+.lp-unlimited-note {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.lp-strip span {
+  border-color: var(--border);
+}
+
+.lp-section,
+.lms-catalogue-section,
+.lms-app-background,
+.lms-course-player {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.lp-section.muted {
+  background: var(--muted);
+}
+
+.lp-section-head h2,
+.lp-service-grid h2,
+.lp-subject-grid h3,
+.lp-plan-grid h3,
+.lp-callout h2,
+.lms-course-card h2,
+.lms-dashboard-header h1,
+.lms-dashboard-section-head h2,
+.lms-enrolled-copy h3,
+.lms-empty-state h3,
+.lms-lesson-heading h1,
+.lms-quiz h2,
+.lms-signin-card h2 {
+  color: var(--foreground);
+}
+
+.lp-section-head p,
+.lp-service-grid p,
+.lp-subject-grid p,
+.lp-plan-grid p,
+.lp-service-grid li,
+.lp-plan-grid li,
+.lp-price span,
+.lp-unlimited-note p,
+.lp-callout p,
+.lms-signin-card p,
+.lms-signin-card > small,
+.lms-signin-divider,
+.lms-result-count,
+.lms-course-card p,
+.lms-course-meta,
+.lms-dashboard-header p,
+.lms-metric-grid span,
+.lms-progress small,
+.lms-certificate-list span,
+.lms-empty-state,
+.lms-lesson-topbar,
+.lms-lesson-heading p {
+  color: var(--muted-foreground);
+}
+
+.lp-service-grid article,
+.lp-subject-grid article,
+.lp-plan-grid article,
+.lp-callout,
+.lp-notice,
+.lms-signin-card,
+.lms-catalogue-toolbar label,
+.lms-course-card,
+.lms-metric-grid article,
+.lms-dashboard-section,
+.lms-lesson-topbar,
+.lms-lesson-card,
+.lms-quiz label {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.lp-service-grid article > svg,
+.lp-subject-grid article > svg,
+.lp-callout > svg,
+.lp-notice > svg,
+.lms-course-card > svg,
+.lms-metric-grid article > svg {
+  color: var(--primary);
+}
+
+.lp-plan-grid article.featured {
+  border-color: var(--primary);
+}
+
+.lp-plan-grid a,
+.lp-button.primary,
+.lms-course-card > a,
+.lms-dashboard-header > a,
+.lms-lesson-actions button,
+.lms-preview-button {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.lp-plan-grid a:hover,
+.lp-button.primary:hover,
+.lms-course-card > a:hover,
+.lms-dashboard-header > a:hover,
+.lms-lesson-actions button:hover,
+.lms-preview-button:hover {
+  background: var(--primary-dark);
+}
+
+.lp-popular {
+  background: var(--primary);
+  color: #ffffff !important;
+}
+
+.lms-signin-card input,
+.lms-plan-tags small,
+.lms-lesson-actions a {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.lms-catalogue-toolbar input,
+.lms-catalogue-toolbar select {
+  color: var(--foreground);
+}
+
+.lms-catalogue-toolbar input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.lms-result-count strong,
+.lms-empty-state h3 {
+  color: var(--foreground);
+}
+
+.lms-enrolled-list article,
+.lms-certificate-list article,
+.lms-lesson-content {
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.lms-quiz {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--card));
+  color: var(--foreground);
+}
+
+:root.dark .lms-quiz {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: color-mix(in srgb, var(--primary-soft) 52%, var(--card));
+}
+
+.lms-message {
+  background: #eaf8f1;
+  color: #087a55;
+}
+
+:root.dark .lms-message {
+  background: #12372c;
+  color: #9ce8c8;
+}
+
+.lms-message.error {
+  background: #fff0ef;
+  color: #b42318;
+}
+
+:root.dark .lms-message.error {
+  background: #45201e;
+  color: #ffb4ae;
+}
+
+/* The existing catalogue and service pages are embedded beneath the new
+   universal shell. Their former chrome is hidden to prevent two headers and
+   two footers from being rendered on different routes. */
+.lp-legacy-embedded .site-header,
+.lp-legacy-embedded .footer,
+.lp-legacy-embedded .corporate-disclosure {
+  display: none !important;
+}
+
+.lp-legacy-embedded {
+  min-width: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
