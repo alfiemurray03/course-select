@@ -1,6 +1,6 @@
 import {
-  ArrowLeft, ArrowRight, Award, BookOpen, Check, CheckCircle2, CircleUserRound,
-  Clock3, Filter, GraduationCap, Infinity as InfinityIcon, LayoutDashboard,
+  ArrowLeft, ArrowRight, Award, BookOpen, Check, CheckCircle2,
+  Clock3, Filter, GraduationCap, Infinity as InfinityIcon,
   Library, LockKeyhole, PlayCircle, Search, ShieldCheck,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -103,7 +103,18 @@ function CoursePage({ slug }: { slug: string }) {
   const lessonKey = `${course.slug}:${lessonIndex}`;
   const completed = Boolean(state.progress[lessonKey]);
 
+  const moveToLesson = (index: number) => {
+    setSearchParams({ lesson: String(index) });
+    setSelectedAnswer(null);
+    setMessage('');
+  };
+
   const markComplete = () => {
+    if (completed) {
+      if (lessonIndex < course.lessons.length - 1) moveToLesson(lessonIndex + 1);
+      else setMessage('Course completed. Your certificate is ready.');
+      return;
+    }
     if (lesson.quiz && selectedAnswer !== lesson.quiz.answer) {
       setMessage(selectedAnswer === null ? 'Choose an answer before submitting the knowledge check.' : 'That answer is not correct yet. Review the lesson and try again.');
       return;
@@ -113,11 +124,11 @@ function CoursePage({ slug }: { slug: string }) {
     const alreadyCertified = state.certificates.some((certificate) => certificate.courseSlug === course.slug);
     const nextCertificates = allComplete && !alreadyCertified ? [...state.certificates, { courseSlug: course.slug, number: `SME-${Date.now().toString().slice(-8)}`, issued: new Date().toLocaleDateString('en-GB') }] : state.certificates;
     setState({ ...state, enrolled: state.enrolled.includes(course.slug) ? state.enrolled : [...state.enrolled, course.slug], progress: nextProgress, certificates: nextCertificates });
-    setMessage(allComplete ? 'Course completed. Your certificate is ready.' : 'Lesson completed.');
-    if (!allComplete && lessonIndex < course.lessons.length - 1) setSearchParams({ lesson: String(lessonIndex + 1) });
+    if (allComplete) setMessage('Course completed. Your certificate is ready.');
+    else moveToLesson(lessonIndex + 1);
   };
 
-  return <main className="lms-course-player"><aside className="lms-course-sidebar"><Link className="lms-sidebar-brand" to="/lms/dashboard"><GraduationCap /> Sousa Murray LMS</Link><Link className="lms-back-dashboard" to="/lms/dashboard"><ArrowLeft size={16} /> Learner dashboard</Link><div className="lms-sidebar-course"><span>{course.category}</span><strong>{course.title}</strong><CourseProgress courseSlug={course.slug} progress={state.progress} /></div><nav>{course.lessons.map((item, index) => <button className={index === lessonIndex ? 'active' : ''} key={item.title} onClick={() => { setSearchParams({ lesson: String(index) }); setSelectedAnswer(null); setMessage(''); }}><i>{state.progress[`${course.slug}:${index}`] ? <Check size={14} /> : index + 1}</i><span>{item.title}</span></button>)}</nav></aside><section className="lms-lesson-area"><div className="lms-lesson-topbar"><Link to="/learning-library/courses">Course catalogue</Link><span>Lesson {lessonIndex + 1} of {course.lessons.length}</span></div><article className="lms-lesson-card"><div className="lms-lesson-heading"><span>{completed ? <><CheckCircle2 size={17} /> Completed</> : 'Current lesson'}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><div className="lms-lesson-content">{lesson.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>{lesson.quiz && <div className="lms-quiz"><span>Knowledge check</span><h2>{lesson.quiz.question}</h2>{lesson.quiz.options.map((option, index) => <label key={option}><input type="radio" name="lesson-quiz" checked={selectedAnswer === index} onChange={() => setSelectedAnswer(index)} /><span>{option}</span></label>)}</div>}{message && <div className={message.includes('not correct') || message.includes('Choose') ? 'lms-message error' : 'lms-message'}>{message}</div>}<div className="lms-lesson-actions"><button onClick={markComplete}>{completed ? 'Continue' : lesson.quiz ? 'Submit and complete' : 'Mark lesson complete'} <ArrowRight size={17} /></button>{state.certificates.some((certificate) => certificate.courseSlug === course.slug) && <Link to={`/lms/certificate/${course.slug}`}>View certificate <Award size={17} /></Link>}</div></article></section></main>;
+  return <main className="lms-course-player"><aside className="lms-course-sidebar"><Link className="lms-sidebar-brand" to="/lms/dashboard"><GraduationCap /> Sousa Murray LMS</Link><Link className="lms-back-dashboard" to="/lms/dashboard"><ArrowLeft size={16} /> Learner dashboard</Link><div className="lms-sidebar-course"><span>{course.category}</span><strong>{course.title}</strong><CourseProgress courseSlug={course.slug} progress={state.progress} /></div><nav>{course.lessons.map((item, index) => <button className={index === lessonIndex ? 'active' : ''} key={item.title} onClick={() => moveToLesson(index)}><i>{state.progress[`${course.slug}:${index}`] ? <Check size={14} /> : index + 1}</i><span>{item.title}</span></button>)}</nav></aside><section className="lms-lesson-area"><div className="lms-lesson-topbar"><Link to="/learning-library/courses">Course catalogue</Link><span>Lesson {lessonIndex + 1} of {course.lessons.length}</span></div><article className="lms-lesson-card"><div className="lms-lesson-heading"><span>{completed ? <><CheckCircle2 size={17} /> Completed</> : 'Current lesson'}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><div className="lms-lesson-content">{lesson.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>{lesson.quiz && <div className="lms-quiz"><span>Knowledge check</span><h2>{lesson.quiz.question}</h2>{lesson.quiz.options.map((option, index) => <label key={option}><input type="radio" name="lesson-quiz" checked={selectedAnswer === index} onChange={() => setSelectedAnswer(index)} disabled={completed} /><span>{option}</span></label>)}</div>}{message && <div className={message.includes('not correct') || message.includes('Choose') ? 'lms-message error' : 'lms-message'}>{message}</div>}<div className="lms-lesson-actions"><button onClick={markComplete}>{completed ? lessonIndex < course.lessons.length - 1 ? 'Next lesson' : 'Course completed' : lesson.quiz ? 'Submit and complete' : 'Mark lesson complete'} <ArrowRight size={17} /></button>{state.certificates.some((certificate) => certificate.courseSlug === course.slug) && <Link to={`/lms/certificate/${course.slug}`}>View certificate <Award size={17} /></Link>}</div></article></section></main>;
 }
 
 function CertificatePage({ slug }: { slug: string }) {
