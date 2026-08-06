@@ -12,10 +12,10 @@ import { useBasket } from './basket';
 import './learning-platform.css';
 
 const plans = [
-  { name: 'Learner', price: '£9.99', audience: '1 named learner', copy: 'Unlimited core library access, quizzes, progress and completion certificates.', features: ['Included core courses', 'Progress and quizzes', 'Completion certificates'] },
+  { name: 'Learner', price: '£9.99', audience: '1 named learner', copy: 'Unlimited core library access, quizzes, progress and completion certificates.', features: ['Included core courses', 'Progress and quizzes', 'Completion certificates'], featured: false },
   { name: 'Learner Plus', price: '£16.99', audience: '1 named learner', copy: 'The complete individual library with premium paths and enhanced certificate tools.', features: ['All included library courses', 'Premium learning paths', 'Priority support'], featured: true },
-  { name: 'Team 5', price: '£39.99', audience: 'Up to 5 learners', copy: 'Ongoing learning for a small team with assignments and progress oversight.', features: ['Five learner seats', 'Team assignments', 'Completion reporting'] },
-  { name: 'Team 15', price: '£89.99', audience: 'Up to 15 learners', copy: 'Wider learner capacity, reporting and priority organisation support.', features: ['Fifteen learner seats', 'Deadlines and reminders', 'Team certificate reports'] },
+  { name: 'Team 5', price: '£39.99', audience: 'Up to 5 learners', copy: 'Ongoing learning for a small team with assignments and progress oversight.', features: ['Five learner seats', 'Team assignments', 'Completion reporting'], featured: false },
+  { name: 'Team 15', price: '£89.99', audience: 'Up to 15 learners', copy: 'Wider learner capacity, reporting and priority organisation support.', features: ['Fifteen learner seats', 'Deadlines and reminders', 'Team certificate reports'], featured: false },
 ] as const;
 
 const subjects = ['Business and enterprise', 'Digital skills and AI', 'Workplace essentials', 'Compliance awareness', 'Personal development', 'Safety awareness'];
@@ -43,8 +43,7 @@ function Layout({ children }: { children: ReactNode }) {
 }
 
 function Plans({ preview = false }: { preview?: boolean }) {
-  const shown = preview ? plans : plans;
-  return <div className="lp-plan-grid">{shown.map((plan) => <article className={plan.featured ? 'featured' : ''} key={plan.name}>{plan.featured && <span className="lp-popular">Most complete individual plan</span>}<small>{plan.audience}</small><h3>{plan.name}</h3><div className="lp-price">{plan.price}<span>/month<br />VAT included</span></div><p>{plan.copy}</p>{!preview && <ul>{plan.features.map((item) => <li key={item}><Check size={16} /> {item}</li>)}</ul>}<Link to={`/account?plan=${encodeURIComponent(plan.name)}`}>{preview ? 'View plan' : `Choose ${plan.name}`} <ArrowRight size={16} /></Link></article>)}</div>;
+  return <div className="lp-plan-grid">{plans.map((plan) => <article className={plan.featured ? 'featured' : ''} key={plan.name}>{plan.featured && <span className="lp-popular">Most complete individual plan</span>}<small>{plan.audience}</small><h3>{plan.name}</h3><div className="lp-price">{plan.price}<span>/month<br />VAT included</span></div><p>{plan.copy}</p>{!preview && <ul>{plan.features.map((item) => <li key={item}><Check size={16} /> {item}</li>)}</ul>}<Link to={`/account?plan=${encodeURIComponent(plan.name)}`}>{preview ? 'View plan' : `Choose ${plan.name}`} <ArrowRight size={16} /></Link></article>)}</div>;
 }
 
 function HomePage() {
