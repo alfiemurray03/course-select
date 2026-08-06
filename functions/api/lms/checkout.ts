@@ -75,6 +75,7 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
 
   const checkoutId = await stableId('lms-checkout', `${access.session.accountId}:${plan.id}:${crypto.randomUUID()}`);
   const baseUrl = productionSiteUrl(request, env);
+  const subscriptionTermsUrl = `${baseUrl}/learning-library-subscription-terms.html`;
   const session = await stripeRequest<StripeCheckoutSession>(env, '/checkout/sessions', {
     mode: 'subscription',
     customer: stripeCustomerId,
@@ -86,6 +87,9 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     allow_promotion_codes: true,
     billing_address_collection: 'auto',
     'customer_update[address]': 'auto',
+    'consent_collection[terms_of_service]': 'required',
+    'custom_text[terms_of_service_acceptance][message]': `I agree to the [Learning Library Subscription Terms and Privacy Notice](${subscriptionTermsUrl}), authorise monthly recurring payments until cancellation, and request immediate course access during any statutory cooling-off period.`,
+    'custom_text[submit][message]': `${plan.name} renews monthly at £${(plan.amountPence / 100).toFixed(2)} including VAT until cancelled. Highfield Professional Training is not included.`,
     'metadata[lms_checkout_id]': checkoutId,
     'metadata[ja_account_id]': access.session.accountId,
     'metadata[head_office_customer_number]': access.profile.head_office_customer_number,
@@ -93,6 +97,8 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     'metadata[entra_object_id]': access.profile.entra_object_id,
     'metadata[plan_id]': plan.id,
     'metadata[seat_limit]': plan.seatLimit,
+    'metadata[terms_version]': 'learning-library-subscription-v1.0-2026-08-06',
+    'metadata[immediate_access_requested]': 'true',
     'metadata[division]': 'sousa_murray_elearning',
     'metadata[service]': 'learning_library',
     'subscription_data[metadata][ja_account_id]': access.session.accountId,
@@ -101,6 +107,8 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     'subscription_data[metadata][entra_object_id]': access.profile.entra_object_id,
     'subscription_data[metadata][plan_id]': plan.id,
     'subscription_data[metadata][seat_limit]': plan.seatLimit,
+    'subscription_data[metadata][terms_version]': 'learning-library-subscription-v1.0-2026-08-06',
+    'subscription_data[metadata][immediate_access_requested]': 'true',
     'subscription_data[metadata][division]': 'sousa_murray_elearning',
     'subscription_data[metadata][service]': 'learning_library',
   }, `lms-checkout-${checkoutId}`);
@@ -120,7 +128,12 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     'subscription_checkout_created',
     'lms_checkout_session',
     checkoutId,
-    { planId: plan.id, stripeCheckoutSessionId: session.id },
+    {
+      planId: plan.id,
+      stripeCheckoutSessionId: session.id,
+      termsVersion: 'learning-library-subscription-v1.0-2026-08-06',
+      immediateAccessRequested: true,
+    },
   );
 
   return Response.json({ url: session.url }, { headers: { 'Cache-Control': 'no-store' } });
