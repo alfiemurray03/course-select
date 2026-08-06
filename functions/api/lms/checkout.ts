@@ -10,6 +10,10 @@ import {
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
+type CheckoutEnv = ProductionLmsEnv & {
+  LMS_SALES_ENABLED?: string;
+};
+
 type CheckoutInput = {
   planId?: string;
 };
@@ -23,7 +27,14 @@ type StripeCheckoutSession = {
   url: string | null;
 };
 
-export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<CheckoutEnv> = async ({ request, env }) => {
+  if (env.LMS_SALES_ENABLED !== 'true') {
+    return Response.json({
+      error: 'lms_sales_not_enabled',
+      message: 'Learning Library subscriptions are being prepared for launch. Paid checkout is not enabled yet.',
+    }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
   if (!env.STRIPE_SECRET_KEY) {
