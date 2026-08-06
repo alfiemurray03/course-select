@@ -11,6 +11,7 @@ import AppShell from './AppShell';
 import { useBasket } from './basket';
 import LearningManagementSystem from './LearningManagementSystem';
 import './learning-platform.css';
+import './theme-compatibility-fix.css';
 
 const plans = [
   { name: 'Learner', price: '£9.99', audience: '1 named learner', copy: 'Unlimited core library access, quizzes, progress and completion certificates.', features: ['Included core courses', 'Progress and quizzes', 'Completion certificates'], featured: false },
@@ -25,22 +26,39 @@ function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { itemCount } = useBasket();
+
   useEffect(() => setOpen(false), [location.pathname]);
+
+  const professionalActive = location.pathname === '/professional-training' || location.pathname.startsWith('/courses');
+
   return <header className="lp-header"><div className="lp-header-inner">
     <Link className="lp-brand" to="/">Sousa Murray eLearning</Link>
-    <nav className="lp-desktop-nav"><NavLink to="/">Home</NavLink><NavLink to="/learning-library">Learning Library</NavLink><NavLink to="/professional-training">Professional Training</NavLink><NavLink to="/plans">Plans</NavLink><Link to="/organisations">Organisations</Link><Link to="/support">Help</Link></nav>
-    <div className="lp-header-actions"><Link className="lp-basket" to="/basket"><ShoppingBasket size={18} /> Basket {itemCount > 0 && <span>{itemCount}</span>}</Link><Link className="lp-account" to="/lms/sign-in"><CircleUserRound size={18} /> LMS sign in</Link><button onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button></div>
-  </div>{open && <nav className="lp-mobile-nav"><Link to="/">Home</Link><Link to="/learning-library">Learning Library</Link><Link to="/learning-library/courses">Library course catalogue</Link><Link to="/plans">Monthly plans</Link><Link to="/lms/sign-in">LMS sign in</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Professional course catalogue</Link><Link to="/organisations">Organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></nav>}</header>;
+    <nav className="lp-desktop-nav" aria-label="Main navigation">
+      <NavLink to="/">Home</NavLink>
+      <NavLink to="/learning-library">Learning Library</NavLink>
+      <Link className={professionalActive ? 'active' : ''} to="/professional-training">Professional Training</Link>
+      <NavLink to="/plans">Plans</NavLink>
+      <Link className={location.pathname === '/organisations' ? 'active' : ''} to="/organisations">Organisations</Link>
+      <Link className={location.pathname === '/support' ? 'active' : ''} to="/support">Help</Link>
+    </nav>
+    <div className="lp-header-actions">
+      <Link className="lp-basket" to="/basket"><ShoppingBasket size={18} /> Basket {itemCount > 0 && <span>{itemCount}</span>}</Link>
+      <Link className="lp-account" to="/lms/sign-in"><CircleUserRound size={18} /> LMS sign in</Link>
+      <button onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
+    </div>
+  </div>{open && <nav className="lp-mobile-nav" aria-label="Mobile navigation">
+    <Link to="/">Home</Link><Link to="/learning-library">Learning Library</Link><Link to="/learning-library/courses">Library course catalogue</Link><Link to="/plans">Monthly plans</Link><Link to="/lms/sign-in">LMS sign in</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Professional course catalogue</Link><Link to="/organisations">Organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link>
+  </nav>}</header>;
 }
 
 function Footer() {
   return <><footer className="lp-footer"><div><strong>Sousa Murray eLearning</strong><p>Unlimited subscription learning and individually purchased professional training, operated by JA Group Services Ltd.</p></div><div><h3>Learning</h3><Link to="/learning-library">Learning Library</Link><Link to="/learning-library/courses">Library course catalogue</Link><Link to="/plans">Monthly plans</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Professional course catalogue</Link></div><div><h3>Support</h3><Link to="/lms/sign-in">LMS sign in</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div><div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/complaints">Complaints</Link></div></footer><div className="lp-disclosure"><span><strong>Sousa Murray eLearning is a trading division of JA Group Services Ltd.</strong> Company number 16314179 · ICO registration ZB877370 · Adults aged 18+.</span><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div></>;
 }
 
-function Layout({ children }: { children: ReactNode }) {
+function Layout({ children, includeUtilities = true }: { children: ReactNode; includeUtilities?: boolean }) {
   const location = useLocation();
   useEffect(() => window.scrollTo({ top: 0, behavior: 'auto' }), [location.pathname]);
-  return <><AgeGate /><AccessibilityTools /><Header />{children}<Footer /></>;
+  return <>{includeUtilities && <><AgeGate /><AccessibilityTools /></>}<Header />{children}<Footer /></>;
 }
 
 function Plans({ preview = false }: { preview?: boolean }) {
@@ -68,9 +86,22 @@ function PlansPage() {
 
 export default function LearningPlatformRouter() {
   const path = useLocation().pathname;
+
   if (path === '/learning-library/courses') return <Layout><LearningManagementSystem /></Layout>;
   if (path.startsWith('/lms')) return <><AgeGate /><AccessibilityTools /><LearningManagementSystem /></>;
-  if (!['/', '/learning-library', '/subscription-learning', '/professional-training', '/plans', '/pricing'].includes(path)) return <AppShell />;
-  const page = path === '/' ? <HomePage /> : path === '/professional-training' ? <ProfessionalPage /> : path === '/plans' || path === '/pricing' ? <PlansPage /> : <LibraryPage />;
+
+  const platformPages = ['/', '/learning-library', '/subscription-learning', '/professional-training', '/plans', '/pricing'];
+  if (!platformPages.includes(path)) {
+    return <Layout includeUtilities={false}><div className="lp-legacy-embedded"><AppShell /></div></Layout>;
+  }
+
+  const page = path === '/'
+    ? <HomePage />
+    : path === '/professional-training'
+      ? <ProfessionalPage />
+      : path === '/plans' || path === '/pricing'
+        ? <PlansPage />
+        : <LibraryPage />;
+
   return <Layout>{page}</Layout>;
 }
