@@ -181,6 +181,15 @@ export function formatUcn(value: string) {
   return digits.length === 10 ? `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}` : value;
 }
 
+function splitCompositeSubject(subject: string) {
+  const separator = subject.indexOf(':');
+  if (separator <= 0 || separator >= subject.length - 1) return null;
+  return {
+    tenantId: subject.slice(0, separator),
+    objectId: subject.slice(separator + 1),
+  };
+}
+
 export async function ensureIdentityProfile(
   db: D1Database,
   session: CustomerSession,
@@ -193,8 +202,11 @@ export async function ensureIdentityProfile(
   `).bind(session.accountId).first<IdentityProfile>();
   if (existing) return existing;
 
-  const tenantId = session.tenantId ?? 'legacy-external-id';
-  const objectId = session.objectId ?? session.subject;
+  const identity = splitCompositeSubject(session.subject);
+  if (!identity) {
+    throw new Error('The JA Group Services ID session does not contain a tenant-and-object identity key. Sign out and sign in again.');
+  }
+  const { tenantId, objectId } = identity;
   const identityKey = `${tenantId}:${objectId}`;
 
   for (let salt = 0; salt < 30; salt += 1) {
