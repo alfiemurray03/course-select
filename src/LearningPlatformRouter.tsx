@@ -21,16 +21,16 @@ import AccessibilityTools from './AccessibilityTools';
 import AgeGate from './AgeGate';
 import AppShell from './AppShell';
 import { useBasket } from './basket';
-import LearningManagementSystem from './LearningManagementSystem';
 import { flattenCourseLessons, libraryCourses } from './libraryCatalogue';
+import ProductionLearningManagementSystem from './ProductionLearningManagementSystem';
 import './learning-platform.css';
 import './theme-compatibility-fix.css';
 
 const plans = [
-  { name: 'Learner', price: '£9.99', audience: '1 named learner', copy: 'Unlimited access to the core Learning Library, progress tracking, assessments and certificates.', features: ['Core course collection', 'Structured lessons and checks', 'Completion certificates'], featured: false },
-  { name: 'Learner Plus', price: '£16.99', audience: '1 named learner', copy: 'The complete individual Learning Library, including compliance and advanced courses.', features: ['Complete course collection', 'Final assessments', 'Priority support'], featured: true },
-  { name: 'Team 5', price: '£39.99', audience: 'Up to 5 learners', copy: 'Complete Learning Library access for a small team with learner oversight.', features: ['Five named learner seats', 'Assignments and progress', 'Certificate reporting'], featured: false },
-  { name: 'Team 15', price: '£89.99', audience: 'Up to 15 learners', copy: 'Wider learner capacity, complete course access and organisation reporting.', features: ['Fifteen learner seats', 'Deadlines and reminders', 'Team completion reports'], featured: false },
+  { id: 'learner', name: 'Learner', price: '£9.99', audience: '1 named learner', copy: 'Unlimited access to the core Learning Library, progress tracking, assessments and certificates.', features: ['Core course collection', 'Structured lessons and checks', 'Completion certificates'], featured: false },
+  { id: 'learner-plus', name: 'Learner Plus', price: '£16.99', audience: '1 named learner', copy: 'The complete individual Learning Library, including compliance and advanced courses.', features: ['Complete course collection', 'Final assessments', 'Priority support'], featured: true },
+  { id: 'team-5', name: 'Team 5', price: '£39.99', audience: 'Up to 5 learners', copy: 'Complete Learning Library access for a small team with learner oversight.', features: ['Five named learner seats', 'Assignments and progress', 'Certificate reporting'], featured: false },
+  { id: 'team-15', name: 'Team 15', price: '£89.99', audience: 'Up to 15 learners', copy: 'Wider learner capacity, complete course access and organisation reporting.', features: ['Fifteen learner seats', 'Deadlines and reminders', 'Team completion reports'], featured: false },
 ] as const;
 
 const subjects = ['Business and enterprise', 'Digital skills and AI', 'Workplace essentials', 'Compliance awareness', 'Personal development', 'Safety awareness'];
@@ -58,7 +58,7 @@ function Header() {
       </nav>
       <div className="lp-header-actions">
         <Link className="lp-basket" to="/basket"><ShoppingBasket size={18} /> Basket {itemCount > 0 && <span>{itemCount}</span>}</Link>
-        <Link className="lp-account" to="/lms/sign-in"><CircleUserRound size={18} /> LMS sign in</Link>
+        <Link className="lp-account" to="/lms/dashboard"><CircleUserRound size={18} /> LMS sign in</Link>
         <button onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
       </div>
     </div>
@@ -67,7 +67,7 @@ function Header() {
       <Link to="/learning-library">Learning Library</Link>
       <Link to="/learning-library/courses">Library course catalogue</Link>
       <Link to="/plans">Monthly plans</Link>
-      <Link to="/lms/sign-in">LMS sign in</Link>
+      <Link to="/lms/dashboard">LMS sign in</Link>
       <Link to="/professional-training">Professional Training</Link>
       <Link to="/courses">Professional course catalogue</Link>
       <Link to="/organisations">Organisations</Link>
@@ -82,7 +82,7 @@ function Footer() {
     <footer className="lp-footer">
       <div><strong>Sousa Murray eLearning</strong><p>Unlimited subscription learning and individually purchased professional training, operated by JA Group Services Ltd.</p></div>
       <div><h3>Learning</h3><Link to="/learning-library">Learning Library</Link><Link to="/learning-library/courses">Library course catalogue</Link><Link to="/plans">Monthly plans</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Professional course catalogue</Link></div>
-      <div><h3>Support</h3><Link to="/lms/sign-in">LMS sign in</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div>
+      <div><h3>Support</h3><Link to="/lms/dashboard">LMS sign in</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/complaints">Complaints</Link></div>
     </footer>
     <div className="lp-disclosure"><span><strong>Sousa Murray eLearning is a trading division of JA Group Services Ltd.</strong> Company number 16314179 · ICO registration ZB877370 · Adults aged 18+.</span><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
@@ -96,11 +96,11 @@ function Layout({ children, includeUtilities = true }: { children: ReactNode; in
 }
 
 function Plans({ preview = false }: { preview?: boolean }) {
-  return <div className="lp-plan-grid">{plans.map((plan) => <article className={plan.featured ? 'featured' : ''} key={plan.name}>
+  return <div className="lp-plan-grid">{plans.map((plan) => <article className={plan.featured ? 'featured' : ''} key={plan.id}>
     {plan.featured && <span className="lp-popular">Complete individual plan</span>}
     <small>{plan.audience}</small><h3>{plan.name}</h3><div className="lp-price">{plan.price}<span>/month<br />VAT included</span></div><p>{plan.copy}</p>
     {!preview && <ul>{plan.features.map((item) => <li key={item}><Check size={16} /> {item}</li>)}</ul>}
-    <Link to={`/lms/sign-in?plan=${encodeURIComponent(plan.name)}`}>{preview ? 'View plan' : `Choose ${plan.name}`} <ArrowRight size={16} /></Link>
+    <Link to={preview ? '/plans' : `/lms/subscribe/${plan.id}`}>{preview ? 'View plan' : `Choose ${plan.name}`} <ArrowRight size={16} /></Link>
   </article>)}</div>;
 }
 
@@ -118,7 +118,7 @@ function HomePage() {
 
 function LibraryPage() {
   return <main>
-    <section className="lp-page-hero"><div className="lp-container"><div className="lp-eyebrow"><InfinityIcon size={16} /> Sousa Murray Learning Library</div><h1>Unlimited learning for one clear monthly price.</h1><p>Access every Sousa Murray course included in your plan while it remains active. Complete structured modules, lesson checks and a final assessment before receiving a completion certificate.</p><div className="lp-actions"><Link className="lp-button light" to="/learning-library/courses">Browse the course catalogue <ArrowRight /></Link><Link className="lp-button ghost" to="/lms/sign-in">LMS sign in</Link></div></div></section>
+    <section className="lp-page-hero"><div className="lp-container"><div className="lp-eyebrow"><InfinityIcon size={16} /> Sousa Murray Learning Library</div><h1>Unlimited learning for one clear monthly price.</h1><p>Access every Sousa Murray course included in your plan while it remains active. Complete structured modules, lesson checks and a final assessment before receiving a completion certificate.</p><div className="lp-actions"><Link className="lp-button light" to="/learning-library/courses">Browse the course catalogue <ArrowRight /></Link><Link className="lp-button ghost" to="/lms/dashboard">LMS sign in</Link></div></div></section>
     <section className="lp-unlimited-note"><div className="lp-container"><InfinityIcon /><p><strong>“Unlimited” means unlimited access to included library courses for each named learner.</strong> It does not mean unlimited learner accounts, regulated qualifications or included Highfield courses.</p></div></section>
     <section className="lp-section"><div className="lp-container"><header className="lp-section-head"><span>Complete learning catalogue</span><h2>Proper courses, not a collection of three-page placeholders</h2><p>The launch library contains {libraryCourses.length} authored courses, {moduleCount} modules and {lessonCount} structured lessons, with lesson checks and final assessments.</p></header><div className="lp-subject-grid">{subjects.map((subject) => <article key={subject}><BookOpen /><h3>{subject}</h3><p>Clear outcomes, full syllabus information, practical lesson content and assessed completion.</p></article>)}</div><div className="lp-centre"><Link className="lp-button primary" to="/learning-library/courses">View all library courses <ArrowRight /></Link></div></div></section>
     <section className="lp-section muted"><div className="lp-container"><header className="lp-section-head"><span>Membership</span><h2>Choose your learner capacity</h2></header><Plans /></div></section>
@@ -143,8 +143,8 @@ function PlansPage() {
 
 export default function LearningPlatformRouter() {
   const path = useLocation().pathname;
-  if (path.startsWith('/learning-library/courses')) return <Layout><LearningManagementSystem /></Layout>;
-  if (path.startsWith('/lms')) return <><AgeGate /><AccessibilityTools /><LearningManagementSystem /></>;
+  if (path.startsWith('/learning-library/courses')) return <Layout><ProductionLearningManagementSystem /></Layout>;
+  if (path.startsWith('/lms')) return <><AgeGate /><AccessibilityTools /><ProductionLearningManagementSystem /></>;
 
   const platformPages = ['/', '/learning-library', '/subscription-learning', '/professional-training', '/plans', '/pricing'];
   if (!platformPages.includes(path)) return <Layout includeUtilities={false}><div className="lp-legacy-embedded"><AppShell /></div></Layout>;
