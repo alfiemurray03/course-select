@@ -42,6 +42,14 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
       && env.ENTRA_CLIENT_SECRET,
     );
     const centralEnv = env as CentralPaymentsEnv;
+    const primaryCredential = String(centralEnv.CUSTOMEROPS_API_KEY || '').trim();
+    const fallbackCredential = String(centralEnv.HEAD_OFFICE_PLATFORM_KEY || '').trim();
+    const selectedCredential = primaryCredential || fallbackCredential;
+    const credentialSource = primaryCredential
+      ? 'CUSTOMEROPS_API_KEY'
+      : fallbackCredential
+        ? 'HEAD_OFFICE_PLATFORM_KEY'
+        : null;
     const centralPaymentsReady = centralPaymentsConfigured(centralEnv);
     const ready = catalogueReady && databaseReady && identityReady && centralPaymentsReady;
 
@@ -71,6 +79,12 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
         provider: 'JA Group Services Central Payments / Stripe',
         architecture: 'head_office_central_payments',
         centralWebhook: 'https://customerops.jagroupservices.co.uk/api/webhooks/stripe',
+        connector: {
+          credentialPresent: Boolean(selectedCredential),
+          credentialSource,
+          credentialLengthValid: selectedCredential.length > 20,
+          generatedKeyFormat: selectedCredential.startsWith('ho_live_'),
+        },
         legacyLmsWebhookConfigured: Boolean(env.STRIPE_LMS_WEBHOOK_SECRET),
         legacyStripeApiConfigured: Boolean(env.STRIPE_SECRET_KEY),
         salesEnabled: env.LMS_SALES_ENABLED !== 'false',
