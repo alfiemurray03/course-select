@@ -2,8 +2,11 @@ import {
   ageCookieName,
   readCookie,
   verifyValue,
-  type CustomerAuthEnv,
 } from '../_shared/customer-auth';
+import {
+  handleProfessionalTrainingCheckout,
+  type ProfessionalTrainingEnv,
+} from '../_shared/professional-training-checkout';
 
 type AgeConfirmation = {
   isAdult?: boolean;
@@ -39,7 +42,7 @@ function recentIso(value?: string, maximumAge = 15 * 60 * 1000) {
   return Number.isFinite(timestamp) && Math.abs(Date.now() - timestamp) <= maximumAge;
 }
 
-export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, next }) => {
+export const onRequest: PagesFunction<ProfessionalTrainingEnv> = async ({ request, env, next }) => {
   const url = new URL(request.url);
   const isCheckout = request.method === 'POST' && url.pathname === '/api/checkout';
   if (!isCheckout) return next();
@@ -93,9 +96,13 @@ export const onRequest: PagesFunction<CustomerAuthEnv> = async ({ request, env, 
         digitalContentConsentRecordedAt: consent.digitalContentConsentRecordedAt,
         changeOfMindCancellationAcknowledged: true,
         statutoryRightsPreserved: true,
+        paymentArchitecture: 'head_office_central_payments',
       }),
     ).run().catch(() => undefined);
   }
 
-  return next();
+  // /api/checkout is intercepted here so the legacy direct-Stripe handler below
+  // the middleware can remain available only as historical compatibility code.
+  // All new Professional Training purchases go through Head Office Central Payments.
+  return handleProfessionalTrainingCheckout(request, env);
 };
