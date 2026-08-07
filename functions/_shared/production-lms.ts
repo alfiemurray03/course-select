@@ -1,9 +1,14 @@
 import {
+  ensureAccountTables,
   requireSession,
   siteUrl,
   type CustomerAuthEnv,
   type CustomerSession,
 } from './customer-auth';
+import {
+  PRODUCTION_LMS_SCHEMA_STATEMENTS,
+  PRODUCTION_LMS_SCHEMA_VERSION,
+} from './production-lms-schema';
 
 export type LmsPlanId = 'learner' | 'learner-plus' | 'team-5' | 'team-15';
 export type LmsLibraryTier = 'core' | 'complete';
@@ -12,6 +17,7 @@ export interface ProductionLmsEnv extends CustomerAuthEnv {
   STRIPE_SECRET_KEY?: string;
   STRIPE_LMS_WEBHOOK_SECRET?: string;
   BOOTSTRAP_TOKEN?: string;
+  LMS_SALES_ENABLED?: string;
 }
 
 export type LmsPlanDefinition = {
@@ -92,6 +98,7 @@ export type SubscriptionRow = {
 };
 
 let lmsSchemaChecked = false;
+let lmsSchemaInitialisation: Promise<void> | null = null;
 
 export function planDefinition(planId: string | null | undefined) {
   return LMS_PLANS.find((plan) => plan.id === planId) ?? null;
@@ -101,22 +108,17 @@ export function planForStripePrice(priceId: string | null | undefined) {
   return LMS_PLANS.find((plan) => plan.stripePriceId === priceId) ?? null;
 }
 
-export async function assertProductionLmsSchema(db: D1Database) {
-  if (lmsSchemaChecked) return;
-  const result = await db.prepare(`
-    SELECT COUNT(*) AS total
-    FROM sqlite_master
-    WHERE type = 'table'
-      AND name IN (
-        'lms_identity_profiles', 'lms_plans', 'lms_checkout_sessions',
-        'lms_subscriptions', 'lms_organisations', 'lms_organisation_members',
-        'lms_enrolments', 'lms_lesson_progress', 'lms_assessment_attempts',
-        'lms_certificates', 'lms_audit_logs'
-      )
-  `).first<{ total: number }>();
-  if (Number(result?.total ?? 0) !== 11) {
-    throw new Error('The production LMS schema has not been applied to the DB binding.');
-  }
+async function initialiseProductionLmsSchema(db: D1Database) {
+  await ensureAccountTables(db);
+
+  await db.batch(
+    PRODUCTION_LMS_SCHEMA_STATEMENTS.map((statement) => db.prepare(statement)),
+  );
+
+  await db.prepare(`
+    INSERT OR IGNORE INTO lms_schema_versions (version)
+    VALUES (?)
+  `).bind(PRODUCTION_LMS_SCHEMA_VERSION).run();
 
   await db.batch(LMS_PLANS.map((plan, index) => db.prepare(`
     INSERT INTO lms_plans (
@@ -147,7 +149,53 @@ export async function assertProductionLmsSchema(db: D1Database) {
     (index + 1) * 10,
   )));
 
-  lmsSchemaChecked = true;
+  const expectedTables = [
+    'lms_schema_versions',
+    'lms_identity_profiles',
+    'lms_plans',
+    'lms_checkout_sessions',
+    'lms_subscriptions',
+    'lms_organisations',
+    'lms_organisation_members',
+    'lms_enrolments',
+    'lms_lesson_progress',
+    'lms_assessment_attempts',
+    'lms_certificates',
+    'lms_audit_logs',
+    'webhook_events',
+  ];
+  const placeholders = expectedTables.map(() => '?').join(', ');
+  const result = await db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM sqlite_master
+    WHERE type = 'table' AND name IN (${placeholders})
+  `).bind(...expectedTables).first<{ total: number }>();
+
+  if (Number(result?.total ?? 0) !== expectedTables.length) {
+    throw new Error('The production LMS database could not be fully initialised.');
+  }
+
+  const planCount = await db.prepare(`
+    SELECT COUNT(*) AS total FROM lms_plans WHERE active = 1
+  `).first<{ total: number }>();
+  if (Number(planCount?.total ?? 0) !== LMS_PLANS.length) {
+    throw new Error('The production LMS plans could not be seeded.');
+  }
+}
+
+export async function assertProductionLmsSchema(db: D1Database) {
+  if (lmsSchemaChecked) return;
+  if (!lmsSchemaInitialisation) {
+    lmsSchemaInitialisation = initialiseProductionLmsSchema(db)
+      .then(() => {
+        lmsSchemaChecked = true;
+      })
+      .catch((error) => {
+        lmsSchemaInitialisation = null;
+        throw error;
+      });
+  }
+  await lmsSchemaInitialisation;
 }
 
 function bytesToHex(bytes: ArrayBuffer) {
@@ -204,7 +252,7 @@ export async function ensureIdentityProfile(
 
   const identity = splitCompositeSubject(session.subject);
   if (!identity) {
-    throw new Error('The JA Group Services ID session does not contain a tenant-and-object identity key. Sign out and sign in again.');
+    throw new Error('The JA Group Services ID session is out of date. Sign out and sign in again to refresh it.');
   }
   const { tenantId, objectId } = identity;
   const identityKey = `${tenantId}:${objectId}`;
@@ -252,8 +300,10 @@ export async function requireProductionLms(
       session: null,
       profile: null,
       response: Response.json({
-        error: 'lms_schema_not_applied',
-        message: error instanceof Error ? error.message : 'The production LMS schema is unavailable.',
+        error: 'lms_initialisation_failed',
+        message: error instanceof Error
+          ? error.message
+          : 'The production LMS database could not be initialised.',
       }, { status: 503 }),
     } as const;
   }
@@ -263,8 +313,19 @@ export async function requireProductionLms(
     return { session: null, profile: null, response: auth.response } as const;
   }
 
-  const profile = await ensureIdentityProfile(env.DB, auth.session);
-  return { session: auth.session, profile, response: null } as const;
+  try {
+    const profile = await ensureIdentityProfile(env.DB, auth.session);
+    return { session: auth.session, profile, response: null } as const;
+  } catch (error) {
+    return {
+      session: auth.session,
+      profile: null,
+      response: Response.json({
+        error: 'identity_profile_failed',
+        message: error instanceof Error ? error.message : 'The learning identity could not be prepared.',
+      }, { status: 409 }),
+    } as const;
+  }
 }
 
 export async function currentSubscription(db: D1Database, accountId: string) {
@@ -275,11 +336,13 @@ export async function currentSubscription(db: D1Database, accountId: string) {
            cancel_at_period_end, grace_expires_at
     FROM lms_subscriptions
     WHERE account_id = ?
-      AND status IN ('active', 'trialing', 'past_due')
       AND (
         status IN ('active', 'trialing')
-        OR grace_expires_at IS NULL
-        OR datetime(grace_expires_at) > CURRENT_TIMESTAMP
+        OR (
+          status = 'past_due'
+          AND grace_expires_at IS NOT NULL
+          AND datetime(grace_expires_at) > CURRENT_TIMESTAMP
+        )
       )
     ORDER BY updated_at DESC
     LIMIT 1
@@ -327,6 +390,24 @@ export async function stripeRequest<T>(
       ? body.error as Record<string, unknown>
       : null;
     throw new Error(typeof error?.message === 'string' ? error.message : 'Stripe rejected the request.');
+  }
+  return body as T;
+}
+
+export async function stripeRetrieve<T>(
+  env: ProductionLmsEnv,
+  path: string,
+): Promise<T> {
+  if (!env.STRIPE_SECRET_KEY) throw new Error('Stripe is not connected to the production LMS.');
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+  });
+  const body = await response.json<Record<string, unknown>>().catch(() => ({}));
+  if (!response.ok) {
+    const error = body.error && typeof body.error === 'object'
+      ? body.error as Record<string, unknown>
+      : null;
+    throw new Error(typeof error?.message === 'string' ? error.message : 'Stripe could not verify the event.');
   }
   return body as T;
 }
