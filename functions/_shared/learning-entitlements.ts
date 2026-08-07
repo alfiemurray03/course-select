@@ -1,5 +1,6 @@
 import {
   currentSubscription,
+  planDefinition,
   subscriptionHasAccess,
   type LmsPlanId,
   type SubscriptionRow,
@@ -24,14 +25,17 @@ export function subscriptionIncludesCourse(
   return Boolean(plan && includedPlans.includes(plan));
 }
 
+function entitlementRank(subscription: SubscriptionRow | null) {
+  if (!subscriptionHasAccess(subscription) || !subscription) return 0;
+  return planDefinition(subscription.plan_id)?.libraryTier === 'complete' ? 2 : 1;
+}
+
 export async function effectiveLearningSubscription(
   db: D1Database,
   accountId: string,
 ): Promise<SubscriptionRow | null> {
   const direct = await currentSubscription(db, accountId);
-  if (subscriptionHasAccess(direct)) return direct;
-
-  return db.prepare(`
+  const inherited = await db.prepare(`
     SELECT subscription.id, subscription.account_id, subscription.plan_id,
            subscription.stripe_customer_id, subscription.stripe_subscription_id,
            subscription.stripe_checkout_session_id, subscription.status,
@@ -57,4 +61,8 @@ export async function effectiveLearningSubscription(
     ORDER BY member.updated_at DESC, subscription.updated_at DESC
     LIMIT 1
   `).bind(accountId).first<SubscriptionRow>();
+
+  if (entitlementRank(inherited) > entitlementRank(direct)) return inherited;
+  if (subscriptionHasAccess(direct)) return direct;
+  return subscriptionHasAccess(inherited) ? inherited : null;
 }
