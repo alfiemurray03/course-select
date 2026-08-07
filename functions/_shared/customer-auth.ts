@@ -181,6 +181,65 @@ export async function requireSession(request: Request, env: CustomerAuthEnv) {
 export async function ensureAccountTables(db: D1Database) {
   if (accountSchemaChecked) return;
 
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS customer_accounts (
+      id TEXT PRIMARY KEY,
+      entra_subject TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL,
+      display_name TEXT,
+      legal_first_name TEXT,
+      legal_last_name TEXT,
+      customer_type TEXT CHECK (customer_type IN ('individual', 'business')),
+      organisation_name TEXT,
+      age_confirmed_at TEXT,
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'restricted', 'closed')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS customer_saved_learners (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      label TEXT,
+      legal_first_name TEXT NOT NULL,
+      legal_last_name TEXT NOT NULL,
+      enrolment_email TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE CASCADE
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS customer_saved_baskets (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      items_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE CASCADE
+    )`),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_customer_accounts_email ON customer_accounts(email)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_customer_saved_learners_account ON customer_saved_learners(account_id, updated_at)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_customer_saved_baskets_account ON customer_saved_baskets(account_id, updated_at)'),
+  ]);
+
+  const columns = await db.prepare('PRAGMA table_info(customer_accounts)').all<{ name: string }>();
+  const existingColumns = new Set((columns.results ?? []).map((column) => column.name));
+  const optionalColumns: Array<[string, string]> = [
+    ['display_name', 'TEXT'],
+    ['legal_first_name', 'TEXT'],
+    ['legal_last_name', 'TEXT'],
+    ['customer_type', 'TEXT'],
+    ['organisation_name', 'TEXT'],
+    ['age_confirmed_at', 'TEXT'],
+    ['status', "TEXT NOT NULL DEFAULT 'active'"],
+    ['created_at', 'TEXT'],
+    ['updated_at', 'TEXT'],
+  ];
+  for (const [name, definition] of optionalColumns) {
+    if (!existingColumns.has(name)) {
+      await db.prepare(`ALTER TABLE customer_accounts ADD COLUMN ${name} ${definition}`).run();
+    }
+  }
+
   const result = await db.prepare(`
     SELECT COUNT(*) AS total
     FROM sqlite_master
@@ -189,7 +248,7 @@ export async function ensureAccountTables(db: D1Database) {
   `).first<{ total: number }>();
 
   if (Number(result?.total ?? 0) !== 3) {
-    throw new Error('Sousa Murray eLearning customer account schema is incomplete.');
+    throw new Error('Sousa Murray eLearning could not initialise the customer account database.');
   }
 
   accountSchemaChecked = true;
