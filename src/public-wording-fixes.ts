@@ -14,7 +14,11 @@ function replaceFixedCatalogueCount() {
         /Choose from \d+ Highfield Online Training courses available through JA Group Services Ltd\./g,
         'Explore a wide range of Highfield Online Training courses available through JA Group Services Ltd.',
       )
-      .replace(/\b\d+ available courses\b/g, 'Extensive course catalogue');
+      .replace(/\b\d+ available courses\b/g, 'Extensive course catalogue')
+      .replace(
+        'Our original courses · Sousa Murray LMS · subscriptions and individual course access.',
+        'Our original courses · Sousa Murray LMS · plan-based access.',
+      );
 
     if (next !== value) {
       node.nodeValue = next;
