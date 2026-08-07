@@ -3,26 +3,22 @@ import {
   Award,
   BookOpen,
   Check,
-  CircleUserRound,
   GraduationCap,
   Headphones,
   Infinity as InfinityIcon,
   LayoutDashboard,
-  Menu,
   ShieldCheck,
-  ShoppingBasket,
   Sparkles,
   Users,
-  X,
 } from 'lucide-react';
-import { ReactNode, useEffect, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import AccessibilityTools from './AccessibilityTools';
 import AgeGate from './AgeGate';
 import AppShell from './AppShell';
-import { useBasket } from './basket';
 import { flattenCourseLessons, libraryCourses } from './libraryCatalogue';
 import ProductionLearningManagementSystem from './ProductionLearningManagementSystem';
+import PublicSiteHeader from './PublicSiteHeader';
 import './learning-platform.css';
 import './theme-compatibility-fix.css';
 
@@ -37,62 +33,22 @@ const subjects = ['Business and enterprise', 'Digital skills and AI', 'Workplace
 const moduleCount = libraryCourses.reduce((total, course) => total + course.modules.length, 0);
 const lessonCount = libraryCourses.reduce((total, course) => total + flattenCourseLessons(course).length, 0);
 
-function Header() {
-  const [open, setOpen] = useState(false);
-  const location = useLocation();
-  const { itemCount } = useBasket();
-  useEffect(() => setOpen(false), [location.pathname]);
-  const professionalActive = location.pathname === '/professional-training' || location.pathname.startsWith('/courses');
-  const libraryActive = location.pathname.startsWith('/learning-library') || location.pathname.startsWith('/lms');
-
-  return <header className="lp-header">
-    <div className="lp-header-inner">
-      <Link className="lp-brand" to="/">Sousa Murray eLearning</Link>
-      <nav className="lp-desktop-nav" aria-label="Main navigation">
-        <NavLink to="/">Home</NavLink>
-        <Link className={libraryActive ? 'active' : ''} to="/learning-library">Learning Library</Link>
-        <Link className={professionalActive ? 'active' : ''} to="/professional-training">Professional Training</Link>
-        <NavLink to="/plans">Plans</NavLink>
-        <Link className={location.pathname === '/organisations' ? 'active' : ''} to="/organisations">Organisations</Link>
-        <Link className={location.pathname === '/support' ? 'active' : ''} to="/support">Help</Link>
-      </nav>
-      <div className="lp-header-actions">
-        <Link className="lp-basket" to="/basket"><ShoppingBasket size={18} /> Basket {itemCount > 0 && <span>{itemCount}</span>}</Link>
-        <Link className="lp-account" to="/lms/dashboard"><CircleUserRound size={18} /> LMS sign in</Link>
-        <button onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
-      </div>
-    </div>
-    {open && <nav className="lp-mobile-nav" aria-label="Mobile navigation">
-      <Link to="/">Home</Link>
-      <Link to="/learning-library">Learning Library</Link>
-      <Link to="/learning-library/courses">Library course catalogue</Link>
-      <Link to="/plans">Monthly plans</Link>
-      <Link to="/lms/dashboard">LMS sign in</Link>
-      <Link to="/professional-training">Professional Training</Link>
-      <Link to="/courses">Professional course catalogue</Link>
-      <Link to="/organisations">Organisations</Link>
-      <Link to="/support">Help Centre</Link>
-      <Link to="/contact">Contact</Link>
-    </nav>}
-  </header>;
-}
-
 function Footer() {
   return <>
     <footer className="lp-footer">
       <div><strong>Sousa Murray eLearning</strong><p>Unlimited subscription learning and individually purchased professional training, operated by JA Group Services Ltd.</p></div>
       <div><h3>Learning</h3><Link to="/learning-library">Learning Library</Link><Link to="/learning-library/courses">Library course catalogue</Link><Link to="/plans">Monthly plans</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Professional course catalogue</Link></div>
-      <div><h3>Support</h3><Link to="/lms/dashboard">LMS sign in</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div>
+      <div><h3>Support</h3><Link to="/lms/dashboard">My Sousa Murray eLearning</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/complaints">Complaints</Link></div>
     </footer>
     <div className="lp-disclosure"><span><strong>Sousa Murray eLearning is a trading division of JA Group Services Ltd.</strong> Company number 16314179 · ICO registration ZB877370 · Adults aged 18+.</span><span>© {new Date().getFullYear()} JA Group Services Ltd.</span></div>
   </>;
 }
 
-function Layout({ children, includeUtilities = true }: { children: ReactNode; includeUtilities?: boolean }) {
+function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   useEffect(() => window.scrollTo({ top: 0, behavior: 'auto' }), [location.pathname]);
-  return <>{includeUtilities && <><AgeGate /><AccessibilityTools /></>}<Header />{children}<Footer /></>;
+  return <><AgeGate /><AccessibilityTools /><PublicSiteHeader />{children}<Footer /></>;
 }
 
 function Plans({ preview = false }: { preview?: boolean }) {
@@ -118,7 +74,7 @@ function HomePage() {
 
 function LibraryPage() {
   return <main>
-    <section className="lp-page-hero"><div className="lp-container"><div className="lp-eyebrow"><InfinityIcon size={16} /> Sousa Murray Learning Library</div><h1>Unlimited learning for one clear monthly price.</h1><p>Access every Sousa Murray course included in your plan while it remains active. Complete structured modules, lesson checks and a final assessment before receiving a completion certificate.</p><div className="lp-actions"><Link className="lp-button light" to="/learning-library/courses">Browse the course catalogue <ArrowRight /></Link><Link className="lp-button ghost" to="/lms/dashboard">LMS sign in</Link></div></div></section>
+    <section className="lp-page-hero"><div className="lp-container"><div className="lp-eyebrow"><InfinityIcon size={16} /> Sousa Murray Learning Library</div><h1>Unlimited learning for one clear monthly price.</h1><p>Access every Sousa Murray course included in your plan while it remains active. Complete structured modules, lesson checks and a final assessment before receiving a completion certificate.</p><div className="lp-actions"><Link className="lp-button light" to="/learning-library/courses">Browse the course catalogue <ArrowRight /></Link><Link className="lp-button ghost" to="/lms/dashboard">My Sousa Murray eLearning</Link></div></div></section>
     <section className="lp-unlimited-note"><div className="lp-container"><InfinityIcon /><p><strong>“Unlimited” means unlimited access to included library courses for each named learner.</strong> It does not mean unlimited learner accounts, regulated qualifications or included Highfield courses.</p></div></section>
     <section className="lp-section"><div className="lp-container"><header className="lp-section-head"><span>Complete learning catalogue</span><h2>Proper courses, not a collection of three-page placeholders</h2><p>The launch library contains {libraryCourses.length} authored courses, {moduleCount} modules and {lessonCount} structured lessons, with lesson checks and final assessments.</p></header><div className="lp-subject-grid">{subjects.map((subject) => <article key={subject}><BookOpen /><h3>{subject}</h3><p>Clear outcomes, full syllabus information, practical lesson content and assessed completion.</p></article>)}</div><div className="lp-centre"><Link className="lp-button primary" to="/learning-library/courses">View all library courses <ArrowRight /></Link></div></div></section>
     <section className="lp-section muted"><div className="lp-container"><header className="lp-section-head"><span>Membership</span><h2>Choose your learner capacity</h2></header><Plans /></div></section>
@@ -147,7 +103,7 @@ export default function LearningPlatformRouter() {
   if (path.startsWith('/lms')) return <><AgeGate /><AccessibilityTools /><ProductionLearningManagementSystem /></>;
 
   const platformPages = ['/', '/learning-library', '/subscription-learning', '/professional-training', '/plans', '/pricing'];
-  if (!platformPages.includes(path)) return <Layout includeUtilities={false}><div className="lp-legacy-embedded"><AppShell /></div></Layout>;
+  if (!platformPages.includes(path)) return <AppShell />;
 
   const page = path === '/'
     ? <HomePage />

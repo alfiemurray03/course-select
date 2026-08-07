@@ -5,9 +5,9 @@ type CustomerWebsite = {
 
 const customerWebsites: CustomerWebsite[] = [
   { name: 'JA Group Services', href: 'https://jagroupservices.co.uk/' },
+  { name: 'Sousa Murray Domains', href: 'https://sousamurraydomains.jagroupservices.co.uk/' },
   { name: 'Sousa Murray Profiles', href: 'https://sousamurrayprofiles.jagroupservices.co.uk/' },
   { name: 'Sousa Murray Planeia', href: 'https://sousamurrayplaneia.jagroupservices.co.uk/' },
-  { name: 'JA Domain Hub', href: 'https://jadomainhub.jagroupservices.co.uk/' },
   { name: 'Sousa Murray eLearning', href: 'https://sousamurrayelearning.jagroupservices.co.uk/' },
 ];
 
