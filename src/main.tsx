@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppErrorBoundary from './AppErrorBoundary';
 import RootApplication from './RootApplication';
 import { BasketProvider } from './basket';
+import { LearningCourseBasketProvider } from './learning-course-basket';
 import { installPublicBrandScrubber } from './public-brand-scrubber';
 import './legacy-route-normaliser';
 import './customer-websites-menu';
@@ -12,6 +13,8 @@ import './course-family-boundaries';
 import './learning-detail-enhancements';
 import './free-course-trial';
 import './enrolment-details-ui';
+import './own-course-catalogue-commerce';
+import './lms-start-course-routing';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
@@ -34,6 +37,8 @@ import './learning-detail-enhancements.css';
 import './free-course-trial.css';
 import './enrolment-details-ui.css';
 import './course-commerce-refresh.css';
+import './learning-course-basket.css';
+import './own-course-catalogue-commerce.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
@@ -81,7 +86,9 @@ ReactDOM.createRoot(root).render(
     <AppErrorBoundary>
       <BrowserRouter>
         <BasketProvider>
-          <RootApplication />
+          <LearningCourseBasketProvider>
+            <RootApplication />
+          </LearningCourseBasketProvider>
         </BasketProvider>
       </BrowserRouter>
     </AppErrorBoundary>

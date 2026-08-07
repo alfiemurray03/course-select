@@ -6,6 +6,10 @@ import {
   type CentralCheckoutRequest,
 } from './central-payments';
 import {
+  OWN_COURSE_PRICE_CODE,
+  OWN_COURSE_PRODUCT_CODE,
+} from './own-course-commerce';
+import {
   effectiveLearningSubscription,
   subscriptionIncludesCourse,
 } from './learning-entitlements';
@@ -86,16 +90,22 @@ export async function resolveCourseAccess(
   return { active: false, source: 'none', subscription: null, entitlement };
 }
 
-function trialDates(checkout: CentralCheckoutRequest) {
+function entitlementDates(checkout: CentralCheckoutRequest, accessDays: number | null) {
   const startsAt = checkout.completed_at || checkout.updated_at || checkout.created_at || new Date().toISOString();
   const parsed = Date.parse(startsAt);
   const safeStart = Number.isFinite(parsed) ? new Date(parsed) : new Date();
-  const expires = new Date(safeStart.getTime() + FREE_TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = accessDays === null
+    ? null
+    : new Date(safeStart.getTime() + accessDays * 24 * 60 * 60 * 1000).toISOString();
   return {
     startsAt: safeStart.toISOString(),
-    expiresAt: expires.toISOString(),
-    status: expires.getTime() > Date.now() ? 'active' : 'expired',
+    expiresAt,
+    status: expiresAt && Date.parse(expiresAt) <= Date.now() ? 'expired' : 'active',
   };
+}
+
+function trialDates(checkout: CentralCheckoutRequest) {
+  return entitlementDates(checkout, FREE_TRIAL_DURATION_DAYS);
 }
 
 export async function recordFreeTrialEntitlement(
@@ -155,13 +165,72 @@ export async function recordFreeTrialEntitlement(
   return courseEntitlement(db, accountId, course.slug, course.version);
 }
 
+export async function recordIndividualPurchaseEntitlement(
+  db: D1Database,
+  accountId: string,
+  course: LibraryCourse,
+  checkout: CentralCheckoutRequest,
+  accessDays: number | null,
+) {
+  if (
+    String(checkout.product_code || '').toUpperCase() !== OWN_COURSE_PRODUCT_CODE
+    || String(checkout.price_code || '').toUpperCase() !== OWN_COURSE_PRICE_CODE
+    || String(checkout.status || '').toLowerCase() !== 'completed'
+    || Number(checkout.amount_minor || 0) <= 0
+  ) {
+    throw new Error('The Central Payments record is not a completed Sousa Murray individual course order.');
+  }
+
+  const { startsAt, expiresAt, status } = entitlementDates(checkout, accessDays);
+  const id = await stableId('lms-course-entitlement', `${accountId}:${course.slug}:individual_purchase`);
+
+  await db.prepare(`
+    INSERT INTO lms_course_entitlements (
+      id,account_id,course_slug,course_code,course_version,source,status,
+      product_code,price_code,central_payment_reference,stripe_customer_id,
+      stripe_checkout_session_id,claimed_at,starts_at,expires_at,revoked_at
+    ) VALUES (?,?,?,?,?,'individual_purchase',?,?,?,?,?,?,?,?,?,NULL)
+    ON CONFLICT(account_id,course_slug,source) DO UPDATE SET
+      course_code=excluded.course_code,
+      course_version=excluded.course_version,
+      status=excluded.status,
+      product_code=excluded.product_code,
+      price_code=excluded.price_code,
+      central_payment_reference=excluded.central_payment_reference,
+      stripe_customer_id=excluded.stripe_customer_id,
+      stripe_checkout_session_id=excluded.stripe_checkout_session_id,
+      claimed_at=excluded.claimed_at,
+      starts_at=excluded.starts_at,
+      expires_at=excluded.expires_at,
+      revoked_at=NULL,
+      updated_at=CURRENT_TIMESTAMP
+  `).bind(
+    id,
+    accountId,
+    course.slug,
+    course.code,
+    course.version,
+    status,
+    OWN_COURSE_PRODUCT_CODE,
+    OWN_COURSE_PRICE_CODE,
+    checkout.id,
+    checkout.stripe_customer_id || null,
+    checkout.stripe_checkout_session_id || null,
+    startsAt,
+    startsAt,
+    expiresAt,
+  ).run();
+
+  return courseEntitlement(db, accountId, course.slug, course.version);
+}
+
 export async function ensureStandaloneEnrolmentBridge(
   db: D1Database,
   accountId: string,
   entitlement: CourseEntitlementRow,
 ) {
   if (!entitlement.stripe_customer_id) {
-    throw new Error('The free trial is missing its Central Payments Stripe customer reference.');
+    throw new Error('The course access record is missing its Central Payments Stripe customer reference.');
   }
   const subscriptionId = await stableId('lms-standalone-access', entitlement.id);
   const syntheticStripeSubscriptionId = `standalone-access:${entitlement.id}`;

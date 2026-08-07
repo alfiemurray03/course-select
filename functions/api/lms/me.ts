@@ -1,14 +1,21 @@
 import {
   courseDuration,
+  findLibraryCourse,
   libraryCourses,
   type CoursePlan,
 } from '../../../src/libraryCatalogue';
 import {
+  centralCourseTrialCheckout,
   centralPaymentsConfigured,
+  FREE_TRIAL_COURSE_SLUG,
   syncCentralLmsSubscription,
   synchroniseElearningCustomer,
   type CentralPaymentsEnv,
 } from '../../_shared/central-payments';
+import {
+  courseEntitlement,
+  recordFreeTrialEntitlement,
+} from '../../_shared/course-entitlements';
 import {
   effectiveLearningSubscription,
   learningPlanName,
@@ -92,6 +99,17 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     try {
       identityProfile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, identityProfile);
       await syncCentralLmsSubscription(centralEnv, env.DB, access.session, identityProfile);
+
+      const trialCourse = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
+      if (trialCourse) {
+        const existingTrial = await courseEntitlement(env.DB, access.session.accountId, trialCourse.slug, trialCourse.version);
+        if (!existingTrial) {
+          const completedTrial = await centralCourseTrialCheckout(centralEnv, identityProfile);
+          if (completedTrial) {
+            await recordFreeTrialEntitlement(env.DB, access.session.accountId, trialCourse, completedTrial);
+          }
+        }
+      }
     } catch (error) {
       console.error(JSON.stringify({
         event: 'elearning_central_payments_sync_failed',
