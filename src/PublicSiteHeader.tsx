@@ -106,12 +106,12 @@ export default function PublicSiteHeader() {
           </button>
           {coursesOpen && <div className="dropdown-panel" role="menu">
             <Link to="/learning-library" role="menuitem">
-              <strong>Learning Library</strong>
-              <span>Unlimited included Sousa Murray courses through a monthly plan.</span>
+              <strong>Sousa Murray Learning Library</strong>
+              <span>Our original courses · Sousa Murray LMS · subscriptions and individual course access.</span>
             </Link>
             <Link to="/professional-training" role="menuitem">
-              <strong>Professional Training</strong>
-              <span>Individually purchased Highfield Online Training courses.</span>
+              <strong>Highfield Professional Training</strong>
+              <span>Highfield courses · Highfield LMS · purchased separately by course/licence.</span>
             </Link>
           </div>}
         </div>
@@ -128,10 +128,11 @@ export default function PublicSiteHeader() {
         <Link
           className="basket-header-button"
           to="/basket"
-          aria-label={`Basket with ${itemCount} courses and ${licenceCount} licences`}
+          aria-label={`Highfield Professional Training basket with ${itemCount} courses and ${licenceCount} licences`}
+          title="Highfield Professional Training basket"
         >
           <ShoppingBasket size={19} />
-          <span className="basket-header-label">Basket</span>
+          <span className="basket-header-label">Professional Basket</span>
           {itemCount > 0 && <span className="basket-count-badge">{itemCount}</span>}
         </Link>
 
@@ -163,12 +164,12 @@ export default function PublicSiteHeader() {
 
     {open && <nav className="mobile-nav" aria-label="Mobile navigation">
       <Link className="mobile-account" to="/lms/dashboard"><CircleUserRound size={19} /> My Sousa Murray eLearning</Link>
-      <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {itemCount > 0 && `(${itemCount})`}</Link>
+      <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Highfield Professional Basket {itemCount > 0 && `(${itemCount})`}</Link>
       <Link to="/">Home</Link>
-      <Link to="/learning-library">Learning Library</Link>
-      <Link to="/learning-library/courses">Learning Library courses</Link>
-      <Link to="/professional-training">Professional Training</Link>
-      <Link to="/courses">Professional course catalogue</Link>
+      <Link to="/learning-library">Sousa Murray Learning Library</Link>
+      <Link to="/learning-library/courses">Sousa Murray course catalogue</Link>
+      <Link to="/professional-training">Highfield Professional Training</Link>
+      <Link to="/courses">Highfield course catalogue</Link>
       <Link to="/plans">Plans</Link>
       <Link to="/organisations">Organisations</Link>
       <Link to="/how-courses-are-delivered">Delivery</Link>
