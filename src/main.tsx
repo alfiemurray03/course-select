@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import AppErrorBoundary from './AppErrorBoundary';
-import LearningPlatformRouter from './LearningPlatformRouter';
+import RootApplication from './RootApplication';
 import { BasketProvider } from './basket';
 import { installPublicBrandScrubber } from './public-brand-scrubber';
 import './legacy-route-normaliser';
@@ -70,7 +70,7 @@ ReactDOM.createRoot(root).render(
     <AppErrorBoundary>
       <BrowserRouter>
         <BasketProvider>
-          <LearningPlatformRouter />
+          <RootApplication />
         </BasketProvider>
       </BrowserRouter>
     </AppErrorBoundary>
