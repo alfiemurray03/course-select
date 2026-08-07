@@ -92,6 +92,61 @@
   animation: free-course-trial-spin .85s linear infinite;
 }
 
+.free-course-trial-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 22px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 20px;
+  padding: 22px 24px;
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--card));
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard > div {
+  display: grid;
+  gap: 7px;
+}
+
+.free-course-trial-dashboard h2 {
+  margin: 0;
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard p {
+  color: var(--muted-foreground);
+}
+
+.free-course-trial-dashboard p strong {
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard > a {
+  flex: 0 0 auto;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 850;
+}
+
+.free-course-trial-dashboard > a:hover {
+  background: var(--primary-dark);
+}
+
 @keyframes free-course-trial-spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .free-course-trial-dashboard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .free-course-trial-dashboard > a {
+    text-align: center;
+  }
 }
