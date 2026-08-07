@@ -34,12 +34,31 @@ function replaceTextWithin(root: Element, from: string, to: string) {
   }
 }
 
-function patchPlanCard(root: ParentNode, planName: string, replacements: Array<[string, string]>) {
+function findPlanCard(root: ParentNode, planName: string) {
   const cards = [...root.querySelectorAll<HTMLElement>('article')];
-  const card = cards.find((item) => item.querySelector('h3')?.textContent?.trim() === planName)
-    ?? cards.find((item) => item.querySelector('h1')?.textContent?.trim() === planName);
+  return cards.find((item) => item.querySelector('h3')?.textContent?.trim() === planName)
+    ?? cards.find((item) => item.querySelector('h1')?.textContent?.trim() === planName)
+    ?? null;
+}
+
+function patchPlanCard(root: ParentNode, planName: string, replacements: Array<[string, string]>) {
+  const card = findPlanCard(root, planName);
   if (!card) return;
   replacements.forEach(([from, to]) => replaceTextWithin(card, from, to));
+}
+
+function addPlanAudienceBadge(root: ParentNode, planName: string, audience: 'Personal' | 'Business') {
+  const card = findPlanCard(root, planName);
+  if (!card || card.querySelector('[data-plan-audience]')) return;
+
+  const badge = document.createElement('span');
+  badge.className = `plan-audience-badge plan-audience-${audience.toLowerCase()}`;
+  badge.setAttribute('data-plan-audience', audience.toLowerCase());
+  badge.textContent = audience;
+
+  const anchor = card.querySelector('small, h3, h1');
+  if (anchor) card.insertBefore(badge, anchor);
+  else card.prepend(badge);
 }
 
 function applyPlanCommercialModel() {
@@ -56,6 +75,11 @@ function applyPlanCommercialModel() {
     ['Complete-library access', 'Selected Core-library access'],
     ['Complete library', 'Selected Core library'],
   ]);
+
+  addPlanAudienceBadge(document, 'Learner', 'Personal');
+  addPlanAudienceBadge(document, 'Learner Plus', 'Personal');
+  addPlanAudienceBadge(document, 'Team 5', 'Business');
+  addPlanAudienceBadge(document, 'Team 15', 'Business');
 
   const grid = document.querySelector('.lp-plan-grid, .psc-shell');
   addBoundaryBefore(
