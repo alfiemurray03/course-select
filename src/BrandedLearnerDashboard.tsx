@@ -45,6 +45,20 @@ type MeResponse = {
       graceExpiresAt: string | null;
     } | null;
   };
+  courseAccess?: {
+    activeStandaloneCount: number;
+    hasAnyAccess: boolean;
+    standalone: Array<{
+      id: string;
+      courseSlug: string;
+      courseCode: string;
+      courseVersion: string;
+      source: 'free_trial' | 'individual_purchase' | 'manual';
+      startsAt: string;
+      expiresAt: string | null;
+      enrolled: boolean;
+    }>;
+  };
   courses: Array<{
     code: string;
     slug: string;
@@ -56,6 +70,8 @@ type MeResponse = {
     durationMinutes: number;
     modules: number;
     lessons: number;
+    accessSource?: 'subscription' | 'free_trial' | 'individual_purchase' | 'manual';
+    accessExpiresAt?: string | null;
   }>;
   enrolments: Array<{
     id: string;
@@ -102,6 +118,7 @@ type OrganisationResponse = {
 };
 
 type Enrolment = MeResponse['enrolments'][number];
+type AvailableCourse = MeResponse['courses'][number];
 
 async function jsonRequest<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -142,6 +159,13 @@ function statusText(value: string) {
   if (value === 'completed') return 'Completed';
   if (value === 'enrolled') return 'Not started';
   return value.replaceAll('_', ' ');
+}
+
+function accessLabel(course: AvailableCourse) {
+  if (course.accessSource === 'free_trial') return course.accessExpiresAt ? `Free trial · access until ${dateText(course.accessExpiresAt)}` : 'Free trial';
+  if (course.accessSource === 'individual_purchase') return 'Individually purchased course';
+  if (course.accessSource === 'manual') return 'Course access assigned by Sousa Murray eLearning';
+  return 'Included with Learning Library plan';
 }
 
 function LearnerChrome({ name, children }: { name: string; children: React.ReactNode }) {
@@ -198,6 +222,18 @@ function CourseRow({ enrolment, available }: { enrolment: Enrolment; available: 
   </article>;
 }
 
+function PendingCourseRow({ course }: { course: AvailableCourse }) {
+  return <article className="smlms-course-row smlms-course-pending">
+    <div className="smlms-course-mark"><BookOpen size={24} /></div>
+    <div className="smlms-course-details">
+      <small>{course.code} · {course.category}</small>
+      <h3>{course.title}</h3>
+      <span>{accessLabel(course)} · learner details are required before enrolment.</span>
+    </div>
+    <Link className="smlms-row-action" to={`/lms/course/${course.slug}`}>Complete enrolment</Link>
+  </article>;
+}
+
 export default function BrandedLearnerDashboard() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [organisation, setOrganisation] = useState<OrganisationResponse | null>(null);
@@ -231,6 +267,8 @@ export default function BrandedLearnerDashboard() {
     const aTime = Date.parse(a.updated_at || a.completed_at || a.enrolled_at);
     return bTime - aTime;
   }), [me]);
+  const enrolledSlugs = useMemo(() => new Set(sortedEnrolments.map((item) => item.course_slug)), [sortedEnrolments]);
+  const pendingCourses = useMemo(() => (me?.courses ?? []).filter((course) => !enrolledSlugs.has(course.slug)), [me, enrolledSlugs]);
   const activeCourses = useMemo(() => sortedEnrolments.filter((item) => item.status !== 'completed' && availableSlugs.has(item.course_slug)), [availableSlugs, sortedEnrolments]);
   const previousCourses = useMemo(() => sortedEnrolments.filter((item) => item.status === 'completed'), [sortedEnrolments]);
   const recentCourses = useMemo(() => sortedEnrolments.filter((item) => availableSlugs.has(item.course_slug)).slice(0, 4), [availableSlugs, sortedEnrolments]);
@@ -270,6 +308,10 @@ export default function BrandedLearnerDashboard() {
   };
 
   const displayedCourses = courseTab === 'active' ? activeCourses : previousCourses;
+  const hasAnyCurrentCourseAccess = me.courses.length > 0;
+  const accessDescription = me.entitlement.active
+    ? `${me.courses.length} courses available with your ${me.entitlement.plan?.name} access`
+    : `${me.courses.length} individually assigned, purchased or trial course${me.courses.length === 1 ? '' : 's'} available`;
 
   return <LearnerChrome name={me.user.name}>
     <section className="smlms-account-strip">
@@ -280,16 +322,21 @@ export default function BrandedLearnerDashboard() {
       </div>
     </section>
 
-    {!me.entitlement.active && <section className="smlms-plan-required"><ShieldCheck /><div><h2>Choose a Learning Library plan</h2><p>An active subscription or named organisation seat is required to start courses and record progress.</p></div><Link to="/plans">View plans</Link></section>}
+    {!me.entitlement.active && <section className="smlms-plan-required"><ShieldCheck /><div><h2>No active Learning Library plan</h2><p>You can still use any course you have bought individually, received as a trial or been assigned. A plan gives broader catalogue access.</p></div><Link to="/plans">Buy a plan</Link></section>}
 
-    {me.entitlement.active && <>
+    {pendingCourses.length > 0 && <section className="smlms-panel">
+      <div className="smlms-panel-heading"><h2>Ready for enrolment</h2><span>{pendingCourses.length} course access {pendingCourses.length === 1 ? 'is' : 'are'} waiting for learner details</span></div>
+      <div className="smlms-course-list">{pendingCourses.map((course) => <PendingCourseRow key={course.slug} course={course} />)}</div>
+    </section>}
+
+    {(hasAnyCurrentCourseAccess || sortedEnrolments.length > 0 || me.certificates.length > 0) && <>
       <section className="smlms-panel smlms-recent-panel">
         <h2>Recently accessed courses</h2>
-        {recentCourses.length ? <div className="smlms-course-list">{recentCourses.map((enrolment) => <CourseRow key={enrolment.id} enrolment={enrolment} available />)}</div> : <div className="smlms-empty-courses recent"><BookOpen size={54} strokeWidth={1.4} /><span>No recent courses</span><Link to="/learning-library/courses">Browse the Learning Library</Link></div>}
+        {recentCourses.length ? <div className="smlms-course-list">{recentCourses.map((enrolment) => <CourseRow key={enrolment.id} enrolment={enrolment} available />)}</div> : <div className="smlms-empty-courses recent"><BookOpen size={54} strokeWidth={1.4} /><span>No recent courses</span><Link to="/learning-library/courses">Browse the course catalogue</Link></div>}
       </section>
 
       <section className="smlms-panel">
-        <div className="smlms-panel-heading"><h2>All courses</h2><span>{me.courses.length} courses available with your {me.entitlement.plan?.name} access</span></div>
+        <div className="smlms-panel-heading"><h2>Your courses</h2><span>{accessDescription}</span></div>
         <div className="smlms-course-tabs" role="tablist" aria-label="Course status">
           <button className={courseTab === 'active' ? 'active' : ''} onClick={() => setCourseTab('active')} role="tab" aria-selected={courseTab === 'active'}>Active courses <span>{activeCourses.length}</span></button>
           <button className={courseTab === 'previous' ? 'active' : ''} onClick={() => setCourseTab('previous')} role="tab" aria-selected={courseTab === 'previous'}>Previous courses <span>{previousCourses.length}</span></button>
@@ -310,7 +357,9 @@ export default function BrandedLearnerDashboard() {
         <div className="smlms-member-list">{organisation?.members.map((member) => <article key={member.id}><Users size={20} /><div><strong>{member.invited_email ?? 'Connected JA Group Services ID'}</strong><span>{member.role} · {member.status}</span></div></article>)}</div>
       </section>}
 
-      <section className="smlms-account-note"><CheckCircle2 /><p><strong>Your learning record is stored centrally.</strong> Lesson progress, assessment attempts and certificates are recorded in the Sousa Murray eLearning LMS rather than only in this browser.</p></section>
+      <section className="smlms-account-note"><CheckCircle2 /><p><strong>Your learning record is stored centrally.</strong> Learner enrolment, lesson progress, assessment attempts and certificates are recorded in the Sousa Murray eLearning LMS rather than only in this browser.</p></section>
     </>}
+
+    {!hasAnyCurrentCourseAccess && sortedEnrolments.length === 0 && me.certificates.length === 0 && <section className="smlms-panel"><EmptyCoursePanel /></section>}
   </LearnerChrome>;
 }
