@@ -1,3 +1,5 @@
+export {};
+
 const PUBLIC_NAVIGATION = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About us' },
