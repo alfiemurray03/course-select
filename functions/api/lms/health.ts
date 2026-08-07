@@ -3,6 +3,10 @@ import {
   validateLibraryCatalogue,
 } from '../../../src/libraryCatalogue';
 import {
+  centralPaymentsConfigured,
+  type CentralPaymentsEnv,
+} from '../../_shared/central-payments';
+import {
   LMS_PLANS,
   assertProductionLmsSchema,
   type ProductionLmsEnv,
@@ -21,17 +25,9 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
   try {
     await assertProductionLmsSchema(env.DB);
     const [version, planCount, tableCount] = await Promise.all([
-      env.DB.prepare(`
-        SELECT MAX(version) AS version FROM lms_schema_versions
-      `).first<{ version: number | null }>(),
-      env.DB.prepare(`
-        SELECT COUNT(*) AS total FROM lms_plans WHERE active = 1
-      `).first<{ total: number }>(),
-      env.DB.prepare(`
-        SELECT COUNT(*) AS total
-        FROM sqlite_master
-        WHERE type = 'table' AND name LIKE 'lms_%'
-      `).first<{ total: number }>(),
+      env.DB.prepare(`SELECT MAX(version) AS version FROM lms_schema_versions`).first<{ version: number | null }>(),
+      env.DB.prepare(`SELECT COUNT(*) AS total FROM lms_plans WHERE active = 1`).first<{ total: number }>(),
+      env.DB.prepare(`SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name LIKE 'lms_%'`).first<{ total: number }>(),
     ]);
 
     const catalogueErrors = validateLibraryCatalogue();
@@ -45,8 +41,9 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
       && env.ENTRA_CLIENT_ID
       && env.ENTRA_CLIENT_SECRET,
     );
-    const stripeReady = Boolean(env.STRIPE_SECRET_KEY);
-    const ready = catalogueReady && databaseReady && identityReady && stripeReady;
+    const centralEnv = env as CentralPaymentsEnv;
+    const centralPaymentsReady = centralPaymentsConfigured(centralEnv);
+    const ready = catalogueReady && databaseReady && identityReady && centralPaymentsReady;
 
     return Response.json({
       ready,
@@ -70,13 +67,12 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
         provider: 'JA Group Services ID / Microsoft Entra External ID',
       },
       billing: {
-        ready: stripeReady,
-        provider: 'Stripe',
-        webhookVerification: env.STRIPE_LMS_WEBHOOK_SECRET
-          ? 'signed_webhook'
-          : stripeReady
-            ? 'canonical_event_retrieval'
-            : 'not_configured',
+        ready: centralPaymentsReady,
+        provider: 'JA Group Services Central Payments / Stripe',
+        architecture: 'head_office_central_payments',
+        centralWebhook: 'https://customerops.jagroupservices.co.uk/api/webhooks/stripe',
+        legacyLmsWebhookConfigured: Boolean(env.STRIPE_LMS_WEBHOOK_SECRET),
+        legacyStripeApiConfigured: Boolean(env.STRIPE_SECRET_KEY),
         salesEnabled: env.LMS_SALES_ENABLED !== 'false',
       },
     }, {
