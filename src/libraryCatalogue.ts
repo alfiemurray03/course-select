@@ -22,6 +22,32 @@ export {
   isCourseIncluded,
 } from './libraryCourseTypes';
 
+function rotateAnswer(options: string[], answer: number, shift: number) {
+  if (!options.length) return { options, answer };
+  const normalisedShift = ((shift % options.length) + options.length) % options.length;
+  if (!normalisedShift) return { options: [...options], answer };
+  const rotated = [...options.slice(-normalisedShift), ...options.slice(0, -normalisedShift)];
+  return { options: rotated, answer: (answer + normalisedShift) % options.length };
+}
+
+expandedLibraryCourses.forEach((course, courseIndex) => {
+  let lessonIndex = 0;
+  for (const module of course.modules) {
+    for (const item of module.lessons) {
+      const rotated = rotateAnswer(item.knowledgeCheck.options, item.knowledgeCheck.answer, (courseIndex + lessonIndex) % 3);
+      item.knowledgeCheck.options = rotated.options;
+      item.knowledgeCheck.answer = rotated.answer;
+      lessonIndex += 1;
+    }
+  }
+
+  course.finalAssessment.questions.forEach((question, questionIndex) => {
+    const rotated = rotateAnswer(question.options, question.answer, (courseIndex + questionIndex + 1) % 3);
+    question.options = rotated.options;
+    question.answer = rotated.answer;
+  });
+});
+
 export const libraryCourses = [...coreLibraryCourses, ...plusLibraryCourses, ...expandedLibraryCourses];
 
 function validateCourse(course: LibraryCourse) {
