@@ -1,4 +1,4 @@
-export const PRODUCTION_LMS_SCHEMA_VERSION = 1;
+export const PRODUCTION_LMS_SCHEMA_VERSION = 2;
 
 export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS lms_schema_versions (
@@ -177,6 +177,7 @@ export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
     payload_json TEXT NOT NULL,
     processing_status TEXT NOT NULL DEFAULT 'received',
     error_message TEXT,
+    received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at TEXT,
     UNIQUE (source, external_event_id)
@@ -192,5 +193,5 @@ export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_lms_assessments_enrolment ON lms_assessment_attempts(enrolment_id, attempt_number)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_certificates_account ON lms_certificates(account_id, issued_at)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_audit_entity ON lms_audit_logs(entity_type, entity_id, created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_webhook_events_source ON webhook_events(source, processing_status, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_webhook_events_source ON webhook_events(source, processing_status)`,
 ] as const;
