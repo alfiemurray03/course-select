@@ -1,7 +1,7 @@
 import { coreLibraryCourses } from './libraryCoursesCore';
 import { expandedLibraryCourses } from './libraryCoursesExpanded';
 import { plusLibraryCourses } from './libraryCoursesPlus';
-import { flattenCourseLessons, type LibraryCourse } from './libraryCourseTypes';
+import { flattenCourseLessons, type CoursePlan, type LibraryCourse } from './libraryCourseTypes';
 
 export type {
   AssessmentQuestion,
@@ -21,6 +21,13 @@ export {
   flattenCourseLessons,
   isCourseIncluded,
 } from './libraryCourseTypes';
+
+export const LIBRARY_PROVIDER_NAME = 'Sousa Murray eLearning';
+export const LIBRARY_LMS_NAME = 'Sousa Murray LMS';
+export const LIBRARY_COURSE_SOURCE = 'Sousa Murray Learning Library';
+
+export const CORE_LIBRARY_PLANS: readonly CoursePlan[] = ['Learner', 'Learner Plus', 'Team 5', 'Team 15'];
+export const COMPLETE_LIBRARY_PLANS: readonly CoursePlan[] = ['Learner Plus', 'Team 15'];
 
 function rotateAnswer(options: string[], answer: number, shift: number) {
   if (!options.length) return { options, answer };
@@ -48,7 +55,24 @@ expandedLibraryCourses.forEach((course, courseIndex) => {
   });
 });
 
-export const libraryCourses = [...coreLibraryCourses, ...plusLibraryCourses, ...expandedLibraryCourses];
+function commercialPlansForCourse(course: LibraryCourse): CoursePlan[] {
+  // The original catalogue used Learner membership as the marker for the
+  // selected Core collection. Everything else is Complete-only. Keep that
+  // stable marker while enforcing the Board/customer-facing commercial split:
+  // Learner + Team 5 receive Core; Learner Plus + Team 15 receive everything.
+  return course.includedPlans.includes('Learner')
+    ? [...CORE_LIBRARY_PLANS]
+    : [...COMPLETE_LIBRARY_PLANS];
+}
+
+export const libraryCourses: LibraryCourse[] = [
+  ...coreLibraryCourses,
+  ...plusLibraryCourses,
+  ...expandedLibraryCourses,
+].map((course) => ({
+  ...course,
+  includedPlans: commercialPlansForCourse(course),
+}));
 
 function validateCourse(course: LibraryCourse) {
   const errors: string[] = [];
@@ -62,6 +86,15 @@ function validateCourse(course: LibraryCourse) {
   if (course.modules.length < 3) errors.push(`${course.code}: a complete course requires at least three modules.`);
   if (lessons.length < 6) errors.push(`${course.code}: a complete course requires at least six lessons.`);
   if (!course.includedPlans.length) errors.push(`${course.code}: at least one plan entitlement is required.`);
+  if (course.includedPlans.includes('Team 5') && !course.includedPlans.includes('Learner')) {
+    errors.push(`${course.code}: Team 5 must not receive Complete-only courses.`);
+  }
+  if (course.includedPlans.includes('Learner') && !course.includedPlans.includes('Team 5')) {
+    errors.push(`${course.code}: Core courses must be available to both Learner and Team 5.`);
+  }
+  if (!course.includedPlans.includes('Learner Plus') || !course.includedPlans.includes('Team 15')) {
+    errors.push(`${course.code}: every Learning Library course must be included in both unlimited Complete plans.`);
+  }
   if (course.learningOutcomes.length < 4) errors.push(`${course.code}: at least four learning outcomes are required.`);
   if (course.finalAssessment.questions.length < 6) errors.push(`${course.code}: final assessment requires at least six questions.`);
   if (course.finalAssessment.passMark < 50 || course.finalAssessment.passMark > 100) errors.push(`${course.code}: invalid pass mark.`);
@@ -80,6 +113,7 @@ function validateCourse(course: LibraryCourse) {
     if (assessmentIds.has(question.id)) errors.push(`${course.code}: duplicate final-assessment id ${question.id}.`);
     assessmentIds.add(question.id);
     if (question.options.length < 3) errors.push(`${course.code}/${question.id}: final-assessment question requires at least three options.`);
+    if (question.knowledgeCheck?.options?.length === 0) errors.push(`${course.code}/${question.id}: invalid knowledge-check payload.`);
     if (question.answer < 0 || question.answer >= question.options.length) errors.push(`${course.code}/${question.id}: final-assessment answer is invalid.`);
   }
 
@@ -109,6 +143,8 @@ if (catalogueErrors.length) {
 
 export const libraryCatalogueStats = {
   courses: libraryCourses.length,
+  coreCourses: libraryCourses.filter((course) => course.includedPlans.includes('Learner')).length,
+  completeCourses: libraryCourses.length,
   modules: libraryCourses.reduce((total, course) => total + course.modules.length, 0),
   lessons: libraryCourses.reduce((total, course) => total + flattenCourseLessons(course).length, 0),
   assessmentQuestions: libraryCourses.reduce((total, course) => total + course.finalAssessment.questions.length, 0),
@@ -120,6 +156,6 @@ export function findLibraryCourse(slug: string) {
   return libraryCourses.find((course) => course.slug === slug);
 }
 
-export function coursesForPlan(plan: import('./libraryCourseTypes').CoursePlan) {
+export function coursesForPlan(plan: CoursePlan) {
   return libraryCourses.filter((course) => course.includedPlans.includes(plan));
 }
