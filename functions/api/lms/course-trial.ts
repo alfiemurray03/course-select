@@ -17,7 +17,6 @@ import {
 import {
   recordLmsAudit,
   requireProductionLms,
-  type IdentityProfile,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
@@ -40,62 +39,26 @@ function trialResponse(entitlement: CourseEntitlementRow | null, checkoutReady: 
   };
 }
 
-async function synchroniseTrial(
-  env: ProductionLmsEnv,
-  accountId: string,
-  profile: IdentityProfile,
-) {
-  if (!env.DB) return { profile, entitlement: null as CourseEntitlementRow | null };
-  const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
-  if (!course) throw new Error('The configured free trial course could not be found in the Learning Library.');
-
-  let entitlement = await courseEntitlement(env.DB, accountId, course.slug, course.version);
-  if (entitlement && entitlement.status === 'active' && entitlement.expires_at && Date.parse(entitlement.expires_at) <= Date.now()) {
-    await env.DB.prepare(`UPDATE lms_course_entitlements
-      SET status='expired',updated_at=CURRENT_TIMESTAMP
-      WHERE id=? AND status='active'`).bind(entitlement.id).run();
-    entitlement = await courseEntitlement(env.DB, accountId, course.slug, course.version);
-  }
-
-  const centralEnv = env as CentralPaymentsEnv;
-  if (!centralPaymentsConfigured(centralEnv)) return { profile, entitlement };
-
-  const centralProfile = await synchroniseElearningCustomer(centralEnv, env.DB, {
-    accountId,
-    email: '',
-    name: '',
-    subject: '',
-  } as never, profile).catch(() => profile);
-
-  if (!entitlement) {
-    const completedCheckout = await centralCourseTrialCheckout(centralEnv, centralProfile);
-    if (completedCheckout) {
-      entitlement = await recordFreeTrialEntitlement(env.DB, accountId, course, completedCheckout);
-    }
-  }
-
-  return { profile: centralProfile, entitlement };
-}
-
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
 
   const centralEnv = env as CentralPaymentsEnv;
+  const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
+  if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
+
   let profile = access.profile;
   let entitlement = await courseEntitlement(
     env.DB,
     access.session.accountId,
-    FREE_TRIAL_COURSE_SLUG,
-    findLibraryCourse(FREE_TRIAL_COURSE_SLUG)?.version ?? '1.0',
+    course.slug,
+    course.version,
   );
 
   try {
     if (centralPaymentsConfigured(centralEnv)) {
       profile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, profile);
       const completedCheckout = await centralCourseTrialCheckout(centralEnv, profile);
-      const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
-      if (!course) throw new Error('The free trial course is not available.');
       if (!entitlement && completedCheckout) {
         entitlement = await recordFreeTrialEntitlement(env.DB, access.session.accountId, course, completedCheckout);
         await recordLmsAudit(
@@ -119,10 +82,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       await env.DB.prepare(`UPDATE lms_course_entitlements
         SET status='expired',updated_at=CURRENT_TIMESTAMP
         WHERE id=? AND status='active'`).bind(entitlement.id).run();
-      const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
-      entitlement = course
-        ? await courseEntitlement(env.DB, access.session.accountId, course.slug, course.version)
-        : entitlement;
+      entitlement = await courseEntitlement(env.DB, access.session.accountId, course.slug, course.version);
     }
   } catch (error) {
     console.error(JSON.stringify({
