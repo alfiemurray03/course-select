@@ -87,6 +87,12 @@ function applyHighfieldMarkers() {
   const path = window.location.pathname;
   if (!(path === '/courses' || path.startsWith('/courses/') || path === '/basket' || path.startsWith('/professional-training'))) return;
 
+  // Individual Highfield course pages already identify Highfield in their own hero,
+  // provider metadata and purchase/delivery information. Do not inject another
+  // element into the two-column course hero grid: doing so changes the grid item
+  // order and pushes the purchase card onto a second row.
+  if (path.startsWith('/courses/')) return;
+
   const target = document.querySelector('.section, .basket-section, .course-detail-section');
   addBoundaryBefore(
     target,
@@ -97,10 +103,6 @@ function applyHighfieldMarkers() {
 
   if (path === '/courses') {
     document.querySelectorAll('.course-grid > article, .course-grid > a').forEach((card) => addCardBadge(card, 'highfield'));
-  }
-  if (path.startsWith('/courses/')) {
-    const hero = document.querySelector('.course-hero .container');
-    if (hero) addCardBadge(hero, 'highfield');
   }
 }
 
