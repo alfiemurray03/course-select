@@ -17,6 +17,9 @@ type TrialStatus = {
   source: string | null;
 };
 
+let coursePanelState: 'idle' | 'loading' | 'loaded' | 'polling' = 'idle';
+let dashboardState: 'idle' | 'loading' | 'loaded' = 'idle';
+
 async function trialRequest<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     credentials: 'same-origin',
@@ -96,7 +99,7 @@ function renderPanel(panel: HTMLElement, status: TrialStatus, message = '') {
     panel.innerHTML = `
       <span class="free-course-trial-badge used">Trial used</span>
       <h3>Your free trial has ended</h3>
-      <p>This course trial can be claimed once per learning account. Your existing learning and certificate records remain in your Sousa Murray LMS account.</p>
+      <p>This course trial can be claimed once per learning account. Existing learning and certificate records remain associated with your Sousa Murray LMS account.</p>
     `;
     return;
   }
@@ -106,12 +109,17 @@ function renderPanel(panel: HTMLElement, status: TrialStatus, message = '') {
     <h3>Try ${TRIAL_COURSE_TITLE}</h3>
     <p>Get full access to this course for 7 days, including lessons, knowledge checks, the final assessment and completion certificate if you pass within the trial period.</p>
     <div class="free-course-trial-price"><strong>£0.00</strong><span>7 days · one named learner</span></div>
-    ${message ? `<p class="free-course-trial-message">${message}</p>` : ''}
+    ${message ? '<p class="free-course-trial-message"></p>' : ''}
     <button type="button" class="plms-primary-action free-course-trial-action" ${status.checkoutReady ? '' : 'disabled'}>
       ${status.checkoutReady ? 'Start free trial with Stripe' : 'Trial checkout unavailable'}
     </button>
     <small>You will continue through Stripe Checkout. Because the order total is £0.00, Stripe will not collect payment details. One free trial claim is available per learning account.</small>
   `;
+
+  if (message) {
+    const messageNode = panel.querySelector<HTMLElement>('.free-course-trial-message');
+    if (messageNode) messageNode.textContent = message;
+  }
 
   const button = panel.querySelector<HTMLButtonElement>('.free-course-trial-action');
   button?.addEventListener('click', async () => {
@@ -134,6 +142,7 @@ function renderPanel(panel: HTMLElement, status: TrialStatus, message = '') {
 }
 
 async function pollAfterCheckout(panel: HTMLElement) {
+  coursePanelState = 'polling';
   panel.innerHTML = `
     <span class="free-course-trial-badge">Stripe Checkout complete</span>
     <h3>Setting up your course access</h3>
@@ -160,14 +169,17 @@ async function pollAfterCheckout(panel: HTMLElement) {
     <h3>Your Stripe order is still being confirmed</h3>
     <p>Your checkout has returned successfully, but Central Payments has not yet exposed the completed order to the LMS. Refresh this page shortly and your trial will be attached automatically.</p>
   `;
+  coursePanelState = 'loaded';
 }
 
 async function courseTrialPanel() {
   if (window.location.pathname !== `/lms/course/${TRIAL_COURSE_SLUG}`) return;
+  if (coursePanelState !== 'idle') return;
   const aside = document.querySelector<HTMLElement>('.plms-course-information-grid > aside');
   if (!aside) return;
-  const panel = trialPanelShell(aside);
 
+  coursePanelState = 'loading';
+  const panel = trialPanelShell(aside);
   const trialResult = new URL(window.location.href).searchParams.get('trial');
   if (trialResult === 'success') {
     await pollAfterCheckout(panel);
@@ -184,12 +196,46 @@ async function courseTrialPanel() {
     }
   } catch {
     panel.remove();
+  } finally {
+    if (coursePanelState !== 'polling') coursePanelState = 'loaded';
+  }
+}
+
+async function dashboardTrialAccess() {
+  if (window.location.pathname !== '/lms/dashboard') return;
+  if (dashboardState !== 'idle') return;
+  const dashboard = document.querySelector<HTMLElement>('.plms-dashboard');
+  const header = dashboard?.querySelector(':scope > header');
+  if (!dashboard || !header) return;
+
+  dashboardState = 'loading';
+  try {
+    const status = await trialRequest<TrialStatus>('/api/lms/course-trial');
+    if (!status.active || dashboard.querySelector(`[${TRIAL_MARKER}="dashboard"]`)) return;
+
+    const card = document.createElement('section');
+    card.className = 'free-course-trial-dashboard';
+    card.setAttribute(TRIAL_MARKER, 'dashboard');
+    card.innerHTML = `
+      <div>
+        <span class="free-course-trial-badge">Free trial active</span>
+        <h2>${TRIAL_COURSE_TITLE}</h2>
+        <p>Full course access is active until <strong>${formatExpiry(status.expiresAt)}</strong>.</p>
+      </div>
+      <a href="/lms/course/${TRIAL_COURSE_SLUG}">Open trial course →</a>
+    `;
+    header.insertAdjacentElement('afterend', card);
+  } catch {
+    // The standard dashboard remains usable if trial status cannot be loaded.
+  } finally {
+    dashboardState = 'loaded';
   }
 }
 
 function applyFreeTrialUi() {
   catalogueBadge();
   void courseTrialPanel();
+  void dashboardTrialAccess();
 }
 
 let scheduled = false;
