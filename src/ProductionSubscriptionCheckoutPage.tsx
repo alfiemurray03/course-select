@@ -18,17 +18,50 @@ type SessionResponse = {
 type PlanDefinition = {
   id: 'learner' | 'learner-plus' | 'team-5' | 'team-15';
   name: string;
+  customerType: 'Personal' | 'Business';
   price: string;
   seats: number;
-  tier: 'Core library' | 'Complete library';
+  tier: 'Selected Core library' | 'Complete library';
   description: string;
 };
 
 const plans: PlanDefinition[] = [
-  { id: 'learner', name: 'Learner', price: '£9.99', seats: 1, tier: 'Core library', description: 'Unlimited core-course access for one named learner.' },
-  { id: 'learner-plus', name: 'Learner Plus', price: '£16.99', seats: 1, tier: 'Complete library', description: 'Unlimited complete-library access for one named learner.' },
-  { id: 'team-5', name: 'Team 5', price: '£39.99', seats: 5, tier: 'Complete library', description: 'Complete-library access for up to five named learners.' },
-  { id: 'team-15', name: 'Team 15', price: '£89.99', seats: 15, tier: 'Complete library', description: 'Complete-library access for up to fifteen named learners.' },
+  {
+    id: 'learner',
+    name: 'Learner',
+    customerType: 'Personal',
+    price: '£9.99',
+    seats: 1,
+    tier: 'Selected Core library',
+    description: 'Access the selected Core Sousa Murray course collection for one named learner. Courses outside the Core collection can be purchased separately or unlocked with Learner Plus.',
+  },
+  {
+    id: 'learner-plus',
+    name: 'Learner Plus',
+    customerType: 'Personal',
+    price: '£16.99',
+    seats: 1,
+    tier: 'Complete library',
+    description: 'Unlimited access to the complete Sousa Murray Learning Library for one named learner.',
+  },
+  {
+    id: 'team-5',
+    name: 'Team 5',
+    customerType: 'Business',
+    price: '£39.99',
+    seats: 5,
+    tier: 'Selected Core library',
+    description: 'Access the selected Core Sousa Murray course collection for up to five named learners. Courses outside the Core collection are separate purchases or are included with Team 15.',
+  },
+  {
+    id: 'team-15',
+    name: 'Team 15',
+    customerType: 'Business',
+    price: '£89.99',
+    seats: 15,
+    tier: 'Complete library',
+    description: 'Unlimited access to the complete Sousa Murray Learning Library for up to fifteen named learners.',
+  },
 ];
 
 const TERMS_VERSION = 'learning-library-subscription-v1.0-2026-08-06';
@@ -93,15 +126,15 @@ export default function ProductionSubscriptionCheckoutPage({ planId }: { planId:
 
   return <main className="psc-page"><div className="psc-shell">
     <section className="psc-plan">
-      <span>Learning Library subscription</span>
+      <span>{plan.customerType} · Learning Library subscription</span>
       <h1>{plan.name}</h1>
       <p>{plan.description}</p>
       <div className="psc-price">{plan.price}<small>per month<br />VAT included</small></div>
       <ul>
         <li><Check /> {plan.tier}</li>
         <li><Check /> {plan.seats === 1 ? 'One named learner' : `Up to ${plan.seats} named learners`}</li>
-        <li><Check /> Progress and final assessments</li>
-        <li><Check /> Verifiable completion certificates</li>
+        <li><Check /> Sousa Murray courses delivered in the Sousa Murray LMS</li>
+        <li><Check /> Progress, final assessments and completion certificates</li>
       </ul>
     </section>
 
@@ -117,7 +150,7 @@ export default function ProductionSubscriptionCheckoutPage({ planId }: { planId:
       </>}
 
       {session?.authenticated && <>
-        <p>You will be redirected to Stripe Checkout. The subscription renews monthly until cancelled.</p>
+        <p>You will be redirected to the JA Group Services Central Payments checkout. The subscription renews monthly until cancelled.</p>
         <div className="psc-consents">
           <label>
             <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
@@ -129,11 +162,11 @@ export default function ProductionSubscriptionCheckoutPage({ planId }: { planId:
           </label>
         </div>
         <button className="psc-action" onClick={checkout} disabled={busy || !termsAccepted || !immediateAccessRequested}>
-          {busy ? <><LoaderCircle className="psc-spin" /> Opening Stripe Checkout</> : <>Continue to Stripe Checkout <ArrowRight /></>}
+          {busy ? <><LoaderCircle className="psc-spin" /> Opening secure checkout</> : <>Continue to secure checkout <ArrowRight /></>}
         </button>
       </>}
 
-      <small>Highfield Professional Training courses are separate individual purchases and are not included in this plan.</small>
+      <small>Highfield Professional Training is a separate service, uses the Highfield LMS and is never included in a Sousa Murray Learning Library subscription.</small>
     </aside>
   </div></main>;
 }
