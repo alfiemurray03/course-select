@@ -10,6 +10,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useBasket } from './basket';
+import { useLearningCourseBasket } from './learning-course-basket';
 import './public-site-header.css';
 
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -66,6 +67,7 @@ function routeIsActive(pathname: string, route: string) {
 export default function PublicSiteHeader() {
   const [open, setOpen] = useState(false);
   const { itemCount, licenceCount } = useBasket();
+  const { itemCount: learningCourseCount } = useLearningCourseBasket();
   const { mode, setMode } = usePublicTheme();
   const location = useLocation();
 
@@ -88,6 +90,17 @@ export default function PublicSiteHeader() {
       </nav>
 
       <div className="header-actions">
+        <Link
+          className="basket-header-button learning-course-basket-header-button"
+          to="/learning-library/basket"
+          aria-label={`Sousa Murray course basket with ${learningCourseCount} courses`}
+          title="Sousa Murray course basket"
+        >
+          <ShoppingBasket size={19} />
+          <span className="basket-header-label">Course Basket</span>
+          {learningCourseCount > 0 && <span className="basket-count-badge">{learningCourseCount}</span>}
+        </Link>
+
         <Link
           className="basket-header-button"
           to="/basket"
@@ -127,6 +140,7 @@ export default function PublicSiteHeader() {
 
     {open && <nav className="mobile-nav" aria-label="Mobile navigation">
       <Link className="mobile-account" to="/lms/dashboard"><CircleUserRound size={19} /> My Sousa Murray eLearning</Link>
+      <Link className="mobile-basket-link" to="/learning-library/basket"><ShoppingBasket size={19} /> Sousa Murray Course Basket {learningCourseCount > 0 && `(${learningCourseCount})`}</Link>
       <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Highfield Basket {itemCount > 0 && `(${itemCount})`}</Link>
       <Link to="/">Home</Link>
       <Link to="/about">About us</Link>
