@@ -4,7 +4,10 @@ import {
   type CoursePlan,
 } from '../../../src/libraryCatalogue';
 import {
-  currentSubscription,
+  effectiveLearningSubscription,
+  learningPlanName,
+} from '../../_shared/learning-entitlements';
+import {
   formatUcn,
   planDefinition,
   requireProductionLms,
@@ -23,6 +26,7 @@ type EnrolmentRow = {
   enrolled_at: string;
   started_at: string | null;
   completed_at: string | null;
+  updated_at: string;
 };
 
 type CertificateRow = {
@@ -38,28 +42,22 @@ type CertificateRow = {
   issued_at: string;
 };
 
-function coursePlan(planId: string): CoursePlan | null {
-  if (planId === 'learner') return 'Learner';
-  if (planId === 'learner-plus') return 'Learner Plus';
-  if (planId === 'team-5') return 'Team 5';
-  if (planId === 'team-15') return 'Team 15';
-  return null;
-}
-
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
 
-  const subscription = await currentSubscription(env.DB, access.session.accountId);
+  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
   const hasAccess = subscriptionHasAccess(subscription);
   const selectedPlan = subscription ? planDefinition(subscription.plan_id) : null;
-  const plan = subscription ? coursePlan(subscription.plan_id) : null;
+  const planName = subscription ? learningPlanName(subscription.plan_id) : null;
+  const plan = planName as CoursePlan | null;
+  const ownedByUser = Boolean(subscription && subscription.account_id === access.session.accountId);
 
   const [enrolmentResult, certificateResult] = await Promise.all([
     env.DB.prepare(`
       SELECT id, course_slug, course_code, course_version, status,
              progress_percent, assessment_score, enrolled_at,
-             started_at, completed_at
+             started_at, completed_at, updated_at
       FROM lms_enrolments
       WHERE account_id = ?
       ORDER BY updated_at DESC
@@ -100,6 +98,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     },
     entitlement: {
       active: hasAccess,
+      ownedByUser,
+      accessSource: ownedByUser ? 'direct' : subscription ? 'organisation' : 'none',
       plan: selectedPlan ? {
         id: selectedPlan.id,
         name: selectedPlan.name,
