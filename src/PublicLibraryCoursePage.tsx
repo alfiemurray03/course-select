@@ -17,7 +17,10 @@ import {
   findLibraryCourse,
   flattenCourseLessons,
 } from './libraryCatalogue';
-import { useLearningCourseBasket } from './learning-course-basket';
+import {
+  addLearningCourseToStoredBasket,
+  useLearningCourseBasket,
+} from './learning-course-basket';
 import './public-library-course-page.css';
 
 type PricingResponse = {
@@ -61,8 +64,9 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
     setAdded(true);
   };
   const buyNow = () => {
-    addItem(course.slug);
-    window.location.assign('/learning-library/basket');
+    if (addLearningCourseToStoredBasket(course.slug)) {
+      window.location.assign('/learning-library/basket');
+    }
   };
 
   return <main className="plcp-page">
