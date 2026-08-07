@@ -2,6 +2,7 @@ import { flattenCourseLessons, libraryCourses } from './libraryCatalogue';
 import { addLearningCourseToStoredBasket } from './learning-course-basket';
 
 const MARKER = 'data-own-course-commerce';
+const RESULT_COPY = 'Individual purchase · Plan access · Final assessment · Certificate verification';
 
 type AccountAccessResponse = {
   courses?: Array<{ slug: string }>;
@@ -60,28 +61,32 @@ function enhanceCatalogue() {
   loadAccountAccess();
 
   const resultLine = document.querySelector<HTMLElement>('.plms-result-line span');
-  if (resultLine) resultLine.textContent = 'Individual purchase · Plan access · Final assessment · Certificate verification';
+  if (resultLine && resultLine.textContent !== RESULT_COPY) resultLine.textContent = RESULT_COPY;
 
   document.querySelectorAll<HTMLElement>('.plms-course-grid > article').forEach((card) => {
     const course = findCourseByCard(card);
     if (!course) return;
 
     const hasAccess = accessKnown && accessibleSlugs.has(course.slug);
+    const expectedHref = hasAccess ? learningHref(course) : `/learning-library/courses/${course.slug}`;
+    const expectedText = hasAccess ? 'Open course →' : 'View course →';
     const existingLink = card.querySelector<HTMLAnchorElement>('a[href*="/lms/course/"], a[href*="/learning-library/courses/"]');
     if (existingLink) {
-      existingLink.href = hasAccess ? learningHref(course) : `/learning-library/courses/${course.slug}`;
-      existingLink.textContent = hasAccess ? 'Open course →' : 'View course →';
-      existingLink.classList.add('sml-catalogue-view-course');
+      const currentPath = `${new URL(existingLink.href, window.location.origin).pathname}${new URL(existingLink.href, window.location.origin).search}`;
+      if (currentPath !== expectedHref) existingLink.href = expectedHref;
+      if (existingLink.textContent !== expectedText) existingLink.textContent = expectedText;
+      if (!existingLink.classList.contains('sml-catalogue-view-course')) existingLink.classList.add('sml-catalogue-view-course');
     }
 
     const mode = hasAccess ? 'included' : 'purchase';
+    const markerValue = `${course.slug}:${mode}`;
     const existingActions = card.querySelector<HTMLElement>(`[${MARKER}]`);
-    if (existingActions?.getAttribute(MARKER) === `${course.slug}:${mode}`) return;
+    if (existingActions?.getAttribute(MARKER) === markerValue) return;
     existingActions?.remove();
 
     const actions = document.createElement('div');
     actions.className = 'sml-own-course-card-actions';
-    actions.setAttribute(MARKER, `${course.slug}:${mode}`);
+    actions.setAttribute(MARKER, markerValue);
 
     if (hasAccess) {
       const included = document.createElement('span');
@@ -182,7 +187,7 @@ let scheduled = false;
 function schedule() {
   if (scheduled) return;
   scheduled = true;
-  queueMicrotask(() => {
+  window.requestAnimationFrame(() => {
     scheduled = false;
     apply();
   });
@@ -190,5 +195,5 @@ function schedule() {
 
 schedule();
 const observer = new MutationObserver(schedule);
-observer.observe(document.documentElement, { childList: true, subtree: true });
+observer.observe(document.body, { childList: true, subtree: true });
 window.addEventListener('popstate', schedule);
