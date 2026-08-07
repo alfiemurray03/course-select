@@ -1,0 +1,69 @@
+.course-family-boundary {
+  width: min(1180px, calc(100% - 32px));
+  margin: 22px auto;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 18px;
+  padding: 18px 20px;
+  background: rgba(37, 99, 235, 0.08);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
+}
+
+.course-family-boundary > div {
+  display: grid;
+  gap: 5px;
+}
+
+.course-family-boundary strong {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.course-family-boundary span {
+  color: var(--muted, #64748b);
+  line-height: 1.55;
+}
+
+.course-family-boundary-highfield {
+  border-color: rgba(124, 58, 237, 0.26);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.course-source-badge {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.course-source-badge-highfield {
+  border-color: rgba(124, 58, 237, 0.28);
+  background: rgba(124, 58, 237, 0.1);
+  color: #6d28d9;
+}
+
+.dark .course-family-boundary,
+.dark .course-source-badge {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.dark .course-family-boundary-highfield,
+.dark .course-source-badge-highfield {
+  border-color: rgba(167, 139, 250, 0.38);
+}
+
+@media (max-width: 720px) {
+  .course-family-boundary {
+    width: min(100% - 20px, 1180px);
+    margin: 14px auto;
+    padding: 15px 16px;
+    border-radius: 14px;
+  }
+}
