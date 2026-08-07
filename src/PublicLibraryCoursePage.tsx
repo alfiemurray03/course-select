@@ -34,6 +34,13 @@ type PricingResponse = {
   }>;
 };
 
+type AccountCourseState = {
+  entitlementActive?: boolean;
+  accessSource?: string;
+  enrolment?: { id: string; status: string; progress_percent: number } | null;
+  lessons?: Array<{ lessonId: string; status: string }>;
+};
+
 const TRIAL_COURSE_SLUG = 'ai-literacy-for-everyday-work';
 
 function money(pence: number) {
@@ -44,6 +51,7 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
   const course = findLibraryCourse(slug);
   const { addItem, contains } = useLearningCourseBasket();
   const [pricing, setPricing] = useState<PricingResponse | null>(null);
+  const [accountCourse, setAccountCourse] = useState<AccountCourseState | null>(null);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
@@ -52,6 +60,11 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
       .then(async (response) => response.ok ? response.json() as Promise<PricingResponse> : null)
       .then((result) => result && setPricing(result))
       .catch(() => undefined);
+
+    fetch(`/api/lms/courses/${encodeURIComponent(course.slug)}`, { credentials: 'same-origin', cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() as Promise<AccountCourseState> : null)
+      .then((result) => setAccountCourse(result))
+      .catch(() => setAccountCourse(null));
   }, [course?.slug]);
 
   const lessons = useMemo(() => course ? flattenCourseLessons(course) : [], [course]);
@@ -59,6 +72,13 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
 
   const price = pricing?.items.find((item) => item.courseSlug === course.slug);
   const inBasket = contains(course.slug) || added;
+  const alreadyAccessible = Boolean(accountCourse?.entitlementActive);
+  const progress = new Map((accountCourse?.lessons ?? []).map((item) => [item.lessonId, item.status]));
+  const nextLesson = lessons.find((lesson) => progress.get(lesson.id) !== 'completed') ?? lessons[0];
+  const learningHref = accountCourse?.enrolment && nextLesson
+    ? `/lms/course/${course.slug}?lesson=${encodeURIComponent(nextLesson.id)}`
+    : `/lms/course/${course.slug}`;
+
   const add = () => {
     addItem(course.slug);
     setAdded(true);
@@ -76,17 +96,26 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
       <div className="plcp-hero-grid">
         <div><small>{course.code} · Version {course.version}</small><h1>{course.title}</h1><p>{course.overview}</p><div className="plcp-meta"><span><Clock3 /> {courseDuration(course)} minutes</span><span><Library /> {course.modules.length} modules</span><span><GraduationCap /> {course.level}</span></div></div>
         <aside className="plcp-purchase-card">
-          <ShoppingBasket />
-          <span>Individual course purchase</span>
-          <h2>{price?.configured && price.grossPence ? money(price.grossPence) : 'Individual purchase'}</h2>
-          {price?.configured && price.grossPence && <small>including VAT</small>}
-          <p>Purchase this Sousa Murray course for one named learner. After secure Stripe payment, the learner is enrolled into the Sousa Murray LMS using the personal details provided during checkout.</p>
-          {pricing?.accessLabel && <strong>{pricing.accessLabel}</strong>}
-          <button type="button" className="plcp-primary" onClick={buyNow}>Buy now <ArrowRight /></button>
-          <button type="button" className="plcp-secondary" onClick={add} disabled={inBasket}>{inBasket ? 'Added to course basket' : 'Add to course basket'} <ShoppingBasket /></button>
-          {course.slug === TRIAL_COURSE_SLUG && <Link className="plcp-trial-link" to={`/lms/course/${course.slug}`}>Free 7-day trial <ArrowRight /></Link>}
-          <Link className="plcp-plan-link" to="/plans">Buy a Learning Library plan <ArrowRight /></Link>
-          <small>Plans are purchased separately. They are never added to the course basket.</small>
+          {alreadyAccessible ? <>
+            <ShieldCheck />
+            <span>Available in your learning account</span>
+            <h2>No course payment due</h2>
+            <p>This course is already available to you through your current Learning Library plan, individual purchase, trial or assigned access.</p>
+            <Link className="plcp-primary" to={learningHref}>{accountCourse?.enrolment ? 'Open course' : 'Complete enrolment'} <ArrowRight /></Link>
+            <small>Your existing course access is used. The course is not added to the purchase basket again.</small>
+          </> : <>
+            <ShoppingBasket />
+            <span>Individual course purchase</span>
+            <h2>{price?.configured && price.grossPence ? money(price.grossPence) : 'Individual purchase'}</h2>
+            {price?.configured && price.grossPence && <small>including VAT</small>}
+            <p>Purchase this Sousa Murray course for one named learner. After secure Stripe payment, the learner is enrolled into the Sousa Murray LMS using the personal details provided during checkout.</p>
+            {pricing?.accessLabel && <strong>{pricing.accessLabel}</strong>}
+            <button type="button" className="plcp-primary" onClick={buyNow}>Buy now <ArrowRight /></button>
+            <button type="button" className="plcp-secondary" onClick={add} disabled={inBasket}>{inBasket ? 'Added to course basket' : 'Add to course basket'} <ShoppingBasket /></button>
+            {course.slug === TRIAL_COURSE_SLUG && <Link className="plcp-trial-link" to={`/lms/course/${course.slug}`}>Free 7-day trial <ArrowRight /></Link>}
+            <Link className="plcp-plan-link" to="/plans">Buy a Learning Library plan <ArrowRight /></Link>
+            <small>Plans are purchased separately. They are never added to the course basket.</small>
+          </>}
         </aside>
       </div>
     </div></section>
