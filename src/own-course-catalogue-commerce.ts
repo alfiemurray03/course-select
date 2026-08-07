@@ -1,7 +1,17 @@
-import { libraryCourses } from './libraryCatalogue';
+import { flattenCourseLessons, libraryCourses } from './libraryCatalogue';
 import { addLearningCourseToStoredBasket } from './learning-course-basket';
 
 const MARKER = 'data-own-course-commerce';
+
+type AccountAccessResponse = {
+  courses?: Array<{ slug: string }>;
+  enrolments?: Array<{ course_slug: string }>;
+};
+
+let accessLoadStarted = false;
+let accessKnown = false;
+const accessibleSlugs = new Set<string>();
+const enrolledSlugs = new Set<string>();
 
 function findCourseByCard(card: Element) {
   const code = card.querySelector('.plms-course-labels span')?.textContent?.trim();
@@ -9,6 +19,31 @@ function findCourseByCard(card: Element) {
   return libraryCourses.find((course) => course.code === code)
     ?? libraryCourses.find((course) => course.title === title)
     ?? null;
+}
+
+function learningHref(course: (typeof libraryCourses)[number]) {
+  if (!enrolledSlugs.has(course.slug)) return `/lms/course/${course.slug}`;
+  const firstLesson = flattenCourseLessons(course)[0];
+  return firstLesson ? `/lms/course/${course.slug}?lesson=${encodeURIComponent(firstLesson.id)}` : `/lms/course/${course.slug}`;
+}
+
+function loadAccountAccess() {
+  if (accessLoadStarted || window.location.pathname !== '/learning-library/courses') return;
+  accessLoadStarted = true;
+  fetch('/api/lms/me', { credentials: 'same-origin', cache: 'no-store' })
+    .then(async (response) => response.ok ? response.json() as Promise<AccountAccessResponse> : null)
+    .then((account) => {
+      accessibleSlugs.clear();
+      enrolledSlugs.clear();
+      for (const course of account?.courses ?? []) accessibleSlugs.add(course.slug);
+      for (const enrolment of account?.enrolments ?? []) enrolledSlugs.add(enrolment.course_slug);
+      accessKnown = true;
+      schedule();
+    })
+    .catch(() => {
+      accessKnown = true;
+      schedule();
+    });
 }
 
 function createButton(label: string, className: string, onClick: () => void) {
@@ -22,6 +57,7 @@ function createButton(label: string, className: string, onClick: () => void) {
 
 function enhanceCatalogue() {
   if (window.location.pathname !== '/learning-library/courses') return;
+  loadAccountAccess();
 
   const resultLine = document.querySelector<HTMLElement>('.plms-result-line span');
   if (resultLine) resultLine.textContent = 'Individual purchase · Plan access · Final assessment · Certificate verification';
@@ -30,36 +66,52 @@ function enhanceCatalogue() {
     const course = findCourseByCard(card);
     if (!course) return;
 
-    const existingLink = card.querySelector<HTMLAnchorElement>('a[href*="/lms/course/"]');
+    const hasAccess = accessKnown && accessibleSlugs.has(course.slug);
+    const existingLink = card.querySelector<HTMLAnchorElement>('a[href*="/lms/course/"], a[href*="/learning-library/courses/"]');
     if (existingLink) {
-      existingLink.href = `/learning-library/courses/${course.slug}`;
-      existingLink.textContent = 'View course →';
+      existingLink.href = hasAccess ? learningHref(course) : `/learning-library/courses/${course.slug}`;
+      existingLink.textContent = hasAccess ? 'Open course →' : 'View course →';
       existingLink.classList.add('sml-catalogue-view-course');
     }
 
-    if (card.querySelector(`[${MARKER}]`)) return;
+    const mode = hasAccess ? 'included' : 'purchase';
+    const existingActions = card.querySelector<HTMLElement>(`[${MARKER}]`);
+    if (existingActions?.getAttribute(MARKER) === `${course.slug}:${mode}`) return;
+    existingActions?.remove();
+
     const actions = document.createElement('div');
     actions.className = 'sml-own-course-card-actions';
-    actions.setAttribute(MARKER, course.slug);
+    actions.setAttribute(MARKER, `${course.slug}:${mode}`);
 
-    const buyNow = createButton('Buy now', 'sml-own-course-buy-now', () => {
-      if (addLearningCourseToStoredBasket(course.slug)) window.location.assign('/learning-library/basket');
-    });
-    const add = createButton('Add to basket', 'sml-own-course-add-basket', () => {
-      if (!addLearningCourseToStoredBasket(course.slug)) {
-        add.textContent = 'Basket full';
+    if (hasAccess) {
+      const included = document.createElement('span');
+      included.className = 'sml-own-course-included-label';
+      included.textContent = 'Included with your current course access';
+      const open = document.createElement('a');
+      open.href = learningHref(course);
+      open.className = 'sml-own-course-open-learning';
+      open.textContent = enrolledSlugs.has(course.slug) ? 'Continue course' : 'Enrol and start';
+      actions.append(included, open);
+    } else {
+      const buyNow = createButton('Buy now', 'sml-own-course-buy-now', () => {
+        if (addLearningCourseToStoredBasket(course.slug)) window.location.assign('/learning-library/basket');
+      });
+      const add = createButton('Add to basket', 'sml-own-course-add-basket', () => {
+        if (!addLearningCourseToStoredBasket(course.slug)) {
+          add.textContent = 'Basket full';
+          add.disabled = true;
+          return;
+        }
+        add.textContent = 'Added to basket';
         add.disabled = true;
-        return;
-      }
-      add.textContent = 'Added to basket';
-      add.disabled = true;
-    });
-    const plan = document.createElement('a');
-    plan.href = '/plans';
-    plan.className = 'sml-own-course-buy-plan';
-    plan.textContent = 'Buy a plan';
+      });
+      const plan = document.createElement('a');
+      plan.href = '/plans';
+      plan.className = 'sml-own-course-buy-plan';
+      plan.textContent = 'Buy a plan';
+      actions.append(buyNow, add, plan);
+    }
 
-    actions.append(buyNow, add, plan);
     if (existingLink) existingLink.insertAdjacentElement('beforebegin', actions);
     else card.append(actions);
   });
@@ -101,6 +153,25 @@ function enhanceLmsInformationPage() {
   activePlanCopy?.insertAdjacentElement('afterend', actions);
   if (!activePlanCopy) aside.append(actions);
 }
+
+// Register before the generic site navigation handler so even a very fast click
+// is resolved to the correct route: the public purchase page for a shopper, or
+// the LMS for a learner who already has this course through a plan/entitlement.
+document.addEventListener('click', (event) => {
+  if (window.location.pathname !== '/learning-library/courses') return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest<HTMLAnchorElement>('.plms-course-grid > article a');
+  if (!link || link.closest('.sml-own-course-card-actions')) return;
+  const card = link.closest('.plms-course-grid > article');
+  if (!card) return;
+  const course = findCourseByCard(card);
+  if (!course) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  window.location.assign(accessibleSlugs.has(course.slug) ? learningHref(course) : `/learning-library/courses/${course.slug}`);
+}, true);
 
 function apply() {
   enhanceCatalogue();
