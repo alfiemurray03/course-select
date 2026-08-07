@@ -49,6 +49,39 @@ type CertificateRow = {
   issued_at: string;
 };
 
+type StandaloneEntitlementRow = {
+  id: string;
+  course_slug: string;
+  course_code: string;
+  course_version: string;
+  source: 'free_trial' | 'individual_purchase' | 'manual';
+  status: string;
+  starts_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function courseSummary(course: (typeof libraryCourses)[number], accessSource: string, accessExpiresAt: string | null) {
+  return {
+    code: course.code,
+    slug: course.slug,
+    title: course.title,
+    category: course.category,
+    shortDescription: course.shortDescription,
+    level: course.level,
+    version: course.version,
+    durationMinutes: courseDuration(course),
+    modules: course.modules.length,
+    lessons: course.modules.reduce((total, module) => total + module.lessons.length, 0),
+    source: 'Sousa Murray Learning Library',
+    learningPlatform: 'Sousa Murray LMS',
+    accessSource,
+    accessExpiresAt,
+  };
+}
+
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
@@ -60,9 +93,6 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       identityProfile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, identityProfile);
       await syncCentralLmsSubscription(centralEnv, env.DB, access.session, identityProfile);
     } catch (error) {
-      // Learning records remain available during a temporary Head Office outage.
-      // Checkout itself fails closed, but an already-synchronised entitlement is
-      // not destroyed merely because the central status request is unavailable.
       console.error(JSON.stringify({
         event: 'elearning_central_payments_sync_failed',
         accountId: access.session.accountId,
@@ -79,7 +109,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   const planTier = subscription ? learningPlanTier(subscription.plan_id) : null;
   const ownedByUser = Boolean(subscription && subscription.account_id === access.session.accountId);
 
-  const [enrolmentResult, certificateResult] = await Promise.all([
+  const [enrolmentResult, certificateResult, standaloneResult] = await Promise.all([
     env.DB.prepare(`
       SELECT id, course_slug, course_code, course_version, status,
              progress_percent, assessment_score, enrolled_at,
@@ -96,24 +126,46 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       WHERE account_id = ?
       ORDER BY issued_at DESC
     `).bind(access.session.accountId).all<CertificateRow>(),
+    env.DB.prepare(`
+      SELECT id,course_slug,course_code,course_version,source,status,
+             starts_at,expires_at,revoked_at,created_at,updated_at
+      FROM lms_course_entitlements
+      WHERE account_id=?
+      ORDER BY updated_at DESC
+    `).bind(access.session.accountId).all<StandaloneEntitlementRow>(),
   ]);
 
-  const availableCourses = plan && hasAccess
-    ? libraryCourses.filter((course) => course.includedPlans.includes(plan)).map((course) => ({
-        code: course.code,
-        slug: course.slug,
-        title: course.title,
-        category: course.category,
-        shortDescription: course.shortDescription,
-        level: course.level,
-        version: course.version,
-        durationMinutes: courseDuration(course),
-        modules: course.modules.length,
-        lessons: course.modules.reduce((total, module) => total + module.lessons.length, 0),
-        source: 'Sousa Murray Learning Library',
-        learningPlatform: 'Sousa Murray LMS',
-      }))
-    : [];
+  const activeStandalone = (standaloneResult.results ?? []).filter((item) => (
+    item.status === 'active'
+    && !item.revoked_at
+    && (!item.expires_at || Date.parse(item.expires_at) > Date.now())
+  ));
+
+  const courseMap = new Map<string, ReturnType<typeof courseSummary>>();
+  if (plan && hasAccess) {
+    for (const course of libraryCourses.filter((item) => item.includedPlans.includes(plan))) {
+      courseMap.set(course.slug, courseSummary(course, 'subscription', subscription?.current_period_end ?? null));
+    }
+  }
+  for (const entitlement of activeStandalone) {
+    const course = libraryCourses.find((item) => item.slug === entitlement.course_slug && item.version === entitlement.course_version)
+      ?? libraryCourses.find((item) => item.slug === entitlement.course_slug);
+    if (!course) continue;
+    courseMap.set(course.slug, courseSummary(course, entitlement.source, entitlement.expires_at));
+  }
+
+  const enrolments = enrolmentResult.results ?? [];
+  const enrolledSlugs = new Set(enrolments.map((item) => item.course_slug));
+  const standaloneAccess = activeStandalone.map((item) => ({
+    id: item.id,
+    courseSlug: item.course_slug,
+    courseCode: item.course_code,
+    courseVersion: item.course_version,
+    source: item.source,
+    startsAt: item.starts_at,
+    expiresAt: item.expires_at,
+    enrolled: enrolledSlugs.has(item.course_slug),
+  }));
 
   return Response.json({
     configured: true,
@@ -143,8 +195,13 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
         graceExpiresAt: subscription.grace_expires_at,
       } : null,
     },
-    courses: availableCourses,
-    enrolments: enrolmentResult.results ?? [],
+    courseAccess: {
+      activeStandaloneCount: activeStandalone.length,
+      hasAnyAccess: hasAccess || activeStandalone.length > 0,
+      standalone: standaloneAccess,
+    },
+    courses: [...courseMap.values()],
+    enrolments,
     certificates: certificateResult.results ?? [],
   }, { headers: { 'Cache-Control': 'no-store' } });
 };
