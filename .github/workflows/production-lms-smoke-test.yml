@@ -1,0 +1,62 @@
+name: Production LMS Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+      - 'src/**'
+      - '.github/workflows/production-lms-smoke-test.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: production-lms-smoke-test
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production-lms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for Cloudflare deployment and verify LMS readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://sousamurrayelearning.jagroupservices.co.uk/api/lms/health'
+
+          for attempt in $(seq 1 36); do
+            echo "Production readiness attempt ${attempt}/36"
+            status=$(curl --silent --show-error --location \
+              --connect-timeout 10 --max-time 25 \
+              --output response.json --write-out '%{http_code}' \
+              "$url" || true)
+
+            echo "HTTP status: ${status}"
+            if [ -f response.json ]; then
+              cat response.json
+              echo
+            fi
+
+            if [ "$status" = '200' ] && jq --exit-status '
+              .ready == true
+              and .database.ready == true
+              and .database.schemaVersion >= 1
+              and .database.lmsTables >= 12
+              and .database.activePlans == 4
+              and .identity.ready == true
+              and .billing.ready == true
+              and .billing.salesEnabled == true
+            ' response.json >/dev/null; then
+              echo 'Sousa Murray eLearning production LMS is ready.'
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo 'Production LMS did not become ready within six minutes.' >&2
+          exit 1
