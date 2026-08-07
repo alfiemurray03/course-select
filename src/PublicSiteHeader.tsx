@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   CircleUserRound,
   Menu,
   Moon,
@@ -7,7 +8,7 @@ import {
   Sun,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useBasket } from './basket';
 
@@ -59,24 +60,29 @@ function routeIsActive(pathname: string, route: string) {
 
 export default function PublicSiteHeader() {
   const [open, setOpen] = useState(false);
+  const [coursesOpen, setCoursesOpen] = useState(false);
+  const coursesMenuRef = useRef<HTMLDivElement>(null);
   const { itemCount, licenceCount } = useBasket();
   const { mode, setMode } = usePublicTheme();
   const location = useLocation();
 
-  useEffect(() => setOpen(false), [location.pathname]);
-  const rotateTheme = () => setMode(mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system');
+  useEffect(() => {
+    setOpen(false);
+    setCoursesOpen(false);
+  }, [location.pathname]);
 
-  const navItems = [
-    { to: '/', label: 'Home' },
-    { to: '/learning-library', label: 'Learning Library' },
-    { to: '/professional-training', label: 'Professional Training' },
-    { to: '/plans', label: 'Plans' },
-    { to: '/organisations', label: 'Organisations' },
-    { to: '/how-courses-are-delivered', label: 'Delivery' },
-    { to: '/about', label: 'About' },
-    { to: '/support', label: 'Help' },
-    { to: '/contact', label: 'Contact' },
-  ] as const;
+  useEffect(() => {
+    const close = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node) || coursesMenuRef.current?.contains(target)) return;
+      setCoursesOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
+
+  const rotateTheme = () => setMode(mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system');
+  const coursesActive = routeIsActive(location.pathname, '/learning-library') || routeIsActive(location.pathname, '/professional-training');
 
   return <header className="site-header">
     <div className="header-inner">
@@ -85,11 +91,36 @@ export default function PublicSiteHeader() {
       </Link>
 
       <nav className="desktop-nav" aria-label="Main navigation">
-        {navItems.map((item) => <NavLink
-          key={item.to}
-          to={item.to}
-          className={routeIsActive(location.pathname, item.to) ? 'active' : undefined}
-        >{item.label}</NavLink>)}
+        <NavLink to="/" className={location.pathname === '/' ? 'active' : undefined}>Home</NavLink>
+
+        <div className="nav-dropdown" ref={coursesMenuRef}>
+          <button
+            type="button"
+            className={coursesActive ? 'active' : undefined}
+            aria-haspopup="menu"
+            aria-expanded={coursesOpen}
+            onClick={() => setCoursesOpen((value) => !value)}
+          >
+            Courses <ChevronDown size={15} />
+          </button>
+          {coursesOpen && <div className="dropdown-panel" role="menu">
+            <Link to="/learning-library" role="menuitem">
+              <strong>Learning Library</strong>
+              <span>Unlimited included Sousa Murray courses through a monthly plan.</span>
+            </Link>
+            <Link to="/professional-training" role="menuitem">
+              <strong>Professional Training</strong>
+              <span>Individually purchased Highfield Online Training courses.</span>
+            </Link>
+          </div>}
+        </div>
+
+        <NavLink to="/plans" className={routeIsActive(location.pathname, '/plans') ? 'active' : undefined}>Plans</NavLink>
+        <NavLink to="/organisations">Organisations</NavLink>
+        <NavLink to="/how-courses-are-delivered">Delivery</NavLink>
+        <NavLink to="/about">About</NavLink>
+        <NavLink to="/support">Help</NavLink>
+        <NavLink to="/contact">Contact</NavLink>
       </nav>
 
       <div className="header-actions">
