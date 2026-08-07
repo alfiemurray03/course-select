@@ -18,6 +18,11 @@ export type CentralPaymentsEnv = ProductionLmsEnv & {
 const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 const BRAND = 'SOUSA_MURRAY_ELEARNING';
 
+export const FREE_TRIAL_COURSE_SLUG = 'ai-literacy-for-everyday-work';
+export const FREE_TRIAL_PRODUCT_CODE = 'ELEARNING_AI_LITERACY_TRIAL';
+export const FREE_TRIAL_PRICE_CODE = 'ELEARNING_AI_LITERACY_TRIAL_FREE';
+export const FREE_TRIAL_DURATION_DAYS = 7;
+
 const CENTRAL_PLAN_CODES: Record<LmsPlanId, { productCode: string; priceCode: string }> = {
   learner: { productCode: 'ELEARNING_LEARNER', priceCode: 'ELEARNING_LEARNER_MONTHLY' },
   'learner-plus': { productCode: 'ELEARNING_LEARNER_PLUS', priceCode: 'ELEARNING_LEARNER_PLUS_MONTHLY' },
@@ -156,6 +161,23 @@ type CentralSubscription = {
   stripe_checkout_session_id?: string | null;
 };
 
+export type CentralCheckoutRequest = {
+  id: string;
+  product_code: string;
+  price_code: string;
+  customer_number: string;
+  stripe_customer_id: string | null;
+  stripe_checkout_session_id: string | null;
+  service_reference: string | null;
+  mode: string;
+  status: string;
+  amount_minor: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+};
+
 function lmsStatus(value: string) {
   const status = String(value || '').toLowerCase();
   if (status === 'canceled') return 'cancelled';
@@ -238,6 +260,50 @@ export async function syncCentralLmsSubscription(
     .bind(current.stripe_customer_id, session.accountId).run();
   await ensureTeamOrganisation(db, session.accountId, subscriptionId, plan);
   return { subscriptionId, plan, status };
+}
+
+export async function createCentralCourseTrialCheckout(
+  env: CentralPaymentsEnv,
+  profile: IdentityProfile,
+  session: CustomerSession,
+  baseUrl: string,
+) {
+  const response = await headOffice<{
+    checkout?: { reference?: string; sessionId?: string; url?: string; mode?: string };
+  }>(env, '/api/v1/payments/checkout', {
+    method: 'POST',
+    body: JSON.stringify({
+      brand: BRAND,
+      customerNumber: profile.head_office_customer_number,
+      productCode: FREE_TRIAL_PRODUCT_CODE,
+      priceCode: FREE_TRIAL_PRICE_CODE,
+      orderReference: `ELEARNING-AI-TRIAL-${crypto.randomUUID()}`,
+      serviceReference: `${session.accountId}:${FREE_TRIAL_COURSE_SLUG}:free-trial`,
+      successUrl: `${baseUrl}/lms/course/${FREE_TRIAL_COURSE_SLUG}?trial=success`,
+      cancelUrl: `${baseUrl}/lms/course/${FREE_TRIAL_COURSE_SLUG}?trial=cancelled`,
+    }),
+  });
+  if (!response.checkout?.url || !response.checkout.sessionId || !response.checkout.reference) {
+    throw new Error('Head Office did not return a complete Stripe Checkout response for the free course trial.');
+  }
+  return response.checkout;
+}
+
+export async function centralCourseTrialCheckout(
+  env: CentralPaymentsEnv,
+  profile: IdentityProfile,
+) {
+  if (!centralPaymentsConfigured(env) || !validUcn(profile.head_office_customer_number)) return null;
+  const response = await headOffice<{ checkoutRequests?: CentralCheckoutRequest[] }>(
+    env,
+    `/api/v1/payments/status?customerNumber=${encodeURIComponent(profile.head_office_customer_number)}`,
+  );
+  return (response.checkoutRequests ?? []).find((checkout) =>
+    String(checkout.product_code || '').toUpperCase() === FREE_TRIAL_PRODUCT_CODE
+    && String(checkout.price_code || '').toUpperCase() === FREE_TRIAL_PRICE_CODE
+    && String(checkout.status || '').toLowerCase() === 'completed'
+    && Number(checkout.amount_minor || 0) === 0
+  ) ?? null;
 }
 
 export async function createCentralLmsPortal(
