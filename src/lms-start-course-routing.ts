@@ -25,7 +25,7 @@ async function nextLessonHref(slug: string) {
     }
   } catch {
     // If progress cannot be loaded, entering lesson one is still better than
-    // sending an enrolled learner back to the public-style course overview.
+    // sending an enrolled learner back to the course information page.
   }
 
   return `/lms/course/${slug}?lesson=${encodeURIComponent(lessons[0].id)}`;
@@ -63,6 +63,27 @@ function routeEnrolledCourseOverviewAction() {
     link.setAttribute(MARKER, 'ready');
   });
 }
+
+// Register before the site's generic internal-navigation handler. If a learner
+// clicks before the async href rewrite has finished, resolve the lesson first
+// and navigate straight into the player instead of allowing the overview page.
+document.addEventListener('click', (event) => {
+  if (window.location.pathname !== '/lms/dashboard') return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest<HTMLAnchorElement>('.smlms-course-row a.smlms-row-action');
+  if (!link) return;
+
+  const url = new URL(link.href, window.location.origin);
+  if (url.searchParams.has('lesson') || url.searchParams.has('assessment')) return;
+  const match = url.pathname.match(/^\/lms\/course\/([^/]+)$/);
+  if (!match) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const slug = decodeURIComponent(match[1]);
+  void nextLessonHref(slug).then((href) => window.location.assign(href));
+}, true);
 
 function apply() {
   void routeDashboardActions();
