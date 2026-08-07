@@ -1,14 +1,15 @@
 import {
   findLibraryCourse,
   flattenCourseLessons,
-  type CoursePlan,
 } from '../../../src/libraryCatalogue';
 import {
-  currentSubscription,
+  effectiveLearningSubscription,
+  subscriptionIncludesCourse,
+} from '../../_shared/learning-entitlements';
+import {
   recordLmsAudit,
   requireProductionLms,
   stableId,
-  subscriptionHasAccess,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
@@ -28,14 +29,6 @@ type EnrolmentRow = {
   started_at: string | null;
   completed_at: string | null;
 };
-
-function coursePlan(planId: string): CoursePlan | null {
-  if (planId === 'learner') return 'Learner';
-  if (planId === 'learner-plus') return 'Learner Plus';
-  if (planId === 'team-5') return 'Team 5';
-  if (planId === 'team-15') return 'Team 15';
-  return null;
-}
 
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
@@ -65,19 +58,18 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
-  const subscription = await currentSubscription(env.DB, access.session.accountId);
-  if (!subscriptionHasAccess(subscription) || !subscription) {
+  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
+  if (!subscription) {
     return Response.json({
       error: 'subscription_required',
-      message: 'An active Learning Library subscription is required before starting this course.',
+      message: 'An active Learning Library subscription or organisation learning seat is required before starting this course.',
     }, { status: 403 });
   }
 
-  const plan = coursePlan(subscription.plan_id);
-  if (!plan || !course.includedPlans.includes(plan)) {
+  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
     return Response.json({
       error: 'course_not_in_plan',
-      message: 'This course is not included in the account’s current plan.',
+      message: 'This course is not included in the account’s current Learning Library entitlement.',
     }, { status: 403 });
   }
 
@@ -129,7 +121,13 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     'course_enrolled',
     'lms_enrolment',
     enrolmentId,
-    { courseSlug: course.slug, courseCode: course.code, courseVersion: course.version },
+    {
+      courseSlug: course.slug,
+      courseCode: course.code,
+      courseVersion: course.version,
+      subscriptionId: subscription.id,
+      entitlementOwnerAccountId: subscription.account_id,
+    },
   );
 
   const created = await env.DB.prepare(`

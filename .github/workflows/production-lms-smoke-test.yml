@@ -43,6 +43,12 @@ jobs:
 
             if [ "$status" = '200' ] && jq --exit-status '
               .ready == true
+              and .catalogue.ready == true
+              and .catalogue.courses >= 250
+              and .catalogue.modules >= 750
+              and .catalogue.lessons >= 1500
+              and .catalogue.assessmentQuestions >= 1500
+              and (.catalogue.validationErrors | length) == 0
               and .database.ready == true
               and .database.schemaVersion >= 1
               and .database.lmsTables >= 12
@@ -51,7 +57,7 @@ jobs:
               and .billing.ready == true
               and .billing.salesEnabled == true
             ' response.json >/dev/null; then
-              echo 'Sousa Murray eLearning production LMS is ready.'
+              echo 'Sousa Murray eLearning production LMS and 250+ course catalogue are ready.'
               exit 0
             fi
 

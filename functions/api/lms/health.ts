@@ -1,4 +1,8 @@
 import {
+  libraryCatalogueStats,
+  validateLibraryCatalogue,
+} from '../../../src/libraryCatalogue';
+import {
   LMS_PLANS,
   assertProductionLmsSchema,
   type ProductionLmsEnv,
@@ -30,6 +34,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
       `).first<{ total: number }>(),
     ]);
 
+    const catalogueErrors = validateLibraryCatalogue();
+    const catalogueReady = catalogueErrors.length === 0 && libraryCatalogueStats.courses >= 250;
     const databaseReady = Number(version?.version ?? 0) >= PRODUCTION_LMS_SCHEMA_VERSION
       && Number(planCount?.total ?? 0) === LMS_PLANS.length
       && Number(tableCount?.total ?? 0) >= 12;
@@ -40,11 +46,19 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ env }) => 
       && env.ENTRA_CLIENT_SECRET,
     );
     const stripeReady = Boolean(env.STRIPE_SECRET_KEY);
-    const ready = databaseReady && identityReady && stripeReady;
+    const ready = catalogueReady && databaseReady && identityReady && stripeReady;
 
     return Response.json({
       ready,
       status: ready ? 'ready' : 'configuration_incomplete',
+      catalogue: {
+        ready: catalogueReady,
+        courses: libraryCatalogueStats.courses,
+        modules: libraryCatalogueStats.modules,
+        lessons: libraryCatalogueStats.lessons,
+        assessmentQuestions: libraryCatalogueStats.assessmentQuestions,
+        validationErrors: catalogueErrors,
+      },
       database: {
         ready: databaseReady,
         schemaVersion: Number(version?.version ?? 0),

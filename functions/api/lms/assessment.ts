@@ -3,11 +3,13 @@ import {
   flattenCourseLessons,
 } from '../../../src/libraryCatalogue';
 import {
-  currentSubscription,
+  effectiveLearningSubscription,
+  subscriptionIncludesCourse,
+} from '../../_shared/learning-entitlements';
+import {
   recordLmsAudit,
   requireProductionLms,
   stableId,
-  subscriptionHasAccess,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
@@ -46,11 +48,6 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !env.DB) return access.response;
 
-  const subscription = await currentSubscription(env.DB, access.session.accountId);
-  if (!subscriptionHasAccess(subscription)) {
-    return Response.json({ error: 'subscription_required' }, { status: 403 });
-  }
-
   let input: AssessmentInput;
   try {
     input = await request.json<AssessmentInput>();
@@ -60,6 +57,15 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
+
+  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
+  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
+    return Response.json({
+      error: 'course_not_in_plan',
+      message: 'An active Learning Library entitlement containing this course is required before taking the final assessment.',
+    }, { status: 403 });
+  }
+
   if (!input.answers || typeof input.answers !== 'object') {
     return Response.json({ error: 'answers_required' }, { status: 400 });
   }

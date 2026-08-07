@@ -3,9 +3,11 @@ import {
   flattenCourseLessons,
 } from '../../../../src/libraryCatalogue';
 import {
-  currentSubscription,
+  effectiveLearningSubscription,
+  subscriptionIncludesCourse,
+} from '../../../_shared/learning-entitlements';
+import {
   requireProductionLms,
-  subscriptionHasAccess,
   type ProductionLmsEnv,
 } from '../../../_shared/production-lms';
 
@@ -52,8 +54,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   const course = findLibraryCourse(slug);
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
-  const subscription = await currentSubscription(env.DB, access.session.accountId);
-  if (!subscriptionHasAccess(subscription)) {
+  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
+  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
     return Response.json({
       course: { slug: course.slug, code: course.code, title: course.title, version: course.version },
       entitlementActive: false,
