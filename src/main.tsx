@@ -51,8 +51,8 @@ function enableReliableInternalNavigation() {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const anchor = target.closest('a[href]');
-    if (!(anchor instanceof HTMLAnchorElement) return;
+    const anchor = target.closest("a[href]");
+    if (!(anchor instanceof HTMLAnchorElement)) return;
     if (anchor.target && anchor.target !== '_self') return;
     if (anchor.hasAttribute('download')) return;
 
