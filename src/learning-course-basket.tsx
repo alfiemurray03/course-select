@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export const LEARNING_COURSE_LIMIT = 25;
+export const LEARNING_COURSE_BASKET_SYNC_EVENT = 'sousa-murray-learning-course-basket-sync';
 
 export type LearningCourseBasketItem = {
   courseSlug: string;
@@ -18,23 +19,35 @@ type LearningCourseBasketContextValue = {
 const STORAGE_KEY = 'sousa-murray-learning-course-basket-v2';
 const LearningCourseBasketContext = createContext<LearningCourseBasketContextValue | null>(null);
 
+function normaliseStoredItems(value: unknown): LearningCourseBasketItem[] {
+  if (!Array.isArray(value)) return [];
+  const slugs = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const slug = String((item as LearningCourseBasketItem).courseSlug || '').trim();
+    if (!slug || slugs.size >= LEARNING_COURSE_LIMIT) continue;
+    slugs.add(slug);
+  }
+  return [...slugs].map((courseSlug) => ({ courseSlug }));
+}
+
 function loadBasket(): LearningCourseBasketItem[] {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return [];
-    const parsed = JSON.parse(saved) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const slugs = new Set<string>();
-    for (const item of parsed) {
-      if (!item || typeof item !== 'object') continue;
-      const slug = String((item as LearningCourseBasketItem).courseSlug || '').trim();
-      if (!slug || slugs.size >= LEARNING_COURSE_LIMIT) continue;
-      slugs.add(slug);
-    }
-    return [...slugs].map((courseSlug) => ({ courseSlug }));
+    return normaliseStoredItems(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
   } catch {
     return [];
   }
+}
+
+export function addLearningCourseToStoredBasket(courseSlug: string) {
+  const slug = courseSlug.trim();
+  if (!slug) return false;
+  const current = loadBasket();
+  if (current.some((item) => item.courseSlug === slug)) return true;
+  if (current.length >= LEARNING_COURSE_LIMIT) return false;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, { courseSlug: slug }]));
+  window.dispatchEvent(new Event(LEARNING_COURSE_BASKET_SYNC_EVENT));
+  return true;
 }
 
 export function LearningCourseBasketProvider({ children }: { children: ReactNode }) {
@@ -43,6 +56,12 @@ export function LearningCourseBasketProvider({ children }: { children: ReactNode
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
+
+  useEffect(() => {
+    const synchronise = () => setItems(loadBasket());
+    window.addEventListener(LEARNING_COURSE_BASKET_SYNC_EVENT, synchronise);
+    return () => window.removeEventListener(LEARNING_COURSE_BASKET_SYNC_EVENT, synchronise);
+  }, []);
 
   const addItem = useCallback((courseSlug: string) => {
     const slug = courseSlug.trim();
