@@ -2,10 +2,7 @@ import {
   findLibraryCourse,
   flattenCourseLessons,
 } from '../../../src/libraryCatalogue';
-import {
-  effectiveLearningSubscription,
-  subscriptionIncludesCourse,
-} from '../../_shared/learning-entitlements';
+import { resolveCourseAccess } from '../../_shared/course-entitlements';
 import {
   recordLmsAudit,
   requireProductionLms,
@@ -58,11 +55,11 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
-  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
-  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
+  const resolvedAccess = await resolveCourseAccess(env.DB, access.session.accountId, course);
+  if (!resolvedAccess.active) {
     return Response.json({
-      error: 'course_not_in_plan',
-      message: 'An active Learning Library entitlement containing this course is required before taking the final assessment.',
+      error: 'course_access_required',
+      message: 'Active access to this course is required before taking the final assessment.',
     }, { status: 403 });
   }
 
@@ -197,6 +194,7 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       score,
       passMark: course.finalAssessment.passMark,
       attemptNumber,
+      accessSource: resolvedAccess.source,
     },
   );
 

@@ -1,4 +1,4 @@
-export const PRODUCTION_LMS_SCHEMA_VERSION = 2;
+export const PRODUCTION_LMS_SCHEMA_VERSION = 3;
 
 export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS lms_schema_versions (
@@ -87,6 +87,28 @@ export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (organisation_id) REFERENCES lms_organisations(id) ON DELETE CASCADE,
     FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE SET NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS lms_course_entitlements (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    course_slug TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    course_version TEXT NOT NULL,
+    source TEXT NOT NULL CHECK (source IN ('free_trial','individual_purchase','manual')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','expired','revoked','refunded')),
+    product_code TEXT,
+    price_code TEXT,
+    central_payment_reference TEXT,
+    stripe_customer_id TEXT,
+    stripe_checkout_session_id TEXT,
+    claimed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    starts_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TEXT,
+    revoked_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (account_id) REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    UNIQUE (account_id, course_slug, source)
   )`,
   `CREATE TABLE IF NOT EXISTS lms_enrolments (
     id TEXT PRIMARY KEY,
@@ -187,6 +209,8 @@ export const PRODUCTION_LMS_SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_lms_members_organisation ON lms_organisation_members(organisation_id, status)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_members_account ON lms_organisation_members(account_id, status)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_members_invited_email ON lms_organisation_members(invited_email, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_lms_course_entitlements_account ON lms_course_entitlements(account_id, course_slug, status, expires_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_lms_course_entitlements_checkout ON lms_course_entitlements(stripe_checkout_session_id, source)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_enrolments_account ON lms_enrolments(account_id, status, updated_at)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_enrolments_subscription ON lms_enrolments(subscription_id, status)`,
   `CREATE INDEX IF NOT EXISTS idx_lms_progress_enrolment ON lms_lesson_progress(enrolment_id, status)`,

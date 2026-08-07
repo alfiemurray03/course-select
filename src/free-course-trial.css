@@ -1,0 +1,152 @@
+.free-course-trial-catalogue-badge {
+  align-self: flex-start;
+  width: fit-content;
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--border));
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--primary-soft) 68%, var(--card));
+  color: var(--primary);
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.free-course-trial-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 2px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 17px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--card));
+  color: var(--foreground);
+}
+
+.free-course-trial-card h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1.08rem;
+}
+
+.free-course-trial-card p,
+.free-course-trial-card small,
+.free-course-trial-price span {
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.free-course-trial-card p strong {
+  color: var(--foreground);
+}
+
+.free-course-trial-badge {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.free-course-trial-badge.used {
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.free-course-trial-price {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 2px 0;
+}
+
+.free-course-trial-price strong {
+  color: var(--foreground);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.free-course-trial-message {
+  border-left: 3px solid var(--primary);
+  padding-left: 10px;
+  color: var(--foreground) !important;
+  font-weight: 650;
+}
+
+.free-course-trial-action {
+  width: 100%;
+}
+
+.free-course-trial-loading {
+  width: 26px;
+  height: 26px;
+  border: 3px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: free-course-trial-spin .85s linear infinite;
+}
+
+.free-course-trial-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 22px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 20px;
+  padding: 22px 24px;
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--card));
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard > div {
+  display: grid;
+  gap: 7px;
+}
+
+.free-course-trial-dashboard h2 {
+  margin: 0;
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard p {
+  color: var(--muted-foreground);
+}
+
+.free-course-trial-dashboard p strong {
+  color: var(--foreground);
+}
+
+.free-course-trial-dashboard > a {
+  flex: 0 0 auto;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 850;
+}
+
+.free-course-trial-dashboard > a:hover {
+  background: var(--primary-dark);
+}
+
+@keyframes free-course-trial-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .free-course-trial-dashboard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .free-course-trial-dashboard > a {
+    text-align: center;
+  }
+}

@@ -3,9 +3,9 @@ import {
   flattenCourseLessons,
 } from '../../../src/libraryCatalogue';
 import {
-  effectiveLearningSubscription,
-  subscriptionIncludesCourse,
-} from '../../_shared/learning-entitlements';
+  ensureStandaloneEnrolmentBridge,
+  resolveCourseAccess,
+} from '../../_shared/course-entitlements';
 import {
   recordLmsAudit,
   requireProductionLms,
@@ -58,18 +58,11 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
-  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
-  if (!subscription) {
+  const resolvedAccess = await resolveCourseAccess(env.DB, access.session.accountId, course);
+  if (!resolvedAccess.active) {
     return Response.json({
-      error: 'subscription_required',
-      message: 'An active Learning Library subscription or organisation learning seat is required before starting this course.',
-    }, { status: 403 });
-  }
-
-  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
-    return Response.json({
-      error: 'course_not_in_plan',
-      message: 'This course is not included in the account’s current Learning Library entitlement.',
+      error: 'course_access_required',
+      message: 'An active plan, course purchase or course trial containing this course is required before starting it.',
     }, { status: 403 });
   }
 
@@ -81,6 +74,21 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     WHERE account_id = ? AND course_slug = ? AND course_version = ?
   `).bind(access.session.accountId, course.slug, course.version).first<EnrolmentRow>();
   if (existing) return Response.json({ enrolment: existing, created: false });
+
+  let subscriptionId = resolvedAccess.subscription?.id ?? null;
+  if (!subscriptionId && resolvedAccess.entitlement) {
+    subscriptionId = await ensureStandaloneEnrolmentBridge(
+      env.DB,
+      access.session.accountId,
+      resolvedAccess.entitlement,
+    );
+  }
+  if (!subscriptionId) {
+    return Response.json({
+      error: 'course_access_link_failed',
+      message: 'Your course access is active, but the LMS could not prepare the enrolment record.',
+    }, { status: 500 });
+  }
 
   const enrolmentId = await stableId(
     'lms-enrolment',
@@ -94,7 +102,7 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   `).bind(
     enrolmentId,
     access.session.accountId,
-    subscription.id,
+    subscriptionId,
     course.slug,
     course.code,
     course.version,
@@ -125,8 +133,10 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       courseSlug: course.slug,
       courseCode: course.code,
       courseVersion: course.version,
-      subscriptionId: subscription.id,
-      entitlementOwnerAccountId: subscription.account_id,
+      subscriptionId,
+      accessSource: resolvedAccess.source,
+      entitlementId: resolvedAccess.entitlement?.id ?? null,
+      entitlementExpiresAt: resolvedAccess.entitlement?.expires_at ?? null,
     },
   );
 
