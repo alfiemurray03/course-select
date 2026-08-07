@@ -3,10 +3,12 @@ import {
   flattenCourseLessons,
 } from '../../../src/libraryCatalogue';
 import {
-  currentSubscription,
+  effectiveLearningSubscription,
+  subscriptionIncludesCourse,
+} from '../../_shared/learning-entitlements';
+import {
   recordLmsAudit,
   requireProductionLms,
-  subscriptionHasAccess,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
@@ -29,11 +31,6 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !env.DB) return access.response;
 
-  const subscription = await currentSubscription(env.DB, access.session.accountId);
-  if (!subscriptionHasAccess(subscription)) {
-    return Response.json({ error: 'subscription_required' }, { status: 403 });
-  }
-
   let input: ProgressInput;
   try {
     input = await request.json<ProgressInput>();
@@ -43,6 +40,15 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
+
+  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
+  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
+    return Response.json({
+      error: 'course_not_in_plan',
+      message: 'An active Learning Library entitlement containing this course is required.',
+    }, { status: 403 });
+  }
+
   const lessons = flattenCourseLessons(course);
   const lesson = lessons.find((item) => item.id === input.lessonId);
   if (!lesson) return Response.json({ error: 'lesson_not_found' }, { status: 404 });
