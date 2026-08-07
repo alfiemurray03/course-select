@@ -13,6 +13,7 @@ import './course-family-boundaries';
 import './learning-detail-enhancements';
 import './free-course-trial';
 import './enrolment-details-ui';
+import './own-course-catalogue-commerce';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
@@ -36,6 +37,7 @@ import './free-course-trial.css';
 import './enrolment-details-ui.css';
 import './course-commerce-refresh.css';
 import './learning-course-basket.css';
+import './own-course-catalogue-commerce.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
