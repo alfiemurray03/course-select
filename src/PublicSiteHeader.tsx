@@ -11,6 +11,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useBasket } from './basket';
+import './public-site-header.css';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
