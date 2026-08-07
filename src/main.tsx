@@ -33,6 +33,7 @@ import './course-family-boundaries.css';
 import './learning-detail-enhancements.css';
 import './free-course-trial.css';
 import './enrolment-details-ui.css';
+import './course-commerce-refresh.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
@@ -51,7 +52,7 @@ function enableReliableInternalNavigation() {
     if (!(target instanceof Element)) return;
 
     const anchor = target.closest('a[href]');
-    if (!(anchor instanceof HTMLAnchorElement)) return;
+    if (!(anchor instanceof HTMLAnchorElement) return;
     if (anchor.target && anchor.target !== '_self') return;
     if (anchor.hasAttribute('download')) return;
 
