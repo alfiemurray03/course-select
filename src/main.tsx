@@ -11,6 +11,7 @@ import './professional-training-payment-return';
 import './course-family-boundaries';
 import './learning-detail-enhancements';
 import './free-course-trial';
+import './enrolment-details-ui';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
@@ -31,6 +32,8 @@ import './customer-websites-menu.css';
 import './course-family-boundaries.css';
 import './learning-detail-enhancements.css';
 import './free-course-trial.css';
+import './enrolment-details-ui.css';
+import './course-commerce-refresh.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
@@ -48,7 +51,7 @@ function enableReliableInternalNavigation() {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const anchor = target.closest('a[href]');
+    const anchor = target.closest("a[href]");
     if (!(anchor instanceof HTMLAnchorElement)) return;
     if (anchor.target && anchor.target !== '_self') return;
     if (anchor.hasAttribute('download')) return;
