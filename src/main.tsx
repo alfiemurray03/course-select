@@ -7,6 +7,7 @@ import { BasketProvider } from './basket';
 import { installPublicBrandScrubber } from './public-brand-scrubber';
 import './legacy-route-normaliser';
 import './customer-websites-menu';
+import './professional-training-payment-return';
 import './styles.css';
 import './catalogue.css';
 import './basket.css';
