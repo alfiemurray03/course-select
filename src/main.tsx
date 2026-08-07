@@ -10,6 +10,7 @@ import './customer-websites-menu';
 import './professional-training-payment-return';
 import './course-family-boundaries';
 import './learning-detail-enhancements';
+import './free-course-trial';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
@@ -29,6 +30,7 @@ import './dark-select-fix.css';
 import './customer-websites-menu.css';
 import './course-family-boundaries.css';
 import './learning-detail-enhancements.css';
+import './free-course-trial.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
