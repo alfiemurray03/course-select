@@ -31,6 +31,8 @@ type PricingResponse = {
   }>;
 };
 
+const TRIAL_COURSE_SLUG = 'ai-literacy-for-everyday-work';
+
 function money(pence: number) {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2 }).format(pence / 100);
 }
@@ -78,6 +80,7 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
           {pricing?.accessLabel && <strong>{pricing.accessLabel}</strong>}
           <button type="button" className="plcp-primary" onClick={buyNow}>Buy now <ArrowRight /></button>
           <button type="button" className="plcp-secondary" onClick={add} disabled={inBasket}>{inBasket ? 'Added to course basket' : 'Add to course basket'} <ShoppingBasket /></button>
+          {course.slug === TRIAL_COURSE_SLUG && <Link className="plcp-trial-link" to={`/lms/course/${course.slug}`}>Free 7-day trial <ArrowRight /></Link>}
           <Link className="plcp-plan-link" to="/plans">Buy a Learning Library plan <ArrowRight /></Link>
           <small>Plans are purchased separately. They are never added to the course basket.</small>
         </aside>
