@@ -1,6 +1,5 @@
 import {
   currentSubscription,
-  planDefinition,
   subscriptionHasAccess,
   type LmsPlanId,
   type SubscriptionRow,
@@ -16,18 +15,30 @@ export function learningPlanName(planId: LmsPlanId | string | null | undefined):
   return null;
 }
 
+export function learningPlanTier(planId: LmsPlanId | string | null | undefined): 'core' | 'complete' | null {
+  if (planId === 'learner' || planId === 'team-5') return 'core';
+  if (planId === 'learner-plus' || planId === 'team-15') return 'complete';
+  return null;
+}
+
 export function subscriptionIncludesCourse(
   subscription: SubscriptionRow | null,
   includedPlans: readonly string[],
 ) {
   if (!subscriptionHasAccess(subscription) || !subscription) return false;
   const plan = learningPlanName(subscription.plan_id);
-  return Boolean(plan && includedPlans.includes(plan));
+  if (!plan) return false;
+
+  // Core courses are marked by Learner membership and belong to all four plans.
+  // Complete-only courses are restricted to Learner Plus and Team 15.
+  const isCoreCourse = includedPlans.includes('Learner');
+  if (isCoreCourse) return true;
+  return plan === 'Learner Plus' || plan === 'Team 15';
 }
 
 function entitlementRank(subscription: SubscriptionRow | null) {
   if (!subscriptionHasAccess(subscription) || !subscription) return 0;
-  return planDefinition(subscription.plan_id)?.libraryTier === 'complete' ? 2 : 1;
+  return learningPlanTier(subscription.plan_id) === 'complete' ? 2 : 1;
 }
 
 export async function effectiveLearningSubscription(
