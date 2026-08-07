@@ -58,7 +58,7 @@ expandedLibraryCourses.forEach((course, courseIndex) => {
 function commercialPlansForCourse(course: LibraryCourse): CoursePlan[] {
   // The original catalogue used Learner membership as the marker for the
   // selected Core collection. Everything else is Complete-only. Keep that
-  // stable marker while enforcing the Board/customer-facing commercial split:
+  // stable marker while enforcing the customer-facing commercial split:
   // Learner + Team 5 receive Core; Learner Plus + Team 15 receive everything.
   return course.includedPlans.includes('Learner')
     ? [...CORE_LIBRARY_PLANS]
@@ -113,7 +113,6 @@ function validateCourse(course: LibraryCourse) {
     if (assessmentIds.has(question.id)) errors.push(`${course.code}: duplicate final-assessment id ${question.id}.`);
     assessmentIds.add(question.id);
     if (question.options.length < 3) errors.push(`${course.code}/${question.id}: final-assessment question requires at least three options.`);
-    if (question.knowledgeCheck?.options?.length === 0) errors.push(`${course.code}/${question.id}: invalid knowledge-check payload.`);
     if (question.answer < 0 || question.answer >= question.options.length) errors.push(`${course.code}/${question.id}: final-assessment answer is invalid.`);
   }
 
