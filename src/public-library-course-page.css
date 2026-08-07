@@ -14,10 +14,11 @@
 .plcp-purchase-card h2{margin:0;font-size:1.85rem}
 .plcp-purchase-card p{margin:0;color:#526176;line-height:1.55}
 .plcp-purchase-card strong{font-size:.84rem}
-.plcp-primary,.plcp-secondary,.plcp-plan-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;padding:0 14px;font:inherit;font-weight:900;text-decoration:none;cursor:pointer}
+.plcp-primary,.plcp-secondary,.plcp-trial-link,.plcp-plan-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;padding:0 14px;font:inherit;font-weight:900;text-decoration:none;cursor:pointer}
 .plcp-primary{border:1px solid #2563eb;background:#2563eb;color:#fff}
 .plcp-secondary{border:1px solid #d8e0ea;background:#fff;color:#0f172a}
 .plcp-secondary:disabled{opacity:.7;cursor:default}
+.plcp-trial-link{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8}
 .plcp-plan-link{border:0;background:#eef4ff;color:#1d4ed8}
 .plcp-purchase-card>small{color:#64748b;line-height:1.45}
 .plcp-content{padding:56px 0}
