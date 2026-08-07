@@ -1,3 +1,5 @@
+export {};
+
 const TRIAL_COURSE_SLUG = 'ai-literacy-for-everyday-work';
 const TRIAL_COURSE_TITLE = 'AI Literacy for Everyday Work';
 const TRIAL_MARKER = 'data-free-course-trial';
@@ -197,7 +199,7 @@ async function courseTrialPanel() {
   } catch {
     panel.remove();
   } finally {
-    if (coursePanelState !== 'polling') coursePanelState = 'loaded';
+    coursePanelState = 'loaded';
   }
 }
 
@@ -249,6 +251,6 @@ function schedule() {
 }
 
 schedule();
-const observer = new MutationObserver(schedule);
-observer.observe(document.documentElement, { childList: true, subtree: true });
+const freeCourseTrialObserver = new MutationObserver(schedule);
+freeCourseTrialObserver.observe(document.documentElement, { childList: true, subtree: true });
 window.addEventListener('popstate', schedule);
