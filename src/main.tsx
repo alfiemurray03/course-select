@@ -9,6 +9,7 @@ import './legacy-route-normaliser';
 import './customer-websites-menu';
 import './professional-training-payment-return';
 import './course-family-boundaries';
+import './learning-detail-enhancements';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
@@ -27,6 +28,7 @@ import './mobile-responsive.css';
 import './dark-select-fix.css';
 import './customer-websites-menu.css';
 import './course-family-boundaries.css';
+import './learning-detail-enhancements.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
