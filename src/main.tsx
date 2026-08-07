@@ -9,6 +9,7 @@ import './legacy-route-normaliser';
 import './customer-websites-menu';
 import './professional-training-payment-return';
 import './course-family-boundaries';
+import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
 import './basket.css';
