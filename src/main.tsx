@@ -14,6 +14,7 @@ import './learning-detail-enhancements';
 import './free-course-trial';
 import './enrolment-details-ui';
 import './own-course-catalogue-commerce';
+import './lms-start-course-routing';
 import './public-navigation-simplifier';
 import './styles.css';
 import './catalogue.css';
