@@ -102,6 +102,25 @@ function enhanceLmsInformationPage() {
   if (!activePlanCopy) aside.append(actions);
 }
 
+// Register before the generic site navigation handler so even a very fast click
+// on the catalogue's original React link goes to the public purchase page and
+// never falls through to an LMS information route.
+document.addEventListener('click', (event) => {
+  if (window.location.pathname !== '/learning-library/courses') return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest<HTMLAnchorElement>('.plms-course-grid > article a');
+  if (!link || link.closest('.sml-own-course-card-actions')) return;
+  const card = link.closest('.plms-course-grid > article');
+  if (!card) return;
+  const course = findCourseByCard(card);
+  if (!course) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  window.location.assign(`/learning-library/courses/${course.slug}`);
+}, true);
+
 function apply() {
   enhanceCatalogue();
   enhanceLmsInformationPage();
