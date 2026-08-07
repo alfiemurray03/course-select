@@ -1,10 +1,11 @@
 .course-family-boundary {
   width: min(1180px, calc(100% - 32px));
   margin: 22px auto;
-  border: 1px solid rgba(37, 99, 235, 0.24);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
   border-radius: 18px;
   padding: 18px 20px;
-  background: rgba(37, 99, 235, 0.08);
+  background: color-mix(in srgb, var(--primary-soft) 48%, var(--card));
+  color: var(--foreground);
   box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
 }
 
@@ -14,38 +15,39 @@
 }
 
 .course-family-boundary strong {
+  color: var(--foreground);
   font-size: 1rem;
   line-height: 1.35;
 }
 
 .course-family-boundary span {
-  color: var(--muted, #64748b);
+  color: var(--muted-foreground);
   line-height: 1.55;
 }
 
 .course-family-boundary-highfield {
-  border-color: rgba(124, 58, 237, 0.26);
-  background: rgba(124, 58, 237, 0.08);
+  border-color: color-mix(in srgb, #7c3aed 32%, var(--border));
+  background: color-mix(in srgb, #7c3aed 10%, var(--card));
 }
 
 .course-source-badge {
   width: fit-content;
   max-width: 100%;
   margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
   border-radius: 999px;
   padding: 7px 10px;
+  background: color-mix(in srgb, var(--primary-soft) 62%, var(--card));
+  color: var(--primary);
   font-size: 0.76rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: 0.01em;
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
 }
 
 .course-source-badge-highfield {
-  border-color: rgba(124, 58, 237, 0.28);
-  background: rgba(124, 58, 237, 0.1);
+  border-color: color-mix(in srgb, #7c3aed 34%, var(--border));
+  background: color-mix(in srgb, #7c3aed 11%, var(--card));
   color: #6d28d9;
 }
 
@@ -55,11 +57,11 @@
   align-self: flex-start;
   width: fit-content;
   margin: 0 0 4px;
-  border: 1px solid rgba(37, 99, 235, 0.24);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
   border-radius: 999px;
   padding: 5px 9px;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--primary-soft) 62%, var(--card));
+  color: var(--primary);
   font-size: 0.69rem;
   font-weight: 900;
   line-height: 1;
@@ -68,28 +70,18 @@
 }
 
 .plan-audience-business {
-  border-color: rgba(79, 70, 229, 0.28);
-  background: rgba(79, 70, 229, 0.09);
+  border-color: color-mix(in srgb, #4f46e5 32%, var(--border));
+  background: color-mix(in srgb, #4f46e5 10%, var(--card));
   color: #4338ca;
 }
 
-.dark .course-family-boundary,
-.dark .course-source-badge,
-.dark .plan-audience-badge {
-  border-color: rgba(96, 165, 250, 0.35);
+:root.dark .course-source-badge-highfield {
+  background: color-mix(in srgb, #7c3aed 22%, var(--card));
+  color: #c4b5fd;
 }
 
-.dark .course-family-boundary-highfield,
-.dark .course-source-badge-highfield {
-  border-color: rgba(167, 139, 250, 0.38);
-}
-
-.dark .plan-audience-badge {
-  color: #bfdbfe;
-}
-
-.dark .plan-audience-business {
-  border-color: rgba(165, 180, 252, 0.38);
+:root.dark .plan-audience-business {
+  background: color-mix(in srgb, #4f46e5 22%, var(--card));
   color: #c7d2fe;
 }
 

@@ -1,18 +1,15 @@
 .course-family-boundary span {
-  color: #334155;
-}
-
-.dark .course-family-boundary span {
-  color: #dbeafe;
+  color: var(--muted-foreground);
 }
 
 .learning-detail-panel {
   width: min(1180px, calc(100% - 32px));
   margin: 32px auto 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 30px;
-  background: var(--surface);
+  background: var(--card);
+  color: var(--card-foreground);
   box-shadow: var(--shadow);
 }
 
@@ -35,11 +32,19 @@
 .learning-process-block > div > span,
 .learning-detail-grid article > strong,
 .learning-important-note > strong {
-  color: #2563eb;
+  color: var(--primary);
   font-size: .76rem;
   font-weight: 900;
   letter-spacing: .08em;
   text-transform: uppercase;
+}
+
+.learning-detail-heading h2,
+.learning-detail-grid article h3,
+.learning-process-block > div h3,
+.learning-process-block li b,
+.learning-course-facts strong {
+  color: var(--foreground);
 }
 
 .learning-detail-heading h2 {
@@ -53,8 +58,16 @@
 .learning-detail-grid article p,
 .learning-process-block li span,
 .learning-course-facts span,
+.learning-important-note p,
+.learning-detail-list li {
+  color: var(--muted-foreground);
+}
+
+.learning-detail-heading p,
+.learning-detail-grid article p,
+.learning-process-block li span,
+.learning-course-facts span,
 .learning-important-note p {
-  color: var(--muted);
   line-height: 1.65;
 }
 
@@ -77,10 +90,11 @@
 }
 
 .learning-detail-grid article {
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 22px;
-  background: var(--surface-muted, #f8fafc);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .learning-detail-grid article h3 {
@@ -95,10 +109,11 @@
 
 .learning-process-block {
   margin-top: 22px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
-  background: var(--surface-muted, #f8fafc);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .learning-process-block > div h3 {
@@ -122,10 +137,11 @@
   display: grid;
   gap: 6px;
   min-height: 150px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 46px 18px 18px;
-  background: var(--surface);
+  background: var(--card);
+  color: var(--card-foreground);
 }
 
 .learning-process-block li::before {
@@ -138,7 +154,7 @@
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: #2563eb;
+  background: var(--primary);
   color: #fff;
   font-size: .75rem;
   font-weight: 900;
@@ -158,10 +174,11 @@
 .learning-course-facts > div {
   display: grid;
   gap: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
-  background: var(--surface-muted, #f8fafc);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .learning-course-facts strong {
@@ -175,7 +192,6 @@
 
 .learning-detail-list li {
   margin: 7px 0;
-  color: var(--muted);
   line-height: 1.55;
 }
 
@@ -190,29 +206,27 @@
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  border: 1px solid rgba(37, 99, 235, .22);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
   border-radius: 999px;
   padding: 0 10px;
-  background: rgba(37, 99, 235, .08);
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--primary-soft) 60%, var(--card));
+  color: var(--primary);
   font-size: .74rem;
   font-weight: 800;
 }
 
 .learning-important-note {
   margin-top: 18px;
-  border-left: 4px solid #2563eb;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+  border-left: 4px solid var(--primary);
   border-radius: 14px;
   padding: 18px 20px;
-  background: rgba(37, 99, 235, .07);
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--card));
+  color: var(--foreground);
 }
 
 .learning-important-note p {
   margin: 7px 0 0;
-}
-
-.dark .learning-plan-chip-row span {
-  color: #bfdbfe;
 }
 
 @media (max-width: 1000px) {
