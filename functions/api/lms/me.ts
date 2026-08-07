@@ -12,6 +12,7 @@ import {
 import {
   effectiveLearningSubscription,
   learningPlanName,
+  learningPlanTier,
 } from '../../_shared/learning-entitlements';
 import {
   formatUcn,
@@ -75,6 +76,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   const selectedPlan = subscription ? planDefinition(subscription.plan_id) : null;
   const planName = subscription ? learningPlanName(subscription.plan_id) : null;
   const plan = planName as CoursePlan | null;
+  const planTier = subscription ? learningPlanTier(subscription.plan_id) : null;
   const ownedByUser = Boolean(subscription && subscription.account_id === access.session.accountId);
 
   const [enrolmentResult, certificateResult] = await Promise.all([
@@ -108,6 +110,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
         durationMinutes: courseDuration(course),
         modules: course.modules.length,
         lessons: course.modules.reduce((total, module) => total + module.lessons.length, 0),
+        source: 'Sousa Murray Learning Library',
+        learningPlatform: 'Sousa Murray LMS',
       }))
     : [];
 
@@ -129,7 +133,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
         name: selectedPlan.name,
         amountPence: selectedPlan.amountPence,
         seatLimit: selectedPlan.seatLimit,
-        libraryTier: selectedPlan.libraryTier,
+        libraryTier: planTier,
       } : null,
       subscription: subscription ? {
         id: subscription.id,
