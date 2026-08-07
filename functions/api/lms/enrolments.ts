@@ -7,6 +7,11 @@ import {
   resolveCourseAccess,
 } from '../../_shared/course-entitlements';
 import {
+  saveLearnerEnrolmentDetails,
+  validateLearnerEnrolmentDetails,
+  type LearnerEnrolmentDetails,
+} from '../../_shared/enrolment-details';
+import {
   recordLmsAudit,
   requireProductionLms,
   stableId,
@@ -15,6 +20,10 @@ import {
 
 type EnrolInput = {
   courseSlug?: string;
+  learner?: Partial<LearnerEnrolmentDetails>;
+  legalFirstName?: string;
+  legalLastName?: string;
+  enrolmentEmail?: string;
 };
 
 type EnrolmentRow = {
@@ -58,6 +67,20 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
   const course = findLibraryCourse(input.courseSlug?.trim() ?? '');
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
+  let learnerDetails: LearnerEnrolmentDetails;
+  try {
+    learnerDetails = validateLearnerEnrolmentDetails(input.learner ?? {
+      legalFirstName: input.legalFirstName,
+      legalLastName: input.legalLastName,
+      enrolmentEmail: input.enrolmentEmail,
+    });
+  } catch (error) {
+    return Response.json({
+      error: String((error as { code?: string })?.code || 'learner_details_required'),
+      message: error instanceof Error ? error.message : 'Complete the learner details before enrolment.',
+    }, { status: Number((error as { status?: number })?.status || 400), headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const resolvedAccess = await resolveCourseAccess(env.DB, access.session.accountId, course);
   if (!resolvedAccess.active) {
     return Response.json({
@@ -73,7 +96,10 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     FROM lms_enrolments
     WHERE account_id = ? AND course_slug = ? AND course_version = ?
   `).bind(access.session.accountId, course.slug, course.version).first<EnrolmentRow>();
-  if (existing) return Response.json({ enrolment: existing, created: false });
+  if (existing) {
+    await saveLearnerEnrolmentDetails(env.DB, existing.id, access.session.accountId, course, learnerDetails);
+    return Response.json({ enrolment: existing, created: false, learnerDetailsConfirmed: true });
+  }
 
   let subscriptionId = resolvedAccess.subscription?.id ?? null;
   if (!subscriptionId && resolvedAccess.entitlement) {
@@ -108,6 +134,8 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     course.version,
   ).run();
 
+  await saveLearnerEnrolmentDetails(env.DB, enrolmentId, access.session.accountId, course, learnerDetails);
+
   const lessons = flattenCourseLessons(course);
   if (lessons.length) {
     await env.DB.batch(lessons.map((lesson) => env.DB!.prepare(`
@@ -137,6 +165,7 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       accessSource: resolvedAccess.source,
       entitlementId: resolvedAccess.entitlement?.id ?? null,
       entitlementExpiresAt: resolvedAccess.entitlement?.expires_at ?? null,
+      learnerDetailsConfirmed: true,
     },
   );
 
@@ -147,5 +176,5 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     FROM lms_enrolments WHERE id = ?
   `).bind(enrolmentId).first<EnrolmentRow>();
 
-  return Response.json({ enrolment: created, created: true }, { status: 201 });
+  return Response.json({ enrolment: created, created: true, learnerDetailsConfirmed: true }, { status: 201 });
 };
