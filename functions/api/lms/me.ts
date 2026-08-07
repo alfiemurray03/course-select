@@ -4,6 +4,12 @@ import {
   type CoursePlan,
 } from '../../../src/libraryCatalogue';
 import {
+  centralPaymentsConfigured,
+  syncCentralLmsSubscription,
+  synchroniseElearningCustomer,
+  type CentralPaymentsEnv,
+} from '../../_shared/central-payments';
+import {
   effectiveLearningSubscription,
   learningPlanName,
 } from '../../_shared/learning-entitlements';
@@ -45,6 +51,24 @@ type CertificateRow = {
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
+
+  let identityProfile = access.profile;
+  const centralEnv = env as CentralPaymentsEnv;
+  if (centralPaymentsConfigured(centralEnv)) {
+    try {
+      identityProfile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, identityProfile);
+      await syncCentralLmsSubscription(centralEnv, env.DB, access.session, identityProfile);
+    } catch (error) {
+      // Learning records remain available during a temporary Head Office outage.
+      // Checkout itself fails closed, but an already-synchronised entitlement is
+      // not destroyed merely because the central status request is unavailable.
+      console.error(JSON.stringify({
+        event: 'elearning_central_payments_sync_failed',
+        accountId: access.session.accountId,
+        message: error instanceof Error ? error.message : 'Unknown Central Payments sync failure',
+      }));
+    }
+  }
 
   const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
   const hasAccess = subscriptionHasAccess(subscription);
@@ -94,7 +118,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       accountId: access.session.accountId,
       name: access.session.name,
       email: access.session.email,
-      headOfficeCustomerNumber: formatUcn(access.profile.head_office_customer_number),
+      headOfficeCustomerNumber: formatUcn(identityProfile.head_office_customer_number),
     },
     entitlement: {
       active: hasAccess,
