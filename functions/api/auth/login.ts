@@ -5,7 +5,6 @@ import {
   safeReturnPath,
   sha256Base64Url,
   signValue,
-  siteUrl,
   type CustomerAuthEnv,
 } from '../../_shared/customer-auth';
 
@@ -16,6 +15,9 @@ type AuthTransaction = {
   returnTo: string;
   createdAt: number;
 };
+
+const CANONICAL_AUTH_ORIGIN = 'https://sousamurrayelearning.jagroupservices.co.uk';
+const CANONICAL_REDIRECT_URI = `${CANONICAL_AUTH_ORIGIN}/api/auth/callback`;
 
 export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, env }) => {
   if (!env.ENTRA_AUTHORITY || !env.ENTRA_CLIENT_ID || !env.SESSION_SECRET) {
@@ -34,13 +36,11 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
   const transaction: AuthTransaction = { state, nonce, verifier, returnTo, createdAt: Date.now() };
   const token = await signValue(transaction, env.SESSION_SECRET);
 
-  const baseUrl = siteUrl(request, env.SITE_URL);
-  const redirectUri = `${baseUrl}/api/auth/callback`;
   const authority = normaliseAuthority(env.ENTRA_AUTHORITY);
   const authorise = new URL(`${authority}/oauth2/v2.0/authorize`);
   authorise.searchParams.set('client_id', env.ENTRA_CLIENT_ID);
   authorise.searchParams.set('response_type', 'code');
-  authorise.searchParams.set('redirect_uri', redirectUri);
+  authorise.searchParams.set('redirect_uri', CANONICAL_REDIRECT_URI);
   authorise.searchParams.set('response_mode', 'query');
   authorise.searchParams.set('scope', 'openid profile email');
   authorise.searchParams.set('state', state);

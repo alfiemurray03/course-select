@@ -8,7 +8,6 @@ import {
   readCookie,
   sessionCookie,
   signValue,
-  siteUrl,
   verifyValue,
   type CustomerAuthEnv,
   type CustomerSession,
@@ -53,6 +52,9 @@ type IdClaims = {
   given_name?: string;
   family_name?: string;
 };
+
+const CANONICAL_AUTH_ORIGIN = 'https://sousamurrayelearning.jagroupservices.co.uk';
+const CANONICAL_REDIRECT_URI = `${CANONICAL_AUTH_ORIGIN}/api/auth/callback`;
 
 function decodePart<T>(part: string): T {
   return JSON.parse(base64UrlDecodeText(part)) as T;
@@ -141,14 +143,12 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
   }
 
   const authority = normaliseAuthority(env.ENTRA_AUTHORITY);
-  const baseUrl = siteUrl(request, env.SITE_URL);
-  const redirectUri = `${baseUrl}/api/auth/callback`;
   const tokenBody = new URLSearchParams({
     client_id: env.ENTRA_CLIENT_ID,
     client_secret: env.ENTRA_CLIENT_SECRET,
     grant_type: 'authorization_code',
     code,
-    redirect_uri: redirectUri,
+    redirect_uri: CANONICAL_REDIRECT_URI,
     code_verifier: transaction.verifier,
     scope: 'openid profile email',
   });
@@ -185,8 +185,6 @@ export const onRequestGet: PagesFunction<CustomerAuthEnv> = async ({ request, en
     }, { status: 401 });
   }
 
-  // A customer is identified by the Entra tenant and object IDs together.
-  // Email remains mutable contact data and is never the primary account key.
   const subject = `${tenantId}:${objectId}`;
 
   await ensureAccountTables(env.DB);
