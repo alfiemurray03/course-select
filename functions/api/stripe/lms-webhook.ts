@@ -3,6 +3,7 @@ import {
   planDefinition,
   planForStripePrice,
   stableId,
+  stripeRetrieve,
   type LmsPlanDefinition,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
@@ -105,7 +106,7 @@ function stripeStatus(value: unknown) {
 
 function firstSubscriptionItem(subscription: Record<string, unknown>) {
   const items = recordValue(subscription.items);
-  const data = Array.isArray(items?.data) ? items?.data : [];
+  const data = Array.isArray(items?.data) ? items.data : [];
   return data.length && recordValue(data[0]) ? recordValue(data[0]) : null;
 }
 
@@ -128,6 +129,45 @@ function invoiceSubscriptionId(invoice: Record<string, unknown>) {
   const parent = recordValue(invoice.parent);
   const details = recordValue(parent?.subscription_details);
   return stringValue(details?.subscription);
+}
+
+async function canonicalStripeEvent(
+  payload: string,
+  signatureHeader: string | null,
+  env: ProductionLmsEnv,
+) {
+  let supplied: StripeEvent;
+  try {
+    supplied = JSON.parse(payload) as StripeEvent;
+  } catch {
+    throw new Error('invalid_payload');
+  }
+  if (!supplied.id || !/^evt_[A-Za-z0-9]+$/.test(supplied.id) || !supplied.type) {
+    throw new Error('invalid_event');
+  }
+
+  if (
+    env.STRIPE_LMS_WEBHOOK_SECRET
+    && signatureHeader
+    && await verifyStripeSignature(payload, signatureHeader, env.STRIPE_LMS_WEBHOOK_SECRET)
+  ) {
+    if (!supplied.data?.object) throw new Error('invalid_event');
+    return supplied;
+  }
+
+  if (!env.STRIPE_SECRET_KEY) throw new Error('stripe_verification_not_configured');
+  const canonical = await stripeRetrieve<StripeEvent>(
+    env,
+    `/events/${encodeURIComponent(supplied.id)}`,
+  );
+  if (
+    canonical.id !== supplied.id
+    || canonical.type !== supplied.type
+    || !canonical.data?.object
+  ) {
+    throw new Error('invalid_event');
+  }
+  return canonical;
 }
 
 async function ensureTeamOrganisation(
@@ -226,38 +266,31 @@ async function upsertSubscription(
 
 export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   if (!env.DB) return Response.json({ error: 'database_not_bound' }, { status: 503 });
-  if (!env.STRIPE_LMS_WEBHOOK_SECRET) {
-    return Response.json({ error: 'lms_webhook_not_configured' }, { status: 503 });
-  }
   try {
     await assertProductionLmsSchema(env.DB);
-  } catch {
-    return Response.json({ error: 'lms_schema_not_applied' }, { status: 503 });
+  } catch (error) {
+    return Response.json({
+      error: 'lms_initialisation_failed',
+      message: error instanceof Error ? error.message : 'The LMS database could not be initialised.',
+    }, { status: 503 });
   }
 
-  const signatureHeader = request.headers.get('Stripe-Signature');
-  if (!signatureHeader) return Response.json({ error: 'missing_signature' }, { status: 400 });
   const payload = await request.text();
-  if (!(await verifyStripeSignature(payload, signatureHeader, env.STRIPE_LMS_WEBHOOK_SECRET))) {
-    return Response.json({ error: 'invalid_signature' }, { status: 400 });
-  }
-
   let event: StripeEvent;
   try {
-    event = JSON.parse(payload) as StripeEvent;
-  } catch {
-    return Response.json({ error: 'invalid_payload' }, { status: 400 });
+    event = await canonicalStripeEvent(payload, request.headers.get('Stripe-Signature'), env);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : 'invalid_event';
+    return Response.json({ error: code }, { status: code === 'stripe_verification_not_configured' ? 503 : 400 });
   }
-  if (!event.id || !event.type || !event.data?.object) {
-    return Response.json({ error: 'invalid_event' }, { status: 400 });
-  }
+  const canonicalPayload = JSON.stringify(event);
 
   const insert = await env.DB.prepare(`
     INSERT OR IGNORE INTO webhook_events (
       id, source, external_event_id, event_type,
       payload_json, processing_status
     ) VALUES (?, 'stripe-lms', ?, ?, ?, 'processing')
-  `).bind(`stripe-lms-${event.id}`, event.id, event.type, payload).run();
+  `).bind(`stripe-lms-${event.id}`, event.id, event.type, canonicalPayload).run();
   if ((insert.meta?.changes ?? 0) === 0) {
     return Response.json({ received: true, duplicate: true });
   }
@@ -273,6 +306,10 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       const stripeCustomerId = stringValue(object.customer);
       const accountId = metadata.ja_account_id;
       const plan = planDefinition(metadata.plan_id);
+      const paymentStatus = stringValue(object.payment_status);
+      const initialStatus = paymentStatus === 'paid' || paymentStatus === 'no_payment_required'
+        ? 'active'
+        : 'incomplete';
 
       if (checkoutId) {
         await env.DB.prepare(`
@@ -290,12 +327,13 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
             id, account_id, plan_id, stripe_customer_id,
             stripe_subscription_id, stripe_checkout_session_id,
             status, seat_limit
-          ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(stripe_subscription_id) DO UPDATE SET
             account_id = excluded.account_id,
             plan_id = excluded.plan_id,
             stripe_customer_id = excluded.stripe_customer_id,
             stripe_checkout_session_id = excluded.stripe_checkout_session_id,
+            status = excluded.status,
             seat_limit = excluded.seat_limit,
             updated_at = CURRENT_TIMESTAMP
         `).bind(
@@ -305,9 +343,12 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
           stripeCustomerId,
           stripeSubscriptionId,
           checkoutSessionId,
+          initialStatus,
           plan.seatLimit,
         ).run();
-        await ensureTeamOrganisation(env.DB, accountId, subscriptionId, plan);
+        if (initialStatus === 'active') {
+          await ensureTeamOrganisation(env.DB, accountId, subscriptionId, plan);
+        }
       }
     } else if (event.type === 'checkout.session.expired') {
       const checkoutId = metadata.lms_checkout_id;
