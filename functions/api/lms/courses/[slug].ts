@@ -2,10 +2,7 @@ import {
   findLibraryCourse,
   flattenCourseLessons,
 } from '../../../../src/libraryCatalogue';
-import {
-  effectiveLearningSubscription,
-  subscriptionIncludesCourse,
-} from '../../../_shared/learning-entitlements';
+import { resolveCourseAccess } from '../../../_shared/course-entitlements';
 import {
   requireProductionLms,
   type ProductionLmsEnv,
@@ -54,11 +51,13 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   const course = findLibraryCourse(slug);
   if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
 
-  const subscription = await effectiveLearningSubscription(env.DB, access.session.accountId);
-  if (!subscriptionIncludesCourse(subscription, course.includedPlans)) {
+  const resolvedAccess = await resolveCourseAccess(env.DB, access.session.accountId, course);
+  if (!resolvedAccess.active) {
     return Response.json({
       course: { slug: course.slug, code: course.code, title: course.title, version: course.version },
       entitlementActive: false,
+      accessSource: 'none',
+      accessExpiresAt: resolvedAccess.entitlement?.expires_at ?? null,
       enrolment: null,
       lessons: [],
       attempts: [],
@@ -77,6 +76,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     return Response.json({
       course: { slug: course.slug, code: course.code, title: course.title, version: course.version },
       entitlementActive: true,
+      accessSource: resolvedAccess.source,
+      accessExpiresAt: resolvedAccess.entitlement?.expires_at ?? null,
       enrolment: null,
       lessons: flattenCourseLessons(course).map((lesson) => ({
         moduleId: lesson.moduleId,
@@ -113,6 +114,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   return Response.json({
     course: { slug: course.slug, code: course.code, title: course.title, version: course.version },
     entitlementActive: true,
+    accessSource: resolvedAccess.source,
+    accessExpiresAt: resolvedAccess.entitlement?.expires_at ?? null,
     enrolment,
     lessons: (progressResult.results ?? []).map((row) => ({
       moduleId: row.module_id,
