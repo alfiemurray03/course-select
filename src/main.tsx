@@ -8,6 +8,7 @@ import { installPublicBrandScrubber } from './public-brand-scrubber';
 import './legacy-route-normaliser';
 import './customer-websites-menu';
 import './professional-training-payment-return';
+import './course-family-boundaries';
 import './styles.css';
 import './catalogue.css';
 import './basket.css';
@@ -24,6 +25,7 @@ import './home-hero-layout-fix.css';
 import './mobile-responsive.css';
 import './dark-select-fix.css';
 import './customer-websites-menu.css';
+import './course-family-boundaries.css';
 import './public-wording-fixes';
 import './highfield-branding';
 
