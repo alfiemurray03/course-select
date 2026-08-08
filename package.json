@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "tsc -b --pretty false && node tests/unified-public-basket.test.mjs"
+    "check": "tsc -b --pretty false && node tests/unified-public-basket.test.mjs && node tests/central-payments-account-cache.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
