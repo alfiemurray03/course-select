@@ -1,0 +1,1 @@
+Build-only validation marker for the production Stripe course catalogue synchronisation.
