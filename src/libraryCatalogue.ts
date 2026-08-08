@@ -37,7 +37,24 @@ export const LIBRARY_COURSE_SOURCE = 'Sousa Murray Learning Library';
 export const CORE_LIBRARY_PLANS: readonly CoursePlan[] = ['Learner', 'Learner Plus', 'Team 5', 'Team 15'];
 export const COMPLETE_LIBRARY_PLANS: readonly CoursePlan[] = ['Learner Plus', 'Team 15'];
 
-export const libraryCourses: LibraryCourse[] = programmeLibraryCourses;
+function rotateAnswer(options: string[], answer: number, shift: number) {
+  if (options.length < 2) return { options: [...options], answer };
+  const amount = ((shift % options.length) + options.length) % options.length;
+  if (!amount) return { options: [...options], answer };
+  const rotated = [...options.slice(amount), ...options.slice(0, amount)];
+  return { options: rotated, answer: (answer - amount + options.length) % options.length };
+}
+
+export const libraryCourses: LibraryCourse[] = programmeLibraryCourses.map((course, courseIndex) => ({
+  ...course,
+  finalAssessment: {
+    ...course.finalAssessment,
+    questions: course.finalAssessment.questions.map((question, questionIndex) => {
+      const rotated = rotateAnswer(question.options, question.answer, (courseIndex + questionIndex) % question.options.length);
+      return { ...question, options: rotated.options, answer: rotated.answer };
+    }),
+  },
+}));
 
 function validateCourse(course: LibraryCourse) {
   const errors: string[] = [];
@@ -82,12 +99,15 @@ function validateCourse(course: LibraryCourse) {
     if (lesson.assignment && lesson.assignment.minimumWords < 150) errors.push(`${course.code}/${lesson.id}: assignment reflection is too short.`);
   }
 
+  const answerPositions = new Set<number>();
   for (const question of course.finalAssessment.questions) {
     if (assessmentIds.has(question.id)) errors.push(`${course.code}: duplicate final-assessment id ${question.id}.`);
     assessmentIds.add(question.id);
     if (question.options.length < 3) errors.push(`${course.code}/${question.id}: final-assessment question requires at least three options.`);
     if (question.answer < 0 || question.answer >= question.options.length) errors.push(`${course.code}/${question.id}: final-assessment answer is invalid.`);
+    answerPositions.add(question.answer);
   }
+  if (answerPositions.size < 3) errors.push(`${course.code}: final-assessment correct answers are not sufficiently distributed across option positions.`);
   return errors;
 }
 
