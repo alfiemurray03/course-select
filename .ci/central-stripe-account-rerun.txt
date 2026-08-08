@@ -1,0 +1,1 @@
+Re-run production Central Payments Stripe account diagnostic after deployment.
