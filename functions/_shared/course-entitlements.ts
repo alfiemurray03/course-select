@@ -271,9 +271,12 @@ export async function ensureStandaloneEnrolmentBridge(
   accountId: string,
   entitlement: CourseEntitlementRow,
 ) {
-  if (!entitlement.stripe_customer_id) {
+  const stripeCustomerReference = entitlement.stripe_customer_id
+    || (entitlement.source === 'manual' ? `manual-access:${entitlement.id}` : null);
+  if (!stripeCustomerReference) {
     throw new Error('The course access record is missing its Central Payments Stripe customer reference.');
   }
+
   const subscriptionId = await stableId('lms-standalone-access', entitlement.id);
   const syntheticStripeSubscriptionId = `standalone-access:${entitlement.id}`;
 
@@ -293,7 +296,7 @@ export async function ensureStandaloneEnrolmentBridge(
   `).bind(
     subscriptionId,
     accountId,
-    entitlement.stripe_customer_id,
+    stripeCustomerReference,
     syntheticStripeSubscriptionId,
     entitlement.stripe_checkout_session_id,
     entitlement.starts_at,
