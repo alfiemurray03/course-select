@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,3 +30,67 @@ jobs:
         run: |
           mkdir -p .wrangler
           npx --yes wrangler@4.114.0 pages functions build functions --outfile=.wrangler/functions-worker.js
+
+      - name: Synchronise live Stripe course catalogue
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/stripe-sync'
+          probe="${base}?family=sousa_murray&offset=0&limit=1"
+
+          echo 'Waiting for the matching Cloudflare production deployment...'
+          for attempt in $(seq 1 36); do
+            status=$(curl --silent --show-error --output /tmp/catalogue-probe.json --write-out '%{http_code}' "$probe" || true)
+            if [ "$status" = '200' ]; then
+              echo 'Production Stripe catalogue sync endpoint is ready.'
+              cat /tmp/catalogue-probe.json | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,pendingPrices,complete,nextOffset,cached}'
+              break
+            fi
+            if [ "$attempt" = '36' ]; then
+              echo "Production sync endpoint did not become ready (last HTTP ${status:-000})." >&2
+              cat /tmp/catalogue-probe.json 2>/dev/null || true
+              exit 1
+            fi
+            echo "Not ready yet (HTTP ${status:-000}); retrying in 10 seconds..."
+            sleep 10
+          done
+
+          sync_family() {
+            family="$1"
+            offset=0
+            batch=0
+            total_synced=0
+            total_created_products=0
+            total_created_prices=0
+            total_pending_prices=0
+
+            while true; do
+              batch=$((batch + 1))
+              url="${base}?family=${family}&offset=${offset}&limit=5"
+              echo "Syncing ${family} batch ${batch} from offset ${offset}..."
+              body=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors "$url")
+              echo "$body" | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,replacedPrices,pendingPrices,complete,nextOffset,cached}'
+
+              synced=$(echo "$body" | jq -r '.synced // 0')
+              created_products=$(echo "$body" | jq -r '.createdProducts // 0')
+              created_prices=$(echo "$body" | jq -r '.createdPrices // 0')
+              pending_prices=$(echo "$body" | jq -r '.pendingPrices // 0')
+              total_synced=$((total_synced + synced))
+              total_created_products=$((total_created_products + created_products))
+              total_created_prices=$((total_created_prices + created_prices))
+              total_pending_prices=$((total_pending_prices + pending_prices))
+
+              next=$(echo "$body" | jq -r 'if .nextOffset == null then "" else (.nextOffset|tostring) end')
+              if [ -z "$next" ]; then
+                break
+              fi
+              offset="$next"
+              sleep 1
+            done
+
+            echo "${family}: synced=${total_synced}, created_products=${total_created_products}, created_prices=${total_created_prices}, pending_prices=${total_pending_prices}"
+          }
+
+          sync_family 'sousa_murray'
+          sync_family 'highfield'
