@@ -1,0 +1,64 @@
+name: One-time live programme Stripe cleanup
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Force the 13-programme catalogue into Central Payments Stripe
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/stripe-sync'
+
+          echo 'Checking that production is serving the rebuilt catalogue...'
+          probe=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 45 "${base}?family=sousa_murray&offset=0&limit=1&force=1")
+          echo "$probe" | jq '{family,total,synced,complete,nextOffset,results,retirement}'
+          total=$(echo "$probe" | jq -r '.total // 0')
+          if [ "$total" != '13' ]; then
+            echo "Refusing live Stripe cleanup: production reports ${total} Sousa Murray products, expected 13 programmes." >&2
+            exit 1
+          fi
+
+          final=''
+          for offset in $(seq 0 12); do
+            echo "Force syncing programme $((offset + 1)) of 13..."
+            body=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors --max-time 45 "${base}?family=sousa_murray&offset=${offset}&limit=1&force=1")
+            echo "$body" | jq '{offset,total,synced,createdProducts,existingProducts,createdPrices,replacedPrices,pendingPrices,complete,nextOffset,results,retirement}'
+            if [ "$(echo "$body" | jq -r '.total // 0')" != '13' ]; then
+              echo 'Catalogue changed during live cleanup; aborting.' >&2
+              exit 1
+            fi
+            final="$body"
+          done
+
+          if [ "$(echo "$final" | jq -r '.complete // false')" != 'true' ]; then
+            echo 'Final programme batch did not complete.' >&2
+            exit 1
+          fi
+          active=$(echo "$final" | jq -r '.retirement.activeCourseCount // 0')
+          retired=$(echo "$final" | jq -r '.retirement.retiredCount // 0')
+          if [ "$active" != '13' ]; then
+            echo "Head Office retirement returned ${active} active programme codes, expected 13." >&2
+            exit 1
+          fi
+          echo "Initial retirement pass archived ${retired} stale Sousa Murray course products."
+
+          echo 'Running a second retirement verification pass...'
+          verify=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors --max-time 45 "${base}?family=sousa_murray&offset=12&limit=1&force=1")
+          echo "$verify" | jq '{total,complete,retirement}'
+          verify_active=$(echo "$verify" | jq -r '.retirement.activeCourseCount // 0')
+          verify_retired=$(echo "$verify" | jq -r '.retirement.retiredCount // -1')
+          if [ "$verify_active" != '13' ] || [ "$verify_retired" != '0' ]; then
+            echo "Live Stripe catalogue is not clean after verification (active=${verify_active}, newly_retired=${verify_retired})." >&2
+            exit 1
+          fi
+
+          echo 'LIVE STRIPE CLEANUP VERIFIED: 13 Sousa Murray programme products remain active; no additional stale own-course products remain to retire.'
