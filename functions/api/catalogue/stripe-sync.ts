@@ -1,5 +1,6 @@
 import { catalogue, singleLicenceTier } from '../../../src/catalogue';
 import { libraryCourses } from '../../../src/libraryCatalogue';
+import { ownCourseIndividualPrice } from '../../../src/ownCoursePricing';
 import type { CentralPaymentsEnv } from '../../_shared/central-payments';
 import type { ProductionLmsEnv } from '../../_shared/production-lms';
 
@@ -13,6 +14,16 @@ type CourseProductManifestItem = {
   name: string;
   description: string;
   url: string;
+  level?: 'Foundation' | 'Intermediate';
+  durationMinutes?: number;
+  moduleCount?: number;
+  lessonCount?: number;
+  assessmentQuestionCount?: number;
+  pricingBand?: string;
+  pricingScore?: number;
+  baseValuePence?: number;
+  commercialUpliftBasisPoints?: number;
+  vatBasisPoints?: number;
   grossPence?: number;
   netPence?: number;
   vatPence?: number;
@@ -65,15 +76,32 @@ async function digest(value: string) {
 }
 
 function ownManifest(): CourseProductManifestItem[] {
-  return libraryCourses.map((course) => ({
-    family: 'sousa_murray',
-    courseId: course.code,
-    courseCode: course.code,
-    courseSlug: course.slug,
-    name: `Sousa Murray eLearning — ${course.title}`,
-    description: `${course.shortDescription} Delivered through the Sousa Murray LMS for one named learner. Operated by JA Group Services Ltd.`,
-    url: `https://sousamurrayelearning.jagroupservices.co.uk/learning-library/courses/${course.slug}`,
-  }));
+  return libraryCourses.map((course) => {
+    const price = ownCourseIndividualPrice(course);
+    return {
+      family: 'sousa_murray',
+      courseId: course.code,
+      courseCode: course.code,
+      courseSlug: course.slug,
+      name: `Sousa Murray eLearning — ${course.title}`,
+      description: `${course.shortDescription} Delivered through the Sousa Murray LMS for one named learner. Operated by JA Group Services Ltd.`,
+      url: `https://sousamurrayelearning.jagroupservices.co.uk/learning-library/courses/${course.slug}`,
+      level: price.level,
+      durationMinutes: price.durationMinutes,
+      moduleCount: price.moduleCount,
+      lessonCount: price.lessonCount,
+      assessmentQuestionCount: price.assessmentQuestionCount,
+      pricingBand: price.id,
+      pricingScore: price.score,
+      baseValuePence: price.baseValuePence,
+      commercialUpliftBasisPoints: price.commercialUpliftBasisPoints,
+      vatBasisPoints: price.vatBasisPoints,
+      netPence: price.retailNetPence,
+      vatPence: price.vatPence,
+      grossPence: price.grossPence,
+      priceSource: 'Sousa Murray governed complexity pricing: 30% commercial uplift, then UK standard-rate VAT',
+    };
+  });
 }
 
 function highfieldManifest(): CourseProductManifestItem[] {

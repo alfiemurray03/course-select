@@ -20,8 +20,11 @@ export type OwnCoursePricingItem = {
 
 export type OwnCoursePricingResponse = {
   configured: boolean;
+  checkoutConfigured?: boolean;
+  accessConfigured?: boolean;
   accessDays: number | null;
   accessLabel: string | null;
+  pricingModel?: string;
   items: OwnCoursePricingItem[];
 };
 
@@ -76,7 +79,7 @@ async function requestHeadOffice<T>(env: CentralPaymentsEnv, path: string, init:
 }
 
 export async function ownCoursePricing(env: CentralPaymentsEnv, courses: readonly LibraryCourse[]) {
-  if (!courses.length) return { configured: false, accessDays: null, accessLabel: null, items: [] } as OwnCoursePricingResponse;
+  if (!courses.length) return { configured: false, checkoutConfigured: false, accessConfigured: false, accessDays: null, accessLabel: null, items: [] } as OwnCoursePricingResponse;
   const codes = [...new Set(courses.map((course) => course.code))];
   return requestHeadOffice<OwnCoursePricingResponse>(env, `/api/v1/payments/learning-course-pricing?codes=${encodeURIComponent(codes.join(','))}`);
 }
