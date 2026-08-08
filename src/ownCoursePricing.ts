@@ -46,7 +46,7 @@ function band(
  */
 export const OWN_COURSE_PRICING_BANDS: readonly OwnCoursePricingBand[] = [
   band('value', 115, 512),          // £7.99 including VAT
-  band('essential', 140, 705),      // £10.99 including VAT
+  band('essential', 140, 705),      // £11.00 including VAT
   band('standard', 165, 897),       // £13.99 including VAT
   band('enhanced', 195, 1089),      // £16.99 including VAT
   band('professional', 230, 1474),  // £22.99 including VAT
@@ -90,7 +90,7 @@ export function ownCourseIndividualPrice(course: LibraryCourse) {
   } as const;
 }
 
-const expectedGross = [799, 1099, 1399, 1699, 2299, 2999];
+const expectedGross = [799, 1100, 1399, 1699, 2299, 2999];
 OWN_COURSE_PRICING_BANDS.forEach((item, index) => {
   if (item.grossPence !== expectedGross[index]) {
     throw new Error(`Invalid Sousa Murray course pricing band ${item.id}: expected ${expectedGross[index]} pence gross, got ${item.grossPence}.`);
