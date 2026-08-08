@@ -1,31 +1,33 @@
 import { findLibraryCourse } from '../../../src/libraryCatalogue';
+import { FREE_TRIAL_OFFERS, freeTrialOfferForSlug, type FreeTrialOffer } from '../../../src/freeTrialOffers';
 import {
-  centralCourseTrialCheckout,
   centralPaymentsConfigured,
-  createCentralCourseTrialCheckout,
-  FREE_TRIAL_COURSE_SLUG,
-  FREE_TRIAL_DURATION_DAYS,
   synchroniseElearningCustomer,
   type CentralPaymentsEnv,
 } from '../../_shared/central-payments';
 import {
   courseEntitlement,
   courseEntitlementHasAccess,
-  recordFreeTrialEntitlement,
   type CourseEntitlementRow,
 } from '../../_shared/course-entitlements';
+import {
+  completedProgrammeTrialCheckout,
+  createProgrammeTrialCheckout,
+  recordProgrammeTrialEntitlement,
+} from '../../_shared/programme-trials';
 import {
   recordLmsAudit,
   requireProductionLms,
   type ProductionLmsEnv,
 } from '../../_shared/production-lms';
 
-function trialResponse(entitlement: CourseEntitlementRow | null, checkoutReady: boolean) {
+function trialResponse(offer: FreeTrialOffer, entitlement: CourseEntitlementRow | null, checkoutReady: boolean) {
   const active = courseEntitlementHasAccess(entitlement);
   const claimed = Boolean(entitlement);
   return {
-    courseSlug: FREE_TRIAL_COURSE_SLUG,
-    durationDays: FREE_TRIAL_DURATION_DAYS,
+    courseSlug: offer.courseSlug,
+    courseTitle: offer.courseTitle,
+    durationDays: offer.durationDays,
     pricePence: 0,
     checkoutProvider: 'Stripe',
     checkoutReady,
@@ -39,28 +41,35 @@ function trialResponse(entitlement: CourseEntitlementRow | null, checkoutReady: 
   };
 }
 
+function offerFromUrl(request: Request) {
+  const url = new URL(request.url);
+  return freeTrialOfferForSlug(url.searchParams.get('courseSlug')) ?? FREE_TRIAL_OFFERS[0] ?? null;
+}
+
+async function offerFromPost(request: Request) {
+  const body = await request.json<{ courseSlug?: string }>().catch(() => ({}));
+  return freeTrialOfferForSlug(body.courseSlug) ?? (body.courseSlug ? null : FREE_TRIAL_OFFERS[0] ?? null);
+}
+
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
   const access = await requireProductionLms(request, env);
   if (access.response || !access.session || !access.profile || !env.DB) return access.response;
 
-  const centralEnv = env as CentralPaymentsEnv;
-  const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
-  if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
+  const offer = offerFromUrl(request);
+  if (!offer) return Response.json({ error: 'free_trial_not_available' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  const course = findLibraryCourse(offer.courseSlug);
+  if (!course) return Response.json({ error: 'course_not_found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
+  const centralEnv = env as CentralPaymentsEnv;
   let profile = access.profile;
-  let entitlement = await courseEntitlement(
-    env.DB,
-    access.session.accountId,
-    course.slug,
-    course.version,
-  );
+  let entitlement = await courseEntitlement(env.DB, access.session.accountId, course.slug, course.version);
 
   try {
     if (centralPaymentsConfigured(centralEnv)) {
       profile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, profile);
-      const completedCheckout = await centralCourseTrialCheckout(centralEnv, profile);
+      const completedCheckout = await completedProgrammeTrialCheckout(centralEnv, profile, offer.courseSlug);
       if (!entitlement && completedCheckout) {
-        entitlement = await recordFreeTrialEntitlement(env.DB, access.session.accountId, course, completedCheckout);
+        entitlement = await recordProgrammeTrialEntitlement(env.DB, access.session.accountId, course, completedCheckout);
         await recordLmsAudit(
           env.DB,
           request,
@@ -70,6 +79,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
           entitlement?.id ?? null,
           {
             courseSlug: course.slug,
+            courseTitle: course.title,
             centralPaymentReference: completedCheckout.id,
             stripeCheckoutSessionId: completedCheckout.stripe_checkout_session_id,
             expiresAt: entitlement?.expires_at ?? null,
@@ -88,12 +98,13 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     console.error(JSON.stringify({
       event: 'free_course_trial_sync_failed',
       accountId: access.session.accountId,
+      courseSlug: offer.courseSlug,
       message: error instanceof Error ? error.message : 'Unknown free trial sync failure',
     }));
   }
 
   return Response.json(
-    trialResponse(entitlement, centralPaymentsConfigured(centralEnv)),
+    trialResponse(offer, entitlement, centralPaymentsConfigured(centralEnv)),
     { headers: { 'Cache-Control': 'no-store' } },
   );
 };
@@ -109,31 +120,39 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
     }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const course = findLibraryCourse(FREE_TRIAL_COURSE_SLUG);
-  if (!course) return Response.json({ error: 'course_not_found' }, { status: 404 });
+  const offer = await offerFromPost(request);
+  if (!offer) {
+    return Response.json({
+      error: 'free_trial_not_available',
+      message: 'This programme does not currently have a free trial offer.',
+    }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  }
+  const course = findLibraryCourse(offer.courseSlug);
+  if (!course) return Response.json({ error: 'course_not_found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
   try {
     const profile = await synchroniseElearningCustomer(centralEnv, env.DB, access.session, access.profile);
-    const completedCheckout = await centralCourseTrialCheckout(centralEnv, profile);
+    const completedCheckout = await completedProgrammeTrialCheckout(centralEnv, profile, offer.courseSlug);
     let entitlement = await courseEntitlement(env.DB, access.session.accountId, course.slug, course.version);
     if (!entitlement && completedCheckout) {
-      entitlement = await recordFreeTrialEntitlement(env.DB, access.session.accountId, course, completedCheckout);
+      entitlement = await recordProgrammeTrialEntitlement(env.DB, access.session.accountId, course, completedCheckout);
     }
     if (entitlement) {
       return Response.json({
         error: 'free_trial_already_claimed',
         message: courseEntitlementHasAccess(entitlement)
-          ? 'This account already has an active free trial for this course.'
-          : 'The free trial for this course has already been used on this account.',
-        trial: trialResponse(entitlement, true),
+          ? 'This account already has an active free trial for this programme.'
+          : 'The free trial for this programme has already been used on this account.',
+        trial: trialResponse(offer, entitlement, true),
       }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
     }
 
-    const checkout = await createCentralCourseTrialCheckout(
+    const checkout = await createProgrammeTrialCheckout(
       centralEnv,
       profile,
       access.session,
       new URL(request.url).origin,
+      offer.courseSlug,
     );
 
     await recordLmsAudit(
@@ -145,7 +164,8 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       checkout.reference,
       {
         courseSlug: course.slug,
-        durationDays: FREE_TRIAL_DURATION_DAYS,
+        courseTitle: course.title,
+        durationDays: offer.durationDays,
         stripeCheckoutSessionId: checkout.sessionId,
         amountPence: 0,
       },
@@ -156,7 +176,8 @@ export const onRequestPost: PagesFunction<ProductionLmsEnv> = async ({ request, 
       reference: checkout.reference,
       sessionId: checkout.sessionId,
       courseSlug: course.slug,
-      durationDays: FREE_TRIAL_DURATION_DAYS,
+      courseTitle: course.title,
+      durationDays: offer.durationDays,
       pricePence: 0,
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
