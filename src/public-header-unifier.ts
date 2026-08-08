@@ -3,6 +3,7 @@ export {};
 const HIGHFIELD_KEY = 'aptenvo-basket-v1';
 const OWN_KEY = 'sousa-murray-learning-course-basket-v2';
 const HEADER_MARKER = 'sousa-murray-elearning';
+const ACCOUNT_LABEL = 'My Sousa Murray eLearning';
 
 function storedArray(key: string) {
   try {
@@ -25,8 +26,9 @@ function basketCount() {
 
 function setBasketButton(button: HTMLAnchorElement, count: number) {
   if (button.getAttribute('href') !== '/basket') button.setAttribute('href', '/basket');
-  button.title = 'Basket';
-  button.setAttribute('aria-label', `Basket with ${count} selected ${count === 1 ? 'course' : 'courses'}`);
+  if (button.title !== 'Basket') button.title = 'Basket';
+  const aria = `Basket with ${count} selected ${count === 1 ? 'course' : 'courses'}`;
+  if (button.getAttribute('aria-label') !== aria) button.setAttribute('aria-label', aria);
 
   const label = button.querySelector<HTMLElement>('.basket-header-label');
   if (label && label.textContent !== 'Basket') label.textContent = 'Basket';
@@ -39,8 +41,22 @@ function setBasketButton(button: HTMLAnchorElement, count: number) {
       button.append(badge);
     }
     if (badge.textContent !== String(count)) badge.textContent = String(count);
-  } else {
-    badge?.remove();
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+function setAccountLink(account: HTMLAnchorElement) {
+  const hrefCorrect = account.getAttribute('href') === '/lms/dashboard';
+  const textCorrect = account.textContent?.replace(/\s+/g, ' ').trim() === ACCOUNT_LABEL;
+  if (hrefCorrect && textCorrect) return;
+
+  if (!hrefCorrect) account.setAttribute('href', '/lms/dashboard');
+  if (!textCorrect) {
+    const icon = account.querySelector('svg')?.cloneNode(true);
+    account.replaceChildren();
+    if (icon) account.append(icon);
+    account.append(document.createTextNode(` ${ACCOUNT_LABEL}`));
   }
 }
 
@@ -51,13 +67,7 @@ function normaliseDesktopActions(header: HTMLElement, count: number) {
   basketButtons.slice(1).forEach((button) => button.remove());
 
   const account = header.querySelector<HTMLAnchorElement>('.header-actions a.desktop-account');
-  if (account) {
-    account.href = '/lms/dashboard';
-    const icon = account.querySelector('svg')?.cloneNode(true);
-    account.replaceChildren();
-    if (icon) account.append(icon);
-    account.append(document.createTextNode(' My Sousa Murray eLearning'));
-  }
+  if (account) setAccountLink(account);
 }
 
 function normaliseMobileActions(header: HTMLElement, count: number) {
@@ -65,22 +75,21 @@ function normaliseMobileActions(header: HTMLElement, count: number) {
   if (!nav) return;
 
   const account = nav.querySelector<HTMLAnchorElement>('.mobile-account');
-  if (account) {
-    account.href = '/lms/dashboard';
-    const icon = account.querySelector('svg')?.cloneNode(true);
-    account.replaceChildren();
-    if (icon) account.append(icon);
-    account.append(document.createTextNode(' My Sousa Murray eLearning'));
-  }
+  if (account) setAccountLink(account);
 
   const basketLinks = [...nav.querySelectorAll<HTMLAnchorElement>('.mobile-basket-link')];
   const basket = basketLinks[0];
   if (basket) {
-    basket.href = '/basket';
-    const icon = basket.querySelector('svg')?.cloneNode(true);
-    basket.replaceChildren();
-    if (icon) basket.append(icon);
-    basket.append(document.createTextNode(` Basket${count > 0 ? ` (${count})` : ''}`));
+    const expectedText = `Basket${count > 0 ? ` (${count})` : ''}`;
+    const hrefCorrect = basket.getAttribute('href') === '/basket';
+    const textCorrect = basket.textContent?.replace(/\s+/g, ' ').trim() === expectedText;
+    if (!hrefCorrect) basket.setAttribute('href', '/basket');
+    if (!textCorrect) {
+      const icon = basket.querySelector('svg')?.cloneNode(true);
+      basket.replaceChildren();
+      if (icon) basket.append(icon);
+      basket.append(document.createTextNode(` ${expectedText}`));
+    }
   }
   basketLinks.slice(1).forEach((link) => link.remove());
 }
@@ -89,7 +98,7 @@ function normalisePublicHeader() {
   if (window.location.pathname.startsWith('/lms')) return;
   const count = basketCount();
   document.querySelectorAll<HTMLElement>('.site-header').forEach((header) => {
-    header.dataset.publicHeader = HEADER_MARKER;
+    if (header.dataset.publicHeader !== HEADER_MARKER) header.dataset.publicHeader = HEADER_MARKER;
     normaliseDesktopActions(header, count);
     normaliseMobileActions(header, count);
   });
