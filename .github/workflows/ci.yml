@@ -32,28 +32,28 @@ jobs:
           npx --yes wrangler@4.114.0 pages functions build functions --outfile=.wrangler/functions-worker.js
 
       - name: Synchronise live Stripe course catalogue
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         shell: bash
         run: |
           set -euo pipefail
           base='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/stripe-sync'
           probe="${base}?family=sousa_murray&offset=0&limit=1"
 
-          echo 'Waiting for the matching Cloudflare production deployment...'
-          for attempt in $(seq 1 36); do
+          echo 'Checking the production Stripe catalogue sync endpoint...'
+          for attempt in $(seq 1 6); do
             status=$(curl --silent --show-error --output /tmp/catalogue-probe.json --write-out '%{http_code}' "$probe" || true)
+            echo "Probe HTTP ${status:-000}"
+            cat /tmp/catalogue-probe.json 2>/dev/null || true
+            echo
             if [ "$status" = '200' ]; then
               echo 'Production Stripe catalogue sync endpoint is ready.'
-              cat /tmp/catalogue-probe.json | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,pendingPrices,complete,nextOffset,cached}'
               break
             fi
-            if [ "$attempt" = '36' ]; then
-              echo "Production sync endpoint did not become ready (last HTTP ${status:-000})." >&2
-              cat /tmp/catalogue-probe.json 2>/dev/null || true
+            if [ "$attempt" = '6' ]; then
+              echo "Production sync endpoint failed diagnostic probing (last HTTP ${status:-000})." >&2
               exit 1
             fi
-            echo "Not ready yet (HTTP ${status:-000}); retrying in 10 seconds..."
-            sleep 10
+            sleep 5
           done
 
           sync_family() {
@@ -69,7 +69,15 @@ jobs:
               batch=$((batch + 1))
               url="${base}?family=${family}&offset=${offset}&limit=5"
               echo "Syncing ${family} batch ${batch} from offset ${offset}..."
-              body=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors "$url")
+              body_file="/tmp/${family}-${offset}.json"
+              status=$(curl --silent --show-error --retry 2 --retry-delay 2 --retry-all-errors --output "$body_file" --write-out '%{http_code}' "$url" || true)
+              cat "$body_file" 2>/dev/null || true
+              echo
+              if [ "$status" != '200' ]; then
+                echo "Catalogue batch failed with HTTP ${status:-000}." >&2
+                exit 1
+              fi
+              body=$(cat "$body_file")
               echo "$body" | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,replacedPrices,pendingPrices,complete,nextOffset,cached}'
 
               synced=$(echo "$body" | jq -r '.synced // 0')
