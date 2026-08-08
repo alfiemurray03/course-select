@@ -31,6 +31,26 @@ jobs:
           mkdir -p .wrangler
           npx --yes wrangler@4.114.0 pages functions build functions --outfile=.wrangler/functions-worker.js
 
+      - name: Check live Central Payments Stripe account
+        shell: bash
+        run: |
+          set -uo pipefail
+          url='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/central-stripe-account'
+          for attempt in $(seq 1 12); do
+            status=$(curl --max-time 12 --connect-timeout 5 --silent --show-error \
+              --output /tmp/central-stripe-account.json \
+              --write-out '%{http_code}' "$url")
+            curl_exit=$?
+            echo "attempt=${attempt} curl_exit=${curl_exit} http_status=${status:-000}"
+            cat /tmp/central-stripe-account.json 2>/dev/null || true
+            echo
+            if [ "$curl_exit" -eq 0 ] && [ "$status" = '200' ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
       - name: Diagnose one live Stripe catalogue product sync
         shell: bash
         run: |
