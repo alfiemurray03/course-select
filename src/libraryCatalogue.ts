@@ -1,4 +1,5 @@
 import { programmeLibraryCourses } from './libraryCoursesProgrammes';
+import { legacyProgrammeAliases } from './legacyProgrammeAliases';
 import {
   flattenCourseLessons,
   lessonKnowledgeChecks,
@@ -87,7 +88,6 @@ function validateCourse(course: LibraryCourse) {
     if (question.options.length < 3) errors.push(`${course.code}/${question.id}: final-assessment question requires at least three options.`);
     if (question.answer < 0 || question.answer >= question.options.length) errors.push(`${course.code}/${question.id}: final-assessment answer is invalid.`);
   }
-
   return errors;
 }
 
@@ -121,7 +121,10 @@ export const libraryCatalogueStats = {
 export const libraryCategories = [...new Set(libraryCourses.map((course) => course.category))].sort();
 
 export function findLibraryCourse(slug: string) {
-  return libraryCourses.find((course) => course.slug === slug);
+  const direct = libraryCourses.find((course) => course.slug === slug);
+  if (direct) return direct;
+  const programmeSlug = legacyProgrammeAliases.get(slug);
+  return programmeSlug ? libraryCourses.find((course) => course.slug === programmeSlug) : undefined;
 }
 
 export function coursesForPlan(plan: CoursePlan) {
