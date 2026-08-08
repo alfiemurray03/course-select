@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -63,22 +63,25 @@ jobs:
             total_synced=0
             total_created_products=0
             total_created_prices=0
+            total_replaced_prices=0
             total_pending_prices=0
 
             while true; do
               batch=$((batch + 1))
-              url="${base}?family=${family}&offset=${offset}&limit=5"
-              echo "Syncing ${family} batch ${batch} from offset ${offset}..."
-              body=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors "$url")
+              url="${base}?family=${family}&offset=${offset}&limit=1"
+              echo "Syncing ${family} item ${offset}..."
+              body=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors --max-time 40 "$url")
               echo "$body" | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,replacedPrices,pendingPrices,complete,nextOffset,cached}'
 
               synced=$(echo "$body" | jq -r '.synced // 0')
               created_products=$(echo "$body" | jq -r '.createdProducts // 0')
               created_prices=$(echo "$body" | jq -r '.createdPrices // 0')
+              replaced_prices=$(echo "$body" | jq -r '.replacedPrices // 0')
               pending_prices=$(echo "$body" | jq -r '.pendingPrices // 0')
               total_synced=$((total_synced + synced))
               total_created_products=$((total_created_products + created_products))
               total_created_prices=$((total_created_prices + created_prices))
+              total_replaced_prices=$((total_replaced_prices + replaced_prices))
               total_pending_prices=$((total_pending_prices + pending_prices))
 
               next=$(echo "$body" | jq -r 'if .nextOffset == null then "" else (.nextOffset|tostring) end')
@@ -86,10 +89,10 @@ jobs:
                 break
               fi
               offset="$next"
-              sleep 1
+              sleep 0.25
             done
 
-            echo "${family}: synced=${total_synced}, created_products=${total_created_products}, created_prices=${total_created_prices}, pending_prices=${total_pending_prices}"
+            echo "${family}: synced=${total_synced}, created_products=${total_created_products}, created_prices=${total_created_prices}, replaced_prices=${total_replaced_prices}, pending_prices=${total_pending_prices}"
           }
 
           sync_family 'sousa_murray'
