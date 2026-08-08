@@ -259,22 +259,7 @@ export async function syncCentralLmsSubscription(
   await db.prepare(`UPDATE lms_identity_profiles SET stripe_customer_id=?,updated_at=CURRENT_TIMESTAMP WHERE account_id=?`)
     .bind(current.stripe_customer_id, session.accountId).run();
   await ensureTeamOrganisation(db, session.accountId, subscriptionId, plan);
-  return { subscriptionId, planId: plan.id, status, stripeCustomerId: current.stripe_customer_id };
-}
-
-export async function centralCourseTrialCheckout(
-  env: CentralPaymentsEnv,
-  profile: IdentityProfile,
-) {
-  const response = await headOffice<{ checkoutRequests?: CentralCheckoutRequest[] }>(
-    env,
-    `/api/v1/payments/status?customerNumber=${encodeURIComponent(profile.head_office_customer_number)}`,
-  );
-  return (response.checkoutRequests ?? []).find((checkout) => (
-    String(checkout.product_code || '').toUpperCase() === FREE_TRIAL_PRODUCT_CODE
-    && String(checkout.price_code || '').toUpperCase() === FREE_TRIAL_PRICE_CODE
-    && String(checkout.status || '').toLowerCase() === 'completed'
-  )) ?? null;
+  return { subscriptionId, plan, status };
 }
 
 export async function createCentralCourseTrialCheckout(
@@ -284,7 +269,7 @@ export async function createCentralCourseTrialCheckout(
   baseUrl: string,
 ) {
   const response = await headOffice<{
-    checkout?: { reference?: string; sessionId?: string; url?: string; amountMinor?: number; currency?: string };
+    checkout?: { reference?: string; sessionId?: string; url?: string; mode?: string };
   }>(env, '/api/v1/payments/checkout', {
     method: 'POST',
     body: JSON.stringify({
@@ -292,17 +277,48 @@ export async function createCentralCourseTrialCheckout(
       customerNumber: profile.head_office_customer_number,
       productCode: FREE_TRIAL_PRODUCT_CODE,
       priceCode: FREE_TRIAL_PRICE_CODE,
-      orderReference: `ELEARNING-AI-LITERACY-TRIAL-${crypto.randomUUID()}`,
-      serviceReference: `${session.accountId}:${FREE_TRIAL_COURSE_SLUG}:7-day-trial`,
+      orderReference: `ELEARNING-AI-TRIAL-${crypto.randomUUID()}`,
+      serviceReference: `${session.accountId}:${FREE_TRIAL_COURSE_SLUG}:free-trial`,
       successUrl: `${baseUrl}/lms/course/${FREE_TRIAL_COURSE_SLUG}?trial=success`,
       cancelUrl: `${baseUrl}/lms/course/${FREE_TRIAL_COURSE_SLUG}?trial=cancelled`,
     }),
   });
   if (!response.checkout?.url || !response.checkout.sessionId || !response.checkout.reference) {
-    throw new Error('Head Office did not return a complete free-trial checkout response.');
-  }
-  if (Number(response.checkout.amountMinor ?? 0) !== 0) {
-    throw new Error('The free course trial is not configured as a £0.00 Central Payments price.');
+    throw new Error('Head Office did not return a complete Stripe Checkout response for the free course trial.');
   }
   return response.checkout;
+}
+
+export async function centralCourseTrialCheckout(
+  env: CentralPaymentsEnv,
+  profile: IdentityProfile,
+) {
+  if (!centralPaymentsConfigured(env) || !validUcn(profile.head_office_customer_number)) return null;
+  const response = await headOffice<{ checkoutRequests?: CentralCheckoutRequest[] }>(
+    env,
+    `/api/v1/payments/status?customerNumber=${encodeURIComponent(profile.head_office_customer_number)}`,
+  );
+  return (response.checkoutRequests ?? []).find((checkout) =>
+    String(checkout.product_code || '').toUpperCase() === FREE_TRIAL_PRODUCT_CODE
+    && String(checkout.price_code || '').toUpperCase() === FREE_TRIAL_PRICE_CODE
+    && String(checkout.status || '').toLowerCase() === 'completed'
+    && Number(checkout.amount_minor || 0) === 0
+  ) ?? null;
+}
+
+export async function createCentralLmsPortal(
+  env: CentralPaymentsEnv,
+  profile: IdentityProfile,
+  baseUrl: string,
+) {
+  const response = await headOffice<{ portal?: { url?: string } }>(env, '/api/v1/payments/portal', {
+    method: 'POST',
+    body: JSON.stringify({
+      brand: BRAND,
+      customerNumber: profile.head_office_customer_number,
+      returnUrl: `${baseUrl}/lms/dashboard?billing=updated`,
+    }),
+  });
+  if (!response.portal?.url) throw new Error('Head Office did not return the Central Payments billing portal URL.');
+  return response.portal.url;
 }
