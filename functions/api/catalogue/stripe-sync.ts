@@ -52,6 +52,7 @@ type HeadOfficeSyncResult = {
 };
 
 type RetirementResult = { activeCourseCount: number; retiredCount: number; retired: Array<{ productCode: string; name: string; stripeProductId: string | null }> };
+type TrialCatalogueResult = { synced: number; createdProducts: number; updatedProducts: number; createdPrices: number; results?: unknown[] };
 
 const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 const MAX_BATCH = 25;
@@ -175,6 +176,12 @@ async function retireStaleOwnCourses(env: SyncEnv) {
   });
 }
 
+async function syncProgrammeTrials(env: SyncEnv) {
+  return headOfficeRequest<TrialCatalogueResult>(env, '/api/v1/payments/programme-trial-catalogue-sync', {
+    brand: 'SOUSA_MURRAY_ELEARNING',
+  });
+}
+
 export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => {
   if (!env.DB) return Response.json({ error: 'database_not_bound', message: 'The eLearning database is not configured.' }, { status: 503 });
   const url = new URL(request.url);
@@ -201,8 +208,12 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
     let priorResult: HeadOfficeSyncResult | null = null;
     try { priorResult = previous.result_json ? JSON.parse(previous.result_json) as HeadOfficeSyncResult : null; } catch {}
     let retirement: RetirementResult | null = null;
-    if (family === 'sousa_murray' && finalBatch) retirement = await retireStaleOwnCourses(env);
-    return Response.json({ family, offset, limit, total: manifest.length, cached: true, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, ...(priorResult ?? { synced: items.length }) }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    let trialCatalogue: TrialCatalogueResult | null = null;
+    if (family === 'sousa_murray' && finalBatch) {
+      retirement = await retireStaleOwnCourses(env);
+      trialCatalogue = await syncProgrammeTrials(env);
+    }
+    return Response.json({ family, offset, limit, total: manifest.length, cached: true, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...(priorResult ?? { synced: items.length }) }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 
   try {
@@ -217,9 +228,13 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
     await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='completed',result_json=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`)
       .bind(JSON.stringify(result), batchKey).run();
     let retirement: RetirementResult | null = null;
-    if (family === 'sousa_murray' && finalBatch) retirement = await retireStaleOwnCourses(env);
+    let trialCatalogue: TrialCatalogueResult | null = null;
+    if (family === 'sousa_murray' && finalBatch) {
+      retirement = await retireStaleOwnCourses(env);
+      trialCatalogue = await syncProgrammeTrials(env);
+    }
 
-    return Response.json({ family, offset, limit, total: manifest.length, cached: false, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, ...result }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ family, offset, limit, total: manifest.length, cached: false, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...result }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   } catch (error) {
     await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`).bind(batchKey).run().catch(() => undefined);
     return Response.json({ error: 'stripe_catalogue_sync_failed', message: error instanceof Error ? error.message : 'The Stripe course catalogue could not be synchronised.', family, offset, limit, total: manifest.length }, { status: Number((error as { status?: number })?.status || 502), headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
