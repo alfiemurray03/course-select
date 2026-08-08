@@ -51,6 +51,13 @@ type HeadOfficeSyncResult = {
   }>;
 };
 
+type HeadOfficeAccountInfo = {
+  stripeAccountId: string | null;
+  liveMode?: boolean | null;
+  mode?: string | null;
+  displayName?: string | null;
+};
+
 type RetirementResult = { activeCourseCount: number; retiredCount: number; retired: Array<{ productCode: string; name: string; stripeProductId: string | null }> };
 type TrialCatalogueResult = { synced: number; createdProducts: number; updatedProducts: number; createdPrices: number; results?: unknown[] };
 
@@ -140,6 +147,42 @@ async function ensureSyncSchema(db: D1Database) {
   )`).run();
 }
 
+async function headOfficeAccountInfo(env: SyncEnv): Promise<HeadOfficeAccountInfo> {
+  const { token, base } = connector(env);
+  if (!token) throw Object.assign(new Error('The Head Office Central Payments platform key is not configured.'), { status: 503 });
+  const target = new URL('/api/v1/payments/account-info', `${base}/`);
+  if (target.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(target.hostname)) {
+    throw Object.assign(new Error('The Head Office Central Payments connector must use HTTPS.'), { status: 503 });
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(target.toString(), {
+      signal: controller.signal,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const result = await response.json<Record<string, unknown>>().catch(() => ({}));
+    if (!response.ok) {
+      const detail = result.error && typeof result.error === 'object' ? result.error as Record<string, unknown> : null;
+      const message = typeof detail?.message === 'string' ? detail.message : `Head Office Stripe account verification returned HTTP ${response.status}.`;
+      throw Object.assign(new Error(message), { status: response.status });
+    }
+    const stripeAccountId = typeof result.stripeAccountId === 'string' ? result.stripeAccountId.trim() : '';
+    if (!stripeAccountId.startsWith('acct_')) {
+      throw Object.assign(new Error('Head Office did not return a valid Central Payments Stripe account ID.'), { status: 503 });
+    }
+    return {
+      stripeAccountId,
+      liveMode: typeof result.liveMode === 'boolean' ? result.liveMode : null,
+      mode: typeof result.mode === 'string' ? result.mode : null,
+      displayName: typeof result.displayName === 'string' ? result.displayName : null,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function headOfficeRequest<T>(env: SyncEnv, path: string, body: unknown): Promise<T> {
   const { token, base } = connector(env);
   if (!token) throw Object.assign(new Error('The Head Office Central Payments platform key is not configured.'), { status: 503 });
@@ -198,7 +241,29 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
   }
 
   await ensureSyncSchema(env.DB);
-  const manifestHash = await digest(JSON.stringify(items));
+
+  let account: HeadOfficeAccountInfo;
+  try {
+    account = await headOfficeAccountInfo(env);
+  } catch (error) {
+    return Response.json({
+      error: 'central_stripe_account_unavailable',
+      message: error instanceof Error ? error.message : 'Head Office could not verify the Central Payments Stripe account.',
+      family,
+      offset,
+      limit,
+      total: manifest.length,
+    }, {
+      status: Number((error as { status?: number })?.status || 502),
+      headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' },
+    });
+  }
+
+  // Stripe Product and Price IDs are scoped to a Stripe account. Including the
+  // verified Head Office account ID in the cache fingerprint guarantees that a
+  // Central Payments account switch re-sends every eLearning catalogue batch.
+  const stripeAccountId = String(account.stripeAccountId);
+  const manifestHash = await digest(JSON.stringify({ stripeAccountId, items }));
   const batchKey = `${family}:${offset}:${items.length}`;
   const previous = await env.DB.prepare(`SELECT manifest_hash,status,result_json FROM stripe_course_catalogue_sync_state WHERE batch_key=? LIMIT 1`)
     .bind(batchKey).first<{ manifest_hash: string; status: string; result_json: string | null }>();
@@ -213,7 +278,7 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
       retirement = await retireStaleOwnCourses(env);
       trialCatalogue = await syncProgrammeTrials(env);
     }
-    return Response.json({ family, offset, limit, total: manifest.length, cached: true, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...(priorResult ?? { synced: items.length }) }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ stripeAccountId, family, offset, limit, total: manifest.length, cached: true, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...(priorResult ?? { synced: items.length }) }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 
   try {
@@ -234,9 +299,9 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
       trialCatalogue = await syncProgrammeTrials(env);
     }
 
-    return Response.json({ family, offset, limit, total: manifest.length, cached: false, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...result }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ stripeAccountId, family, offset, limit, total: manifest.length, cached: false, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, trialCatalogue, ...result }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   } catch (error) {
     await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`).bind(batchKey).run().catch(() => undefined);
-    return Response.json({ error: 'stripe_catalogue_sync_failed', message: error instanceof Error ? error.message : 'The Stripe course catalogue could not be synchronised.', family, offset, limit, total: manifest.length }, { status: Number((error as { status?: number })?.status || 502), headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ error: 'stripe_catalogue_sync_failed', message: error instanceof Error ? error.message : 'The Stripe course catalogue could not be synchronised.', stripeAccountId, family, offset, limit, total: manifest.length }, { status: Number((error as { status?: number })?.status || 502), headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 };
