@@ -20,6 +20,24 @@ export type LessonSection = {
   callout?: string;
 };
 
+export type LearningAssignment = {
+  title: string;
+  brief: string;
+  deliverables: string[];
+  reflectionPrompt: string;
+  minimumWords: number;
+  estimatedMinutes: number;
+};
+
+export type CourseStudyPlan = {
+  durationWeeks: number;
+  expectedHoursPerWeek: string;
+  guidedLearningHours: number;
+  independentStudyHours: number;
+  totalQualificationTimeHours: number;
+  deliveryPattern: string;
+};
+
 export type LibraryLesson = {
   id: string;
   title: string;
@@ -31,13 +49,18 @@ export type LibraryLesson = {
     title: string;
     instructions: string[];
   };
+  assignment?: LearningAssignment;
+  /** Legacy single-check shape retained so historic course source files compile. */
   knowledgeCheck: KnowledgeCheck;
+  /** Proper programme lessons use multiple formative questions. */
+  knowledgeChecks?: KnowledgeCheck[];
 };
 
 export type LibraryModule = {
   id: string;
   title: string;
   description: string;
+  week?: number;
   lessons: LibraryLesson[];
 };
 
@@ -61,11 +84,19 @@ export type LibraryCourse = {
   includedPlans: CoursePlan[];
   learningOutcomes: string[];
   modules: LibraryModule[];
+  studyPlan?: CourseStudyPlan;
   finalAssessment: {
     title: string;
     instructions: string;
     passMark: number;
     questions: AssessmentQuestion[];
+    estimatedMinutes?: number;
+  };
+  capstoneProject?: {
+    title: string;
+    brief: string;
+    deliverables: string[];
+    estimatedHours: number;
   };
   certificateStatement: string;
   importantNotice: string;
@@ -75,6 +106,7 @@ export type LibraryCourse = {
 export type FlatLesson = LibraryLesson & {
   moduleId: string;
   moduleTitle: string;
+  moduleWeek?: number;
   sequence: number;
 };
 
@@ -84,12 +116,27 @@ export function flattenCourseLessons(course: LibraryCourse): FlatLesson[] {
     ...lesson,
     moduleId: module.id,
     moduleTitle: module.title,
+    moduleWeek: module.week,
     sequence: sequence++,
   })));
 }
 
+export function lessonKnowledgeChecks(lesson: LibraryLesson): KnowledgeCheck[] {
+  return lesson.knowledgeChecks?.length ? lesson.knowledgeChecks : [lesson.knowledgeCheck];
+}
+
 export function courseDuration(course: LibraryCourse): number {
-  return flattenCourseLessons(course).reduce((total, lesson) => total + lesson.minutes, 0) + 15;
+  const lessonMinutes = flattenCourseLessons(course).reduce((total, lesson) => (
+    total + lesson.minutes + (lesson.assignment?.estimatedMinutes ?? 0)
+  ), 0);
+  const assessmentMinutes = course.finalAssessment.estimatedMinutes ?? 15;
+  const capstoneMinutes = (course.capstoneProject?.estimatedHours ?? 0) * 60;
+  return lessonMinutes + assessmentMinutes + capstoneMinutes;
+}
+
+export function courseStudyHours(course: LibraryCourse): number {
+  if (course.studyPlan) return course.studyPlan.totalQualificationTimeHours;
+  return Math.ceil(courseDuration(course) / 60);
 }
 
 export function isCourseIncluded(course: LibraryCourse, plan: CoursePlan): boolean {

@@ -18,7 +18,7 @@ export type CentralPaymentsEnv = ProductionLmsEnv & {
 const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 const BRAND = 'SOUSA_MURRAY_ELEARNING';
 
-export const FREE_TRIAL_COURSE_SLUG = 'ai-literacy-for-everyday-work';
+export const FREE_TRIAL_COURSE_SLUG = 'digital-skills-and-ai-at-work';
 export const FREE_TRIAL_PRODUCT_CODE = 'ELEARNING_AI_LITERACY_TRIAL';
 export const FREE_TRIAL_PRICE_CODE = 'ELEARNING_AI_LITERACY_TRIAL_FREE';
 export const FREE_TRIAL_DURATION_DAYS = 7;
