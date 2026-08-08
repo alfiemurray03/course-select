@@ -7,6 +7,7 @@ const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 const BRAND = 'SOUSA_MURRAY_ELEARNING';
 export const OWN_COURSE_PRODUCT_CODE = 'ELEARNING_OWN_COURSE_BASKET';
 export const OWN_COURSE_PRICE_CODE = 'OWN_COURSE_BASKET';
+export const UNIFIED_COURSE_PRODUCT_CODE = 'ELEARNING_UNIFIED_COURSE_BASKET';
 
 export type OwnCoursePricingItem = {
   courseCode: string;
@@ -22,6 +23,17 @@ export type OwnCoursePricingResponse = {
   accessDays: number | null;
   accessLabel: string | null;
   items: OwnCoursePricingItem[];
+};
+
+type CentralCheckoutItem = {
+  checkout_request_id?: string;
+  item_code?: string;
+  line_gross_minor?: number;
+  metadata_json?: string;
+};
+
+export type OwnCourseCheckoutStatus = CentralCheckoutRequest & {
+  own_course_amount_minor?: number;
 };
 
 function connector(env: CentralPaymentsEnv) {
@@ -90,7 +102,7 @@ export async function createCentralOwnCourseBasketCheckout(
       serviceReference: `${session.accountId}:own-course-purchase`,
       items: courses.map((course) => ({ courseCode: course.code, courseTitle: course.title })),
       successUrl: `${baseUrl}/learning-library/purchase/success?order=${encodeURIComponent(orderReference)}`,
-      cancelUrl: `${baseUrl}/learning-library/basket?checkout=cancelled`,
+      cancelUrl: `${baseUrl}/basket?checkout=cancelled`,
     }),
   });
   if (!response.checkout?.url || !response.checkout.sessionId || !response.checkout.reference) {
@@ -99,16 +111,37 @@ export async function createCentralOwnCourseBasketCheckout(
   return response;
 }
 
+function isOwnCourseLine(item: CentralCheckoutItem) {
+  try {
+    const metadata = item.metadata_json ? JSON.parse(item.metadata_json) as Record<string, unknown> : {};
+    return String(metadata.family || '').toLowerCase() === 'sousa_murray'
+      || String(metadata.provider || '').toLowerCase() === 'sousa murray elearning';
+  } catch {
+    return false;
+  }
+}
+
 export async function centralOwnCourseCheckoutStatus(
   env: CentralPaymentsEnv,
   orderReference: string,
 ) {
-  const response = await requestHeadOffice<{ checkoutRequests?: CentralCheckoutRequest[] }>(
+  const response = await requestHeadOffice<{
+    checkoutRequests?: CentralCheckoutRequest[];
+    checkoutItems?: CentralCheckoutItem[];
+  }>(
     env,
     `/api/v1/payments/status?orderReference=${encodeURIComponent(orderReference)}`,
   );
-  return (response.checkoutRequests ?? []).find((checkout) => (
-    String(checkout.product_code || '').toUpperCase() === OWN_COURSE_PRODUCT_CODE
-    && String(checkout.price_code || '').toUpperCase() === OWN_COURSE_PRICE_CODE
-  )) ?? null;
+  const checkout = (response.checkoutRequests ?? []).find((row) => {
+    const productCode = String(row.product_code || '').toUpperCase();
+    return productCode === OWN_COURSE_PRODUCT_CODE || productCode === UNIFIED_COURSE_PRODUCT_CODE;
+  });
+  if (!checkout) return null;
+
+  const relatedItems = (response.checkoutItems ?? []).filter((item) => String(item.checkout_request_id || '') === String(checkout.id || ''));
+  const ownAmount = relatedItems.filter(isOwnCourseLine).reduce((sum, item) => sum + Number(item.line_gross_minor || 0), 0);
+  return {
+    ...checkout,
+    own_course_amount_minor: ownAmount > 0 ? ownAmount : Number(checkout.amount_minor || 0),
+  } as OwnCourseCheckoutStatus;
 }
