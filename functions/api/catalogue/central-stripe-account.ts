@@ -5,6 +5,9 @@ const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 
 type Env = ProductionLmsEnv & CentralPaymentsEnv;
 
+// This route exposes only non-secret Stripe account identity returned by Head
+// Office. It is used to verify that the eLearning website and Central Payments
+// are pointed at the same principal JA Group Services Ltd Stripe account.
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const token = String(env.CUSTOMEROPS_API_KEY || env.HEAD_OFFICE_PLATFORM_KEY || '').trim();
   const base = String(env.CUSTOMEROPS_BASE_URL || env.HEAD_OFFICE_API_BASE_URL || HEAD_OFFICE_DEFAULT).trim().replace(/\/$/, '');
