@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -31,74 +31,21 @@ jobs:
           mkdir -p .wrangler
           npx --yes wrangler@4.114.0 pages functions build functions --outfile=.wrangler/functions-worker.js
 
-      - name: Synchronise live Stripe course catalogue
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      - name: Diagnose one live Stripe catalogue product sync
         shell: bash
         run: |
-          set -euo pipefail
-          base='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/stripe-sync'
-          probe="${base}?family=sousa_murray&offset=0&limit=1"
-
-          echo 'Checking the production Stripe catalogue sync endpoint...'
-          for attempt in $(seq 1 3); do
-            status=$(curl --max-time 15 --connect-timeout 5 --silent --show-error --output /tmp/catalogue-probe.json --write-out '%{http_code}' "$probe" || true)
-            echo "Probe HTTP ${status:-000}"
-            cat /tmp/catalogue-probe.json 2>/dev/null || true
-            echo
-            if [ "$status" = '200' ]; then
-              echo 'Production Stripe catalogue sync endpoint is ready.'
-              break
-            fi
-            if [ "$attempt" = '3' ]; then
-              echo "Production sync endpoint failed diagnostic probing (last HTTP ${status:-000})." >&2
-              exit 1
-            fi
-            sleep 3
-          done
-
-          sync_family() {
-            family="$1"
-            offset=0
-            batch=0
-            total_synced=0
-            total_created_products=0
-            total_created_prices=0
-            total_pending_prices=0
-
-            while true; do
-              batch=$((batch + 1))
-              url="${base}?family=${family}&offset=${offset}&limit=5"
-              echo "Syncing ${family} batch ${batch} from offset ${offset}..."
-              body_file="/tmp/${family}-${offset}.json"
-              status=$(curl --max-time 45 --connect-timeout 5 --silent --show-error --retry 1 --retry-delay 2 --retry-all-errors --output "$body_file" --write-out '%{http_code}' "$url" || true)
-              cat "$body_file" 2>/dev/null || true
-              echo
-              if [ "$status" != '200' ]; then
-                echo "Catalogue batch failed with HTTP ${status:-000}." >&2
-                exit 1
-              fi
-              body=$(cat "$body_file")
-              echo "$body" | jq '{family,offset,total,synced,createdProducts,existingProducts,createdPrices,replacedPrices,pendingPrices,complete,nextOffset,cached}'
-
-              synced=$(echo "$body" | jq -r '.synced // 0')
-              created_products=$(echo "$body" | jq -r '.createdProducts // 0')
-              created_prices=$(echo "$body" | jq -r '.createdPrices // 0')
-              pending_prices=$(echo "$body" | jq -r '.pendingPrices // 0')
-              total_synced=$((total_synced + synced))
-              total_created_products=$((total_created_products + created_products))
-              total_created_prices=$((total_created_prices + created_prices))
-              total_pending_prices=$((total_pending_prices + pending_prices))
-
-              next=$(echo "$body" | jq -r 'if .nextOffset == null then "" else (.nextOffset|tostring) end')
-              if [ -z "$next" ]; then
-                break
-              fi
-              offset="$next"
-              sleep 1
-            done
-
-            echo "${family}: synced=${total_synced}, created_products=${total_created_products}, created_prices=${total_created_prices}, pending_prices=${total_pending_prices}"
-          }
-
-          sync_family 'sousa_murray'
-          sync_family 'highfield'
+          set -uo pipefail
+          url='https://sousamurrayelearning.jagroupservices.co.uk/api/catalogue/stripe-sync?family=sousa_murray&offset=0&limit=1&force=1'
+          echo "Requesting one production Sousa Murray course product..."
+          status=$(curl --max-time 20 --connect-timeout 5 --silent --show-error \
+            --output /tmp/catalogue-diagnostic.json \
+            --write-out '%{http_code}' "$url")
+          curl_exit=$?
+          echo "curl_exit=${curl_exit} http_status=${status:-000}"
+          echo '--- response body ---'
+          cat /tmp/catalogue-diagnostic.json 2>/dev/null || true
+          echo
+          echo '--- end response body ---'
+          if [ "$curl_exit" -ne 0 ] || [ "$status" != '200' ]; then
+            exit 1
+          fi
