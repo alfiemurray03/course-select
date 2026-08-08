@@ -20,19 +20,21 @@
 - A mixed individual-course basket is one Central Payments checkout and one Stripe Checkout Session.
 - Stripe line items remain linked to the correct governed course Product for each course family.
 - The mixed flow validates totals independently in Head Office and the eLearning application before recording local fulfilment orders.
+- Individual Sousa Murray course prices use the approved governed VAT-inclusive complexity bands: £7.99, £11.00, £13.99, £16.99, £22.99 and £29.99.
 
-## Enrolment
+## Enrolment and course access
 
-- JA Group Services ID authentication is required before a mixed basket can be paid.
+- JA Group Services ID authentication is required before an individual-course basket can be paid.
 - The purchaser/own-course learner email must match the signed-in JA Group Services ID.
 - Highfield learner details are collected per licence.
 - Sousa Murray course entitlements and enrolments are created only after Central Payments reports payment completion.
+- An individually purchased Sousa Murray course provides 12 months of access from confirmed payment.
+- The LMS records the entitlement start and expiry timestamps and refuses standalone course access after the expiry timestamp.
+- The 12-month expiry is calculated as a calendar-month term in the LMS; the existing 365-day field is retained only as a compatibility/governance value exchanged with Central Payments.
+- A new purchase of the same course creates a fresh 12-month entitlement period after payment.
 
-## Remaining commercial launch gate
+## Commercial status
 
-Individual Sousa Murray course purchases remain fail-closed until Head Office has approved:
+The individual Sousa Murray course price schedule and access duration are now approved and governed in code. Paid individual-course checkout remains fail-closed if Central Payments does not report the expected approved Stripe Price or the approved 12-month access term.
 
-1. the individual purchase price (or price schedule) for the Sousa Murray catalogue; and
-2. the access duration for an individually purchased Sousa Murray course.
-
-This does not affect Highfield course checkout or the existing Learning Library subscription plans. No price or access duration is invented by the application.
+Highfield course checkout and Learning Library subscription plans retain their separate pricing and access rules.

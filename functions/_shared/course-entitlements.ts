@@ -8,6 +8,7 @@ import {
 import {
   OWN_COURSE_PRICE_CODE,
   OWN_COURSE_PRODUCT_CODE,
+  UNIFIED_COURSE_PRODUCT_CODE,
 } from './own-course-commerce';
 import {
   effectiveLearningSubscription,
@@ -17,6 +18,10 @@ import {
   stableId,
   type SubscriptionRow,
 } from './production-lms';
+
+export const INDIVIDUAL_COURSE_ACCESS_MONTHS = 12;
+export const INDIVIDUAL_COURSE_ACCESS_DAYS_COMPAT = 365;
+const UNIFIED_COURSE_PRICE_CODE = 'ELEARNING_UNIFIED_BASKET';
 
 export type CourseEntitlementSource = 'free_trial' | 'individual_purchase' | 'manual';
 
@@ -90,10 +95,14 @@ export async function resolveCourseAccess(
   return { active: false, source: 'none', subscription: null, entitlement };
 }
 
-function entitlementDates(checkout: CentralCheckoutRequest, accessDays: number | null) {
+function checkoutStartDate(checkout: CentralCheckoutRequest) {
   const startsAt = checkout.completed_at || checkout.updated_at || checkout.created_at || new Date().toISOString();
   const parsed = Date.parse(startsAt);
-  const safeStart = Number.isFinite(parsed) ? new Date(parsed) : new Date();
+  return Number.isFinite(parsed) ? new Date(parsed) : new Date();
+}
+
+function entitlementDates(checkout: CentralCheckoutRequest, accessDays: number | null) {
+  const safeStart = checkoutStartDate(checkout);
   const expiresAt = accessDays === null
     ? null
     : new Date(safeStart.getTime() + accessDays * 24 * 60 * 60 * 1000).toISOString();
@@ -101,6 +110,36 @@ function entitlementDates(checkout: CentralCheckoutRequest, accessDays: number |
     startsAt: safeStart.toISOString(),
     expiresAt,
     status: expiresAt && Date.parse(expiresAt) <= Date.now() ? 'expired' : 'active',
+  };
+}
+
+function addCalendarMonths(date: Date, months: number) {
+  const rawMonth = date.getUTCMonth() + months;
+  const targetYear = date.getUTCFullYear() + Math.floor(rawMonth / 12);
+  const targetMonth = ((rawMonth % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(date.getUTCDate(), lastDay);
+  return new Date(Date.UTC(
+    targetYear,
+    targetMonth,
+    targetDay,
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds(),
+  ));
+}
+
+function individualPurchaseDates(checkout: CentralCheckoutRequest, accessDays: number | null) {
+  if (accessDays !== INDIVIDUAL_COURSE_ACCESS_DAYS_COMPAT) {
+    throw new Error('Head Office Central Payments returned an individual-course access term that does not match the approved 12-month rule.');
+  }
+  const safeStart = checkoutStartDate(checkout);
+  const expiresAt = addCalendarMonths(safeStart, INDIVIDUAL_COURSE_ACCESS_MONTHS).toISOString();
+  return {
+    startsAt: safeStart.toISOString(),
+    expiresAt,
+    status: Date.parse(expiresAt) <= Date.now() ? 'expired' : 'active',
   };
 }
 
@@ -172,16 +211,19 @@ export async function recordIndividualPurchaseEntitlement(
   checkout: CentralCheckoutRequest,
   accessDays: number | null,
 ) {
+  const productCode = String(checkout.product_code || '').toUpperCase();
+  const priceCode = String(checkout.price_code || '').toUpperCase();
+  const ownOnlyCheckout = productCode === OWN_COURSE_PRODUCT_CODE && priceCode === OWN_COURSE_PRICE_CODE;
+  const unifiedCheckout = productCode === UNIFIED_COURSE_PRODUCT_CODE && priceCode === UNIFIED_COURSE_PRICE_CODE;
   if (
-    String(checkout.product_code || '').toUpperCase() !== OWN_COURSE_PRODUCT_CODE
-    || String(checkout.price_code || '').toUpperCase() !== OWN_COURSE_PRICE_CODE
+    (!ownOnlyCheckout && !unifiedCheckout)
     || String(checkout.status || '').toLowerCase() !== 'completed'
     || Number(checkout.amount_minor || 0) <= 0
   ) {
     throw new Error('The Central Payments record is not a completed Sousa Murray individual course order.');
   }
 
-  const { startsAt, expiresAt, status } = entitlementDates(checkout, accessDays);
+  const { startsAt, expiresAt, status } = individualPurchaseDates(checkout, accessDays);
   const id = await stableId('lms-course-entitlement', `${accountId}:${course.slug}:individual_purchase`);
 
   await db.prepare(`
@@ -211,8 +253,8 @@ export async function recordIndividualPurchaseEntitlement(
     course.code,
     course.version,
     status,
-    OWN_COURSE_PRODUCT_CODE,
-    OWN_COURSE_PRICE_CODE,
+    productCode,
+    priceCode,
     checkout.id,
     checkout.stripe_customer_id || null,
     checkout.stripe_checkout_session_id || null,
