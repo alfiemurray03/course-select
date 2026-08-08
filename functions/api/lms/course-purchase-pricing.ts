@@ -43,6 +43,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   if (!centralPaymentsConfigured(centralEnv)) {
     return Response.json({
       configured: false,
+      priceCatalogueConfigured: false,
       checkoutConfigured: false,
       accessConfigured: false,
       priceDisplayConfigured: true,
@@ -78,7 +79,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
         : undefined;
 
     return Response.json({
-      configured: stripePricesReady,
+      configured: checkoutConfigured,
+      priceCatalogueConfigured: stripePricesReady,
       checkoutConfigured,
       accessConfigured: pricing.accessConfigured ?? false,
       priceDisplayConfigured: true,
@@ -91,6 +93,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   } catch (error) {
     return Response.json({
       configured: false,
+      priceCatalogueConfigured: false,
       checkoutConfigured: false,
       accessConfigured: false,
       priceDisplayConfigured: true,
