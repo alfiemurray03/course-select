@@ -1,5 +1,6 @@
 import { flattenCourseLessons, libraryCourses } from './libraryCatalogue';
 import { addLearningCourseToStoredBasket } from './learning-course-basket';
+import { ownCourseIndividualPrice } from './ownCoursePricing';
 
 const MARKER = 'data-own-course-commerce';
 const RESULT_COPY = 'Individual purchase · Plan access · Final assessment · Certificate verification';
@@ -13,6 +14,14 @@ let accessLoadStarted = false;
 let accessKnown = false;
 const accessibleSlugs = new Set<string>();
 const enrolledSlugs = new Set<string>();
+
+function money(pence: number) {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+  }).format(pence / 100);
+}
 
 function findCourseByCard(card: Element) {
   const code = card.querySelector('.plms-course-labels span')?.textContent?.trim();
@@ -56,6 +65,28 @@ function createButton(label: string, className: string, onClick: () => void) {
   return button;
 }
 
+function createPriceRow(course: (typeof libraryCourses)[number], included: boolean) {
+  const price = ownCourseIndividualPrice(course);
+  const row = document.createElement('div');
+  row.className = 'sml-own-course-price';
+  row.setAttribute('data-pricing-band', price.id);
+
+  const copy = document.createElement('span');
+  copy.className = 'sml-own-course-price-copy';
+  copy.textContent = included ? 'Individual purchase price' : 'Buy this course individually';
+
+  const amount = document.createElement('span');
+  amount.className = 'sml-own-course-price-amount';
+  const strong = document.createElement('strong');
+  strong.textContent = money(price.grossPence);
+  const small = document.createElement('small');
+  small.textContent = 'VAT included';
+  amount.append(strong, small);
+
+  row.append(copy, amount);
+  return row;
+}
+
 function enhanceCatalogue() {
   if (window.location.pathname !== '/learning-library/courses') return;
   loadAccountAccess();
@@ -80,14 +111,18 @@ function enhanceCatalogue() {
     }
 
     const mode = hasAccess ? 'included' : 'purchase';
-    const markerValue = `${course.slug}:${mode}`;
+    const markerValue = `${course.slug}:${mode}:priced-v1`;
     const existingActions = card.querySelector<HTMLElement>(`[${MARKER}]`);
-    if (existingActions?.getAttribute(MARKER) === markerValue) return;
+    if (
+      existingActions?.getAttribute(MARKER) === markerValue
+      && existingActions.querySelector('.sml-own-course-price')
+    ) return;
     existingActions?.remove();
 
     const actions = document.createElement('div');
     actions.className = 'sml-own-course-card-actions';
     actions.setAttribute(MARKER, markerValue);
+    actions.append(createPriceRow(course, hasAccess));
 
     if (hasAccess) {
       const included = document.createElement('span');
@@ -145,6 +180,17 @@ function enhanceLmsInformationPage() {
   actions.className = 'sml-own-course-lms-access-actions';
   actions.setAttribute(MARKER, 'lms-access');
 
+  const price = ownCourseIndividualPrice(course);
+  const priceNote = document.createElement('div');
+  priceNote.className = 'sml-own-course-lms-price';
+  const priceLabel = document.createElement('span');
+  priceLabel.textContent = 'Individual purchase';
+  const priceAmount = document.createElement('strong');
+  priceAmount.textContent = money(price.grossPence);
+  const priceVat = document.createElement('small');
+  priceVat.textContent = 'VAT included';
+  priceNote.append(priceLabel, priceAmount, priceVat);
+
   const buy = document.createElement('a');
   buy.href = `/learning-library/courses/${course.slug}`;
   buy.className = 'plms-primary-action';
@@ -155,7 +201,7 @@ function enhanceLmsInformationPage() {
   plan.className = 'sml-own-course-secondary-action';
   plan.textContent = 'Buy a plan →';
 
-  actions.append(buy, plan);
+  actions.append(priceNote, buy, plan);
   activePlanCopy?.insertAdjacentElement('afterend', actions);
   if (!activePlanCopy) aside.append(actions);
 }

@@ -5,6 +5,46 @@
   margin-top: 14px;
 }
 
+.sml-own-course-price {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+  color: var(--foreground);
+}
+
+.sml-own-course-price-copy {
+  color: var(--muted-foreground);
+  font-size: .76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.sml-own-course-price-amount {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  white-space: nowrap;
+}
+
+.sml-own-course-price-amount strong {
+  color: var(--foreground);
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.sml-own-course-price-amount small {
+  color: var(--muted-foreground);
+  font-size: .68rem;
+  font-weight: 700;
+}
+
 .sml-own-course-card-actions button,
 .sml-own-course-card-actions a,
 .sml-own-course-secondary-action {
@@ -77,6 +117,35 @@
   margin: 14px 0;
 }
 
+.sml-own-course-lms-price {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+}
+
+.sml-own-course-lms-price span {
+  color: var(--muted-foreground);
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.sml-own-course-lms-price strong {
+  color: var(--foreground);
+  font-size: 1.12rem;
+}
+
+.sml-own-course-lms-price small {
+  grid-column: 2;
+  color: var(--muted-foreground);
+  font-size: .68rem;
+  text-align: right;
+}
+
 .sml-own-course-lms-access-actions .plms-primary-action,
 .sml-own-course-secondary-action {
   width: 100%;
@@ -93,9 +162,14 @@
     grid-template-columns: 1fr;
   }
 
+  .sml-own-course-price,
   .sml-own-course-buy-plan,
   .sml-own-course-included-label,
   .sml-own-course-open-learning {
     grid-column: auto;
+  }
+
+  .sml-own-course-price {
+    align-items: flex-start;
   }
 }

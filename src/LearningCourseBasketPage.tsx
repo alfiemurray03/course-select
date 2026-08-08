@@ -24,12 +24,16 @@ type SessionResponse = {
 };
 type PricingResponse = {
   configured: boolean;
+  checkoutConfigured?: boolean;
+  accessConfigured?: boolean;
+  priceDisplayConfigured?: boolean;
   accessDays: number | null;
   accessLabel: string | null;
   items: Array<{
     courseSlug: string;
     courseCode: string;
     configured: boolean;
+    stripePriceConfigured?: boolean;
     grossPence: number | null;
     netPence: number | null;
     vatPence: number | null;
@@ -139,7 +143,16 @@ export default function LearningCourseBasketPage() {
     const slugs = detailedItems.map((course) => course.slug).join(',');
     jsonRequest<PricingResponse>(`/api/lms/course-purchase-pricing?slugs=${encodeURIComponent(slugs)}`)
       .then(setPricing)
-      .catch((error: Error) => setPricing({ configured: false, accessDays: null, accessLabel: null, items: [], message: error.message }));
+      .catch((error: Error) => setPricing({
+        configured: false,
+        checkoutConfigured: false,
+        accessConfigured: false,
+        priceDisplayConfigured: false,
+        accessDays: null,
+        accessLabel: null,
+        items: [],
+        message: error.message,
+      }));
   }, [detailedItems]);
 
   const priceBySlug = useMemo(() => new Map(pricing?.items.map((item) => [item.courseSlug, item]) ?? []), [pricing]);
@@ -152,6 +165,11 @@ export default function LearningCourseBasketPage() {
     };
   }, { net: 0, vat: 0, gross: 0 }), [detailedItems, priceBySlug]);
 
+  const priceDisplayReady = Boolean(detailedItems.length && detailedItems.every((course) => {
+    const price = priceBySlug.get(course.slug);
+    return price?.configured && Number(price.grossPence) > 0;
+  }));
+  const checkoutReady = Boolean(priceDisplayReady && pricing?.checkoutConfigured);
   const detailsComplete = Boolean(
     customerType
     && legalFirstName.trim()
@@ -164,9 +182,9 @@ export default function LearningCourseBasketPage() {
 
   const beginCheckout = async (event: FormEvent) => {
     event.preventDefault();
-    if (!detailedItems.length || !detailsComplete || !consentComplete || !pricing?.configured || !accountEmailMatches) return;
+    if (!detailedItems.length || !detailsComplete || !consentComplete || !checkoutReady || !accountEmailMatches) return;
     if (!session?.authenticated) {
-      window.location.assign(`/api/auth/login?returnTo=${encodeURIComponent('/learning-library/basket?resume=1')}`);
+      window.location.assign(`/api/auth/login?returnTo=${encodeURIComponent('/basket?resume=1')}`);
       return;
     }
 
@@ -201,16 +219,23 @@ export default function LearningCourseBasketPage() {
     clearBasket();
   }
 
+  const checkoutMessage = pricing?.message
+    || (!priceDisplayReady
+      ? 'Approved course pricing is loading.'
+      : pricing?.accessConfigured === false
+        ? 'The approved course price is shown. The individual-course access term still needs to be confirmed in Head Office before Stripe checkout can open.'
+        : 'The approved course price is shown while Central Payments finishes preparing the Stripe checkout price.');
+
   return <main className="sml-course-basket-page">
-    <section className="sml-course-basket-hero"><div className="lp-container"><span><ShoppingBasket /> Sousa Murray course basket</span><h1>Purchase individual Sousa Murray courses.</h1><p>Courses in this basket are one-time individual course purchases for one named learner. Learning is delivered through the Sousa Murray LMS after payment and enrolment are confirmed.</p></div></section>
+    <section className="sml-course-basket-hero"><div className="lp-container"><span><ShoppingBasket /> Sousa Murray eLearning basket</span><h1>Review your Sousa Murray eLearning basket.</h1><p>This is the website's single basket for individually purchased courses. Sousa Murray courses and Highfield Online Training can be added here while each course keeps its own enrolment and learning-platform process.</p></div></section>
     <section className="lp-container sml-course-basket-shell">
-      {!detailedItems.length ? <div className="sml-course-basket-empty"><ShoppingBasket size={44} /><h2>Your Sousa Murray course basket is empty</h2><p>Add courses from the Sousa Murray eLearning catalogue. Learning Library plans are purchased separately and are never added to this basket.</p><Link to="/learning-library/courses">Browse Sousa Murray courses <ArrowRight /></Link></div> : <form onSubmit={beginCheckout} className="sml-course-basket-layout">
+      {!detailedItems.length ? <div className="sml-course-basket-empty"><ShoppingBasket size={44} /><h2>Your basket is empty</h2><p>Add an individual Sousa Murray course or Highfield Online Training course. Learning Library plans are purchased separately.</p><Link to="/learning-library/courses">Browse Sousa Murray courses <ArrowRight /></Link></div> : <form onSubmit={beginCheckout} className="sml-course-basket-layout">
         <div className="sml-course-basket-main">
           <section className="sml-course-basket-panel">
             <div className="sml-course-basket-panel-heading"><div><span>{itemCount} selected {itemCount === 1 ? 'course' : 'courses'}</span><h2>Courses for the named learner</h2></div><Link to="/learning-library/courses">Add another course</Link></div>
             <div className="sml-course-basket-items">{detailedItems.map((course) => {
               const price = priceBySlug.get(course.slug);
-              return <article key={course.slug}><BookOpen /><div><small>{course.code} · {course.level}</small><h3>{course.title}</h3><p>{course.shortDescription}</p></div><div className="sml-course-basket-price">{price?.configured && price.grossPence ? <><strong>{formatMoney(price.grossPence)}</strong><span>including VAT</span></> : <><strong>Price pending</strong><span>Head Office pricing not configured</span></>}<button type="button" onClick={() => removeItem(course.slug)}><Trash2 size={17} /> Remove</button></div></article>;
+              return <article key={course.slug}><BookOpen /><div><small>{course.code} · {course.level}</small><h3>{course.title}</h3><p>{course.shortDescription}</p></div><div className="sml-course-basket-price">{price?.configured && price.grossPence ? <><strong>{formatMoney(price.grossPence)}</strong><span>including VAT</span></> : <><strong>Loading price…</strong><span>Approved price is being loaded</span></>}<button type="button" onClick={() => removeItem(course.slug)}><Trash2 size={17} /> Remove</button></div></article>;
             })}</div>
           </section>
 
@@ -244,11 +269,12 @@ export default function LearningCourseBasketPage() {
           <ShieldCheck size={30} />
           <h2>Order summary</h2>
           <div><span>Courses</span><strong>{itemCount}</strong></div>
-          {pricing?.configured ? <><div><span>Subtotal excluding VAT</span><strong>{formatMoney(totals.net)}</strong></div><div><span>VAT</span><strong>{formatMoney(totals.vat)}</strong></div><div className="total"><span>Total to pay</span><strong>{formatMoney(totals.gross)}</strong></div><p>{pricing.accessLabel}</p></> : <div className="sml-pricing-unavailable"><CircleAlert /><p>{pricing?.message || 'Individual course pricing and access duration are not yet configured in Head Office Central Payments.'}</p></div>}
-          {!session ? <div className="sml-course-basket-loading"><LoaderCircle /> Checking your account…</div> : !session.authenticated ? <button className="sml-course-checkout-button" type="submit" disabled={!detailsComplete || !consentComplete || !pricing?.configured}>Sign in or create account to continue <ArrowRight /></button> : <button className="sml-course-checkout-button" type="submit" disabled={busy || !detailsComplete || !consentComplete || !pricing?.configured || !accountEmailMatches}>{busy ? <><LoaderCircle className="sml-spin" /> Opening Stripe…</> : <>Continue to secure Stripe checkout <ArrowRight /></>}</button>}
+          {priceDisplayReady ? <><div><span>Subtotal excluding VAT</span><strong>{formatMoney(totals.net)}</strong></div><div><span>VAT</span><strong>{formatMoney(totals.vat)}</strong></div><div className="total"><span>Total to pay</span><strong>{formatMoney(totals.gross)}</strong></div>{pricing?.accessLabel && <p>{pricing.accessLabel}</p>}</> : <div className="sml-pricing-unavailable"><CircleAlert /><p>Loading the approved course price…</p></div>}
+          {!checkoutReady && priceDisplayReady && <div className="sml-pricing-unavailable"><CircleAlert /><p>{checkoutMessage}</p></div>}
+          {!session ? <div className="sml-course-basket-loading"><LoaderCircle /> Checking your account…</div> : !session.authenticated ? <button className="sml-course-checkout-button" type="submit" disabled={!detailsComplete || !consentComplete || !checkoutReady}>Sign in or create account to continue <ArrowRight /></button> : <button className="sml-course-checkout-button" type="submit" disabled={busy || !detailsComplete || !consentComplete || !checkoutReady || !accountEmailMatches}>{busy ? <><LoaderCircle className="sml-spin" /> Opening Stripe…</> : <>Continue to secure Stripe checkout <ArrowRight /></>}</button>}
           {message && <p className="sml-course-basket-message">{message}</p>}
-          {searchParams.get('checkout') === 'cancelled' && <p className="sml-course-basket-message">Stripe Checkout was cancelled. Your course basket and learner details are still here.</p>}
-          <small>Learning Library plans are not placed in this basket. Highfield Online Training continues to use the separate Highfield Basket.</small>
+          {searchParams.get('checkout') === 'cancelled' && <p className="sml-course-basket-message">Stripe Checkout was cancelled. Nothing has been charged and your basket is still here.</p>}
+          <small>Learning Library plans are purchased separately. All individual Sousa Murray and Highfield courses use this one website basket.</small>
         </aside>
       </form>}
     </section>
