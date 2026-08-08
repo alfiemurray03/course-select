@@ -51,6 +51,8 @@ type HeadOfficeSyncResult = {
   }>;
 };
 
+type RetirementResult = { activeCourseCount: number; retiredCount: number; retired: Array<{ productCode: string; name: string; stripeProductId: string | null }> };
+
 const HEAD_OFFICE_DEFAULT = 'https://customerops.jagroupservices.co.uk';
 const MAX_BATCH = 25;
 const encoder = new TextEncoder();
@@ -84,7 +86,7 @@ function ownManifest(): CourseProductManifestItem[] {
       courseCode: course.code,
       courseSlug: course.slug,
       name: `Sousa Murray eLearning — ${course.title}`,
-      description: `${course.shortDescription} Delivered through the Sousa Murray LMS for one named learner. Operated by JA Group Services Ltd.`,
+      description: `${course.shortDescription} Full ${course.studyPlan?.durationWeeks ?? 12}-week programme with applied assignments, capstone project and final assessment. Delivered through the Sousa Murray LMS for one named learner.`,
       url: `https://sousamurrayelearning.jagroupservices.co.uk/learning-library/courses/${course.slug}`,
       level: price.level,
       durationMinutes: price.durationMinutes,
@@ -99,7 +101,7 @@ function ownManifest(): CourseProductManifestItem[] {
       netPence: price.retailNetPence,
       vatPence: price.vatPence,
       grossPence: price.grossPence,
-      priceSource: 'Sousa Murray governed complexity pricing: 30% commercial uplift, then UK standard-rate VAT',
+      priceSource: 'Sousa Murray governed programme pricing: 30% commercial uplift, then UK standard-rate VAT',
     };
   });
 }
@@ -137,42 +139,44 @@ async function ensureSyncSchema(db: D1Database) {
   )`).run();
 }
 
-async function callHeadOffice(env: SyncEnv, items: CourseProductManifestItem[]) {
+async function headOfficeRequest<T>(env: SyncEnv, path: string, body: unknown): Promise<T> {
   const { token, base } = connector(env);
   if (!token) throw Object.assign(new Error('The Head Office Central Payments platform key is not configured.'), { status: 503 });
-  const target = new URL('/api/v1/payments/course-catalogue-sync', `${base}/`);
+  const target = new URL(path, `${base}/`);
   if (target.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(target.hostname)) {
     throw Object.assign(new Error('The Head Office Central Payments connector must use HTTPS.'), { status: 503 });
   }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
     const response = await fetch(target.toString(), {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ brand: 'SOUSA_MURRAY_ELEARNING', items }),
+      method: 'POST', signal: controller.signal,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    const body = await response.json<Record<string, unknown>>().catch(() => ({}));
+    const result = await response.json<Record<string, unknown>>().catch(() => ({}));
     if (!response.ok) {
-      const detail = body.error && typeof body.error === 'object' ? body.error as Record<string, unknown> : null;
-      const message = typeof detail?.message === 'string' ? detail.message : `Head Office catalogue sync returned HTTP ${response.status}.`;
+      const detail = result.error && typeof result.error === 'object' ? result.error as Record<string, unknown> : null;
+      const message = typeof detail?.message === 'string' ? detail.message : `Head Office catalogue operation returned HTTP ${response.status}.`;
       throw Object.assign(new Error(message), { status: response.status });
     }
-    return body as HeadOfficeSyncResult;
-  } finally {
-    clearTimeout(timeout);
-  }
+    return result as T;
+  } finally { clearTimeout(timeout); }
+}
+
+async function callHeadOffice(env: SyncEnv, items: CourseProductManifestItem[]) {
+  return headOfficeRequest<HeadOfficeSyncResult>(env, '/api/v1/payments/course-catalogue-sync', { brand: 'SOUSA_MURRAY_ELEARNING', items });
+}
+
+async function retireStaleOwnCourses(env: SyncEnv) {
+  return headOfficeRequest<RetirementResult>(env, '/api/v1/payments/course-catalogue-retire', {
+    brand: 'SOUSA_MURRAY_ELEARNING',
+    activeCourseCodes: libraryCourses.map((course) => course.code),
+  });
 }
 
 export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => {
   if (!env.DB) return Response.json({ error: 'database_not_bound', message: 'The eLearning database is not configured.' }, { status: 503 });
-
   const url = new URL(request.url);
   const family = url.searchParams.get('family') === 'highfield' ? 'highfield' : 'sousa_murray';
   const offset = Math.max(0, Number.parseInt(url.searchParams.get('offset') || '0', 10) || 0);
@@ -183,15 +187,7 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
   const items = manifest.slice(offset, offset + limit);
 
   if (!items.length) {
-    return Response.json({
-      family,
-      offset,
-      limit,
-      total: manifest.length,
-      synced: 0,
-      complete: true,
-      nextOffset: null,
-    }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ family, offset, limit, total: manifest.length, synced: 0, complete: true, nextOffset: null }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 
   await ensureSyncSchema(env.DB);
@@ -199,56 +195,33 @@ export const onRequestGet: PagesFunction<SyncEnv> = async ({ request, env }) => 
   const batchKey = `${family}:${offset}:${items.length}`;
   const previous = await env.DB.prepare(`SELECT manifest_hash,status,result_json FROM stripe_course_catalogue_sync_state WHERE batch_key=? LIMIT 1`)
     .bind(batchKey).first<{ manifest_hash: string; status: string; result_json: string | null }>();
+  const finalBatch = offset + items.length >= manifest.length;
 
   if (!force && previous?.manifest_hash === manifestHash && previous.status === 'completed') {
     let priorResult: HeadOfficeSyncResult | null = null;
     try { priorResult = previous.result_json ? JSON.parse(previous.result_json) as HeadOfficeSyncResult : null; } catch {}
-    return Response.json({
-      family,
-      offset,
-      limit,
-      total: manifest.length,
-      cached: true,
-      complete: offset + items.length >= manifest.length,
-      nextOffset: offset + items.length < manifest.length ? offset + items.length : null,
-      ...(priorResult ?? { synced: items.length }),
-    }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    let retirement: RetirementResult | null = null;
+    if (family === 'sousa_murray' && finalBatch) retirement = await retireStaleOwnCourses(env);
+    return Response.json({ family, offset, limit, total: manifest.length, cached: true, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, ...(priorResult ?? { synced: items.length }) }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 
   try {
     await env.DB.prepare(`INSERT INTO stripe_course_catalogue_sync_state
       (batch_key,manifest_hash,family,offset_value,item_count,status,result_json,completed_at,updated_at)
       VALUES (?,?,?,?,?,'running',NULL,NULL,CURRENT_TIMESTAMP)
-      ON CONFLICT(batch_key) DO UPDATE SET
-        manifest_hash=excluded.manifest_hash,family=excluded.family,offset_value=excluded.offset_value,
-        item_count=excluded.item_count,status='running',result_json=NULL,completed_at=NULL,updated_at=CURRENT_TIMESTAMP`)
+      ON CONFLICT(batch_key) DO UPDATE SET manifest_hash=excluded.manifest_hash,family=excluded.family,
+        offset_value=excluded.offset_value,item_count=excluded.item_count,status='running',result_json=NULL,completed_at=NULL,updated_at=CURRENT_TIMESTAMP`)
       .bind(batchKey, manifestHash, family, offset, items.length).run();
 
     const result = await callHeadOffice(env, items);
-    await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state
-      SET status='completed',result_json=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`)
+    await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='completed',result_json=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`)
       .bind(JSON.stringify(result), batchKey).run();
+    let retirement: RetirementResult | null = null;
+    if (family === 'sousa_murray' && finalBatch) retirement = await retireStaleOwnCourses(env);
 
-    return Response.json({
-      family,
-      offset,
-      limit,
-      total: manifest.length,
-      cached: false,
-      complete: offset + items.length >= manifest.length,
-      nextOffset: offset + items.length < manifest.length ? offset + items.length : null,
-      ...result,
-    }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    return Response.json({ family, offset, limit, total: manifest.length, cached: false, complete: finalBatch, nextOffset: finalBatch ? null : offset + items.length, retirement, ...result }, { headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   } catch (error) {
-    await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`)
-      .bind(batchKey).run().catch(() => undefined);
-    return Response.json({
-      error: 'stripe_catalogue_sync_failed',
-      message: error instanceof Error ? error.message : 'The Stripe course catalogue could not be synchronised.',
-      family,
-      offset,
-      limit,
-      total: manifest.length,
-    }, { status: Number((error as { status?: number })?.status || 502), headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
+    await env.DB.prepare(`UPDATE stripe_course_catalogue_sync_state SET status='failed',updated_at=CURRENT_TIMESTAMP WHERE batch_key=?`).bind(batchKey).run().catch(() => undefined);
+    return Response.json({ error: 'stripe_catalogue_sync_failed', message: error instanceof Error ? error.message : 'The Stripe course catalogue could not be synchronised.', family, offset, limit, total: manifest.length }, { status: Number((error as { status?: number })?.status || 502), headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } });
   }
 };
