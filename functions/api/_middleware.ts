@@ -7,6 +7,10 @@ import {
   handleProfessionalTrainingCheckout,
   type ProfessionalTrainingEnv,
 } from '../_shared/professional-training-checkout';
+import {
+  handleUnifiedElearningCheckout,
+  type UnifiedElearningEnv,
+} from '../_shared/unified-elearning-checkout';
 
 type AgeConfirmation = {
   isAdult?: boolean;
@@ -18,9 +22,10 @@ type CheckoutConsentPayload = {
   adultConfirmedAt?: string;
   digitalContentConsent?: boolean;
   digitalContentConsentRecordedAt?: string;
+  unifiedBasket?: boolean;
 };
 
-async function checkoutConsent(request: Request): Promise<CheckoutConsentPayload | null> {
+async function checkoutPayload(request: Request): Promise<CheckoutConsentPayload | null> {
   try {
     const contentType = request.headers.get('Content-Type') ?? '';
     if (contentType.includes('multipart/form-data')) {
@@ -42,12 +47,12 @@ function recentIso(value?: string, maximumAge = 15 * 60 * 1000) {
   return Number.isFinite(timestamp) && Math.abs(Date.now() - timestamp) <= maximumAge;
 }
 
-export const onRequest: PagesFunction<ProfessionalTrainingEnv> = async ({ request, env, next }) => {
+export const onRequest: PagesFunction<ProfessionalTrainingEnv & UnifiedElearningEnv> = async ({ request, env, next }) => {
   const url = new URL(request.url);
   const isCheckout = request.method === 'POST' && url.pathname === '/api/checkout';
   if (!isCheckout) return next();
 
-  const consent = await checkoutConsent(request);
+  const consent = await checkoutPayload(request);
   let adultConfirmationTime: number | string | undefined;
 
   if (env.SESSION_SECRET) {
@@ -96,13 +101,17 @@ export const onRequest: PagesFunction<ProfessionalTrainingEnv> = async ({ reques
         digitalContentConsentRecordedAt: consent.digitalContentConsentRecordedAt,
         changeOfMindCancellationAcknowledged: true,
         statutoryRightsPreserved: true,
-        paymentArchitecture: 'head_office_central_payments',
+        paymentArchitecture: consent?.unifiedBasket ? 'head_office_central_payments_unified' : 'head_office_central_payments',
       }),
     ).run().catch(() => undefined);
   }
 
+  if (consent?.unifiedBasket === true) {
+    return handleUnifiedElearningCheckout(request, env);
+  }
+
   // /api/checkout is intercepted here so the legacy direct-Stripe handler below
   // the middleware can remain available only as historical compatibility code.
-  // All new Professional Training purchases go through Head Office Central Payments.
+  // All Professional Training purchases go through Head Office Central Payments.
   return handleProfessionalTrainingCheckout(request, env);
 };

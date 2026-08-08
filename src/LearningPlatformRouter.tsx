@@ -12,17 +12,18 @@ import {
   Users,
 } from 'lucide-react';
 import { ReactNode, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import AccessibilityTools from './AccessibilityTools';
 import AgeGate from './AgeGate';
 import AppShell from './AppShell';
 import BrandedLearnerDashboard from './BrandedLearnerDashboard';
 import { catalogue as highfieldCatalogue, formatMoney, singleLicenceTier } from './catalogue';
 import { flattenCourseLessons, libraryCategories, libraryCourses } from './libraryCatalogue';
-import LearningCourseBasketPage, { LearningCoursePurchaseSuccessPage } from './LearningCourseBasketPage';
+import { LearningCoursePurchaseSuccessPage } from './LearningCourseBasketPage';
 import ProductionLearningManagementSystem from './ProductionLearningManagementSystem';
 import PublicLibraryCoursePage from './PublicLibraryCoursePage';
 import PublicSiteHeader from './PublicSiteHeader';
+import UnifiedBasketPage from './UnifiedBasketPage';
 import './learning-platform.css';
 import './theme-compatibility-fix.css';
 
@@ -46,7 +47,7 @@ function Footer() {
   return <>
     <footer className="lp-footer">
       <div><strong>Sousa Murray eLearning</strong><p>Individually purchased courses, Learning Library plans and professional training, operated by JA Group Services Ltd.</p></div>
-      <div><h3>Learning</h3><Link to="/learning-library">Sousa Murray courses</Link><Link to="/learning-library/courses">Sousa Murray course catalogue</Link><Link to="/learning-library/basket">Course Basket</Link><Link to="/plans">Learning Library plans</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Highfield course catalogue</Link></div>
+      <div><h3>Learning</h3><Link to="/learning-library">Sousa Murray courses</Link><Link to="/learning-library/courses">Sousa Murray course catalogue</Link><Link to="/basket">Basket</Link><Link to="/plans">Learning Library plans</Link><Link to="/professional-training">Professional Training</Link><Link to="/courses">Highfield course catalogue</Link></div>
       <div><h3>Support</h3><Link to="/lms/dashboard">My Sousa Murray eLearning</Link><Link to="/organisations">For organisations</Link><Link to="/support">Help Centre</Link><Link to="/contact">Contact</Link></div>
       <div><h3>Legal</h3><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Policy</Link><Link to="/refunds">Refunds Policy</Link><Link to="/complaints">Complaints</Link></div>
     </footer>
@@ -115,12 +116,15 @@ function PlansPage() {
 export default function LearningPlatformRouter() {
   const path = useLocation().pathname;
 
-  if (path === '/learning-library/basket') return <Layout><LearningCourseBasketPage /></Layout>;
+  if (path === '/learning-library/basket') return <Navigate to="/basket" replace />;
+  if (path === '/basket') return <Layout><UnifiedBasketPage /></Layout>;
   if (path === '/learning-library/purchase/success') return <Layout><LearningCoursePurchaseSuccessPage /></Layout>;
   const publicCourse = path.match(/^\/learning-library\/courses\/([^/]+)$/);
   if (publicCourse) return <Layout><PublicLibraryCoursePage slug={decodeURIComponent(publicCourse[1])} /></Layout>;
   if (path === '/learning-library/courses') return <Layout><ProductionLearningManagementSystem /></Layout>;
 
+  // The learner LMS deliberately does not inherit the public website header or
+  // footer. It has its own navigation, visual system and learning workflow.
   if (path === '/lms' || path === '/lms/dashboard') return <><AgeGate /><AccessibilityTools /><BrandedLearnerDashboard /></>;
   if (path.startsWith('/lms')) return <><AgeGate /><AccessibilityTools /><ProductionLearningManagementSystem /></>;
 

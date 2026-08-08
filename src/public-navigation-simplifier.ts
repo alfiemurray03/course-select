@@ -13,10 +13,10 @@ function isActive(href: string) {
   if (href === '/') return path === '/';
   if (href === '/about') return path === '/about';
   if (href === '/professional-training') {
-    return path === '/professional-training' || path.startsWith('/courses') || path === '/basket';
+    return path === '/professional-training' || path.startsWith('/courses');
   }
   if (href === '/learning-library/courses') {
-    return path.startsWith('/learning-library') || path.startsWith('/lms');
+    return path.startsWith('/learning-library');
   }
   if (href === '/plans') return path === '/plans' || path === '/pricing';
   return false;
@@ -52,6 +52,7 @@ function simplifyMobile(nav: HTMLElement) {
 }
 
 function applySimpleNavigation() {
+  if (window.location.pathname.startsWith('/lms')) return;
   document.querySelectorAll<HTMLElement>('.site-header .desktop-nav').forEach(simplifyDesktop);
   document.querySelectorAll<HTMLElement>('.site-header .mobile-nav').forEach(simplifyMobile);
 }

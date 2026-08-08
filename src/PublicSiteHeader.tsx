@@ -55,10 +55,10 @@ function routeIsActive(pathname: string, route: string) {
   if (route === '/') return pathname === '/';
   if (route === '/about') return pathname === '/about';
   if (route === '/professional-training') {
-    return pathname === '/professional-training' || pathname.startsWith('/courses') || pathname === '/basket';
+    return pathname === '/professional-training' || pathname.startsWith('/courses');
   }
   if (route === '/learning-library/courses') {
-    return pathname.startsWith('/learning-library') || pathname.startsWith('/lms');
+    return pathname.startsWith('/learning-library');
   }
   if (route === '/plans') return pathname === '/plans' || pathname === '/pricing';
   return false;
@@ -66,8 +66,9 @@ function routeIsActive(pathname: string, route: string) {
 
 export default function PublicSiteHeader() {
   const [open, setOpen] = useState(false);
-  const { itemCount, licenceCount } = useBasket();
-  const { itemCount: learningCourseCount } = useLearningCourseBasket();
+  const { itemCount: highfieldCourseCount } = useBasket();
+  const { itemCount: ownCourseCount } = useLearningCourseBasket();
+  const basketCount = highfieldCourseCount + ownCourseCount;
   const { mode, setMode } = usePublicTheme();
   const location = useLocation();
 
@@ -75,7 +76,7 @@ export default function PublicSiteHeader() {
 
   const rotateTheme = () => setMode(mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system');
 
-  return <header className="site-header">
+  return <header className="site-header" data-public-header="sousa-murray-elearning">
     <div className="header-inner">
       <Link to="/" className="brand" aria-label="Sousa Murray eLearning home">
         <span style={wordmarkStyle}>Sousa Murray eLearning</span>
@@ -91,25 +92,14 @@ export default function PublicSiteHeader() {
 
       <div className="header-actions">
         <Link
-          className="basket-header-button learning-course-basket-header-button"
-          to="/learning-library/basket"
-          aria-label={`Sousa Murray course basket with ${learningCourseCount} courses`}
-          title="Sousa Murray course basket"
-        >
-          <ShoppingBasket size={19} />
-          <span className="basket-header-label">Course Basket</span>
-          {learningCourseCount > 0 && <span className="basket-count-badge">{learningCourseCount}</span>}
-        </Link>
-
-        <Link
           className="basket-header-button"
           to="/basket"
-          aria-label={`Highfield Online Training basket with ${itemCount} courses and ${licenceCount} licences`}
-          title="Highfield Online Training basket"
+          aria-label={`Basket with ${basketCount} selected ${basketCount === 1 ? 'course' : 'courses'}`}
+          title="Basket"
         >
           <ShoppingBasket size={19} />
-          <span className="basket-header-label">Highfield Basket</span>
-          {itemCount > 0 && <span className="basket-count-badge">{itemCount}</span>}
+          <span className="basket-header-label">Basket</span>
+          {basketCount > 0 && <span className="basket-count-badge">{basketCount}</span>}
         </Link>
 
         <Link className="account-button desktop-account" to="/lms/dashboard">
@@ -140,8 +130,7 @@ export default function PublicSiteHeader() {
 
     {open && <nav className="mobile-nav" aria-label="Mobile navigation">
       <Link className="mobile-account" to="/lms/dashboard"><CircleUserRound size={19} /> My Sousa Murray eLearning</Link>
-      <Link className="mobile-basket-link" to="/learning-library/basket"><ShoppingBasket size={19} /> Sousa Murray Course Basket {learningCourseCount > 0 && `(${learningCourseCount})`}</Link>
-      <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Highfield Basket {itemCount > 0 && `(${itemCount})`}</Link>
+      <Link className="mobile-basket-link" to="/basket"><ShoppingBasket size={19} /> Basket {basketCount > 0 && `(${basketCount})`}</Link>
       <Link to="/">Home</Link>
       <Link to="/about">About us</Link>
       <Link to="/professional-training">Highfield Online Training</Link>

@@ -52,8 +52,9 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     if (String(checkout.customer_number || '') !== String(local.order.head_office_customer_number || '')) {
       throw new Error('The Central Payments customer does not match the local course order.');
     }
-    if (Number(checkout.amount_minor || 0) !== Number(local.order.total_gross_pence || 0)) {
-      throw new Error('The Central Payments total does not match the local course order total.');
+    const ownCoursePaymentAmount = Number(checkout.own_course_amount_minor ?? checkout.amount_minor ?? 0);
+    if (ownCoursePaymentAmount !== Number(local.order.total_gross_pence || 0)) {
+      throw new Error('The Central Payments Sousa Murray course amount does not match the local course order total.');
     }
     if (String(checkout.status || '').toLowerCase() !== 'completed') {
       return Response.json({ completed: false, status: checkout.status || 'pending', orderReference }, { headers: { 'Cache-Control': 'no-store' } });
@@ -91,6 +92,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       courseSlugs: fulfilled.map((course) => course.slug),
       learnerEmail: learner.enrolmentEmail,
       accessDays,
+      sharedStripeCheckout: String(checkout.product_code || '').toUpperCase() === 'ELEARNING_UNIFIED_COURSE_BASKET',
     });
 
     return Response.json({

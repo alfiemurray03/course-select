@@ -72,7 +72,8 @@ function enhanceCatalogue() {
     const expectedText = hasAccess ? 'Open course →' : 'View course →';
     const existingLink = card.querySelector<HTMLAnchorElement>('a[href*="/lms/course/"], a[href*="/learning-library/courses/"]');
     if (existingLink) {
-      const currentPath = `${new URL(existingLink.href, window.location.origin).pathname}${new URL(existingLink.href, window.location.origin).search}`;
+      const currentUrl = new URL(existingLink.href, window.location.origin);
+      const currentPath = `${currentUrl.pathname}${currentUrl.search}`;
       if (currentPath !== expectedHref) existingLink.href = expectedHref;
       if (existingLink.textContent !== expectedText) existingLink.textContent = expectedText;
       if (!existingLink.classList.contains('sml-catalogue-view-course')) existingLink.classList.add('sml-catalogue-view-course');
@@ -99,7 +100,7 @@ function enhanceCatalogue() {
       actions.append(included, open);
     } else {
       const buyNow = createButton('Buy now', 'sml-own-course-buy-now', () => {
-        if (addLearningCourseToStoredBasket(course.slug)) window.location.assign('/learning-library/basket');
+        if (addLearningCourseToStoredBasket(course.slug)) window.location.assign('/basket');
       });
       const add = createButton('Add to basket', 'sml-own-course-add-basket', () => {
         if (!addLearningCourseToStoredBasket(course.slug)) {
@@ -159,9 +160,6 @@ function enhanceLmsInformationPage() {
   if (!activePlanCopy) aside.append(actions);
 }
 
-// Register before the generic site navigation handler so even a very fast click
-// is resolved to the correct route: the public purchase page for a shopper, or
-// the LMS for a learner who already has this course through a plan/entitlement.
 document.addEventListener('click', (event) => {
   if (window.location.pathname !== '/learning-library/courses') return;
   const target = event.target;

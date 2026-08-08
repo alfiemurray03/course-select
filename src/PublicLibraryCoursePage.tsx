@@ -85,7 +85,7 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
   };
   const buyNow = () => {
     if (addLearningCourseToStoredBasket(course.slug)) {
-      window.location.assign('/learning-library/basket');
+      window.location.assign('/basket');
     }
   };
 
@@ -102,7 +102,7 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
             <h2>No course payment due</h2>
             <p>This course is already available to you through your current Learning Library plan, individual purchase, trial or assigned access.</p>
             <Link className="plcp-primary" to={learningHref}>{accountCourse?.enrolment ? 'Open course' : 'Complete enrolment'} <ArrowRight /></Link>
-            <small>Your existing course access is used. The course is not added to the purchase basket again.</small>
+            <small>Your existing course access is used. The course is not added to the basket again.</small>
           </> : <>
             <ShoppingBasket />
             <span>Individual course purchase</span>
@@ -111,10 +111,10 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
             <p>Purchase this Sousa Murray course for one named learner. After secure Stripe payment, the learner is enrolled into the Sousa Murray LMS using the personal details provided during checkout.</p>
             {pricing?.accessLabel && <strong>{pricing.accessLabel}</strong>}
             <button type="button" className="plcp-primary" onClick={buyNow}>Buy now <ArrowRight /></button>
-            <button type="button" className="plcp-secondary" onClick={add} disabled={inBasket}>{inBasket ? 'Added to course basket' : 'Add to course basket'} <ShoppingBasket /></button>
+            <button type="button" className="plcp-secondary" onClick={add} disabled={inBasket}>{inBasket ? 'Added to basket' : 'Add to basket'} <ShoppingBasket /></button>
             {course.slug === TRIAL_COURSE_SLUG && <Link className="plcp-trial-link" to={`/lms/course/${course.slug}`}>Free 7-day trial <ArrowRight /></Link>}
             <Link className="plcp-plan-link" to="/plans">Buy a Learning Library plan <ArrowRight /></Link>
-            <small>Plans are purchased separately. They are never added to the course basket.</small>
+            <small>Plans are purchased separately and are never basket items.</small>
           </>}
         </aside>
       </div>
@@ -133,6 +133,6 @@ export default function PublicLibraryCoursePage({ slug }: { slug: string }) {
       </aside>
     </div></section>
 
-    <section className="plcp-journey"><div className="lp-container"><span className="plcp-kicker">What happens after purchase</span><h2>From Stripe checkout to your course</h2><div className="plcp-steps"><article><b>1</b><h3>Choose the course</h3><p>Add one or more Sousa Murray courses to the dedicated course basket. Plans remain a separate purchase route.</p></article><article><b>2</b><h3>Provide learner details</h3><p>Enter the learner's legal first name, legal last name and enrolment email so the correct learning record can be created.</p></article><article><b>3</b><h3>Secure payment</h3><p>Complete the order through JA Group Services Central Payments and Stripe Checkout.</p></article><article><b>4</b><h3>Automatic enrolment</h3><p>After Central Payments confirms the payment, Sousa Murray eLearning creates the course entitlement and LMS enrolment.</p></article><article><b>5</b><h3>Start inside the LMS</h3><p>The course appears in My Sousa Murray eLearning. Start Course opens the lesson player directly, not this public information page.</p></article></div></div></section>
+    <section className="plcp-journey"><div className="lp-container"><span className="plcp-kicker">What happens after purchase</span><h2>From basket to your course</h2><div className="plcp-steps"><article><b>1</b><h3>Choose your training</h3><p>Add Sousa Murray courses and, where required, Highfield Online Training courses to the same website basket.</p></article><article><b>2</b><h3>Provide learner details</h3><p>Enter the learner information needed for each course family so the correct learning records can be created.</p></article><article><b>3</b><h3>One secure payment</h3><p>Complete the complete individual-course basket through JA Group Services Central Payments and Stripe Checkout.</p></article><article><b>4</b><h3>Correct enrolment route</h3><p>Sousa Murray courses are enrolled into the Sousa Murray LMS. Highfield courses continue through the Highfield enrolment workflow.</p></article><article><b>5</b><h3>Start learning</h3><p>Sousa Murray courses appear in My Sousa Murray eLearning and open directly into the LMS lesson player.</p></article></div></div></section>
   </main>;
 }
