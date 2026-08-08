@@ -58,11 +58,18 @@ type CertificateRow = {
 
 type StandaloneEntitlementRow = {
   id: string;
+  account_id: string;
   course_slug: string;
   course_code: string;
   course_version: string;
   source: 'free_trial' | 'individual_purchase' | 'manual';
   status: string;
+  product_code: string | null;
+  price_code: string | null;
+  central_payment_reference: string | null;
+  stripe_customer_id: string | null;
+  stripe_checkout_session_id: string | null;
+  claimed_at: string;
   starts_at: string;
   expires_at: string | null;
   revoked_at: string | null;
@@ -80,6 +87,8 @@ function courseSummary(course: (typeof libraryCourses)[number], accessSource: st
     level: course.level,
     version: course.version,
     durationMinutes: courseDuration(course),
+    durationWeeks: course.studyPlan?.durationWeeks ?? null,
+    totalStudyHours: course.studyPlan?.totalQualificationTimeHours ?? null,
     modules: course.modules.length,
     lessons: course.modules.reduce((total, module) => total + module.lessons.length, 0),
     source: 'Sousa Murray Learning Library',
@@ -87,6 +96,56 @@ function courseSummary(course: (typeof libraryCourses)[number], accessSource: st
     accessSource,
     accessExpiresAt,
   };
+}
+
+async function migrateLegacyStandaloneEntitlements(db: D1Database, accountId: string, rows: StandaloneEntitlementRow[]) {
+  for (const legacy of rows) {
+    const programme = findLibraryCourse(legacy.course_slug);
+    if (!programme || programme.slug === legacy.course_slug) continue;
+
+    const migratedId = `${legacy.id}:programme:${programme.code}`;
+    await db.prepare(`INSERT INTO lms_course_entitlements (
+        id,account_id,course_slug,course_code,course_version,source,status,
+        product_code,price_code,central_payment_reference,stripe_customer_id,
+        stripe_checkout_session_id,claimed_at,starts_at,expires_at,revoked_at,created_at,updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(account_id,course_slug,source) DO UPDATE SET
+        course_code=excluded.course_code,
+        course_version=excluded.course_version,
+        status=CASE WHEN lms_course_entitlements.revoked_at IS NULL THEN excluded.status ELSE lms_course_entitlements.status END,
+        product_code=COALESCE(excluded.product_code,lms_course_entitlements.product_code),
+        price_code=COALESCE(excluded.price_code,lms_course_entitlements.price_code),
+        central_payment_reference=COALESCE(excluded.central_payment_reference,lms_course_entitlements.central_payment_reference),
+        stripe_customer_id=COALESCE(excluded.stripe_customer_id,lms_course_entitlements.stripe_customer_id),
+        stripe_checkout_session_id=COALESCE(excluded.stripe_checkout_session_id,lms_course_entitlements.stripe_checkout_session_id),
+        claimed_at=MIN(lms_course_entitlements.claimed_at,excluded.claimed_at),
+        starts_at=MIN(lms_course_entitlements.starts_at,excluded.starts_at),
+        expires_at=CASE
+          WHEN lms_course_entitlements.expires_at IS NULL THEN excluded.expires_at
+          WHEN excluded.expires_at IS NULL THEN lms_course_entitlements.expires_at
+          ELSE MAX(lms_course_entitlements.expires_at,excluded.expires_at)
+        END,
+        updated_at=CURRENT_TIMESTAMP`)
+      .bind(
+        migratedId,
+        accountId,
+        programme.slug,
+        programme.code,
+        programme.version,
+        legacy.source,
+        legacy.status,
+        legacy.product_code,
+        legacy.price_code,
+        legacy.central_payment_reference,
+        legacy.stripe_customer_id,
+        legacy.stripe_checkout_session_id,
+        legacy.claimed_at,
+        legacy.starts_at,
+        legacy.expires_at,
+        legacy.revoked_at,
+        legacy.created_at,
+      ).run();
+  }
 }
 
 export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, env }) => {
@@ -105,9 +164,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
         const existingTrial = await courseEntitlement(env.DB, access.session.accountId, trialCourse.slug, trialCourse.version);
         if (!existingTrial) {
           const completedTrial = await centralCourseTrialCheckout(centralEnv, identityProfile);
-          if (completedTrial) {
-            await recordFreeTrialEntitlement(env.DB, access.session.accountId, trialCourse, completedTrial);
-          }
+          if (completedTrial) await recordFreeTrialEntitlement(env.DB, access.session.accountId, trialCourse, completedTrial);
         }
       }
     } catch (error) {
@@ -127,6 +184,16 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   const planTier = subscription ? learningPlanTier(subscription.plan_id) : null;
   const ownedByUser = Boolean(subscription && subscription.account_id === access.session.accountId);
 
+  const initialStandalone = await env.DB.prepare(`
+    SELECT id,account_id,course_slug,course_code,course_version,source,status,
+           product_code,price_code,central_payment_reference,stripe_customer_id,
+           stripe_checkout_session_id,claimed_at,starts_at,expires_at,revoked_at,created_at,updated_at
+    FROM lms_course_entitlements
+    WHERE account_id=?
+    ORDER BY updated_at DESC
+  `).bind(access.session.accountId).all<StandaloneEntitlementRow>();
+  await migrateLegacyStandaloneEntitlements(env.DB, access.session.accountId, initialStandalone.results ?? []);
+
   const [enrolmentResult, certificateResult, standaloneResult] = await Promise.all([
     env.DB.prepare(`
       SELECT id, course_slug, course_code, course_version, status,
@@ -145,8 +212,9 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       ORDER BY issued_at DESC
     `).bind(access.session.accountId).all<CertificateRow>(),
     env.DB.prepare(`
-      SELECT id,course_slug,course_code,course_version,source,status,
-             starts_at,expires_at,revoked_at,created_at,updated_at
+      SELECT id,account_id,course_slug,course_code,course_version,source,status,
+             product_code,price_code,central_payment_reference,stripe_customer_id,
+             stripe_checkout_session_id,claimed_at,starts_at,expires_at,revoked_at,created_at,updated_at
       FROM lms_course_entitlements
       WHERE account_id=?
       ORDER BY updated_at DESC
@@ -154,9 +222,7 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   ]);
 
   const activeStandalone = (standaloneResult.results ?? []).filter((item) => (
-    item.status === 'active'
-    && !item.revoked_at
-    && (!item.expires_at || Date.parse(item.expires_at) > Date.now())
+    item.status === 'active' && !item.revoked_at && (!item.expires_at || Date.parse(item.expires_at) > Date.now())
   ));
 
   const courseMap = new Map<string, ReturnType<typeof courseSummary>>();
@@ -166,24 +232,27 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     }
   }
   for (const entitlement of activeStandalone) {
-    const course = libraryCourses.find((item) => item.slug === entitlement.course_slug && item.version === entitlement.course_version)
-      ?? libraryCourses.find((item) => item.slug === entitlement.course_slug);
+    const course = findLibraryCourse(entitlement.course_slug);
     if (!course) continue;
     courseMap.set(course.slug, courseSummary(course, entitlement.source, entitlement.expires_at));
   }
 
   const enrolments = enrolmentResult.results ?? [];
   const enrolledSlugs = new Set(enrolments.map((item) => item.course_slug));
-  const standaloneAccess = activeStandalone.map((item) => ({
-    id: item.id,
-    courseSlug: item.course_slug,
-    courseCode: item.course_code,
-    courseVersion: item.course_version,
-    source: item.source,
-    startsAt: item.starts_at,
-    expiresAt: item.expires_at,
-    enrolled: enrolledSlugs.has(item.course_slug),
-  }));
+  const standaloneAccess = activeStandalone.flatMap((item) => {
+    const course = findLibraryCourse(item.course_slug);
+    if (!course || course.slug !== item.course_slug) return [];
+    return [{
+      id: item.id,
+      courseSlug: course.slug,
+      courseCode: course.code,
+      courseVersion: course.version,
+      source: item.source,
+      startsAt: item.starts_at,
+      expiresAt: item.expires_at,
+      enrolled: enrolledSlugs.has(course.slug),
+    }];
+  });
 
   return Response.json({
     configured: true,
@@ -214,8 +283,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
       } : null,
     },
     courseAccess: {
-      activeStandaloneCount: activeStandalone.length,
-      hasAnyAccess: hasAccess || activeStandalone.length > 0,
+      activeStandaloneCount: standaloneAccess.length,
+      hasAnyAccess: hasAccess || standaloneAccess.length > 0,
       standalone: standaloneAccess,
     },
     courses: [...courseMap.values()],
