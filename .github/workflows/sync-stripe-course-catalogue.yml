@@ -1,5 +1,8 @@
 name: Sync Stripe course catalogue
 
+# The catalogue source remains in the eLearning repository; this workflow asks
+# the production server-side sync route to reconcile it into Central Payments
+# and the approved live Stripe Product Catalogue after catalogue changes.
 on:
   workflow_dispatch:
   push:
