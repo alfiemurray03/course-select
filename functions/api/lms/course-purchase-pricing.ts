@@ -22,6 +22,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   if (!centralPaymentsConfigured(centralEnv)) {
     return Response.json({
       configured: false,
+      checkoutConfigured: false,
+      accessConfigured: false,
       accessDays: null,
       accessLabel: null,
       items: courses.map((course) => ({ courseSlug: course!.slug, courseCode: course!.code, configured: false, grossPence: null, netPence: null, vatPence: null, currency: 'GBP' })),
@@ -34,8 +36,11 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
     const byCode = new Map(pricing.items.map((item) => [item.courseCode, item]));
     return Response.json({
       configured: pricing.configured,
+      checkoutConfigured: pricing.checkoutConfigured ?? false,
+      accessConfigured: pricing.accessConfigured ?? false,
       accessDays: pricing.accessDays,
       accessLabel: pricing.accessLabel,
+      pricingModel: pricing.pricingModel ?? null,
       items: courses.map((course) => {
         const price = byCode.get(course!.code);
         return {
@@ -52,6 +57,8 @@ export const onRequestGet: PagesFunction<ProductionLmsEnv> = async ({ request, e
   } catch (error) {
     return Response.json({
       configured: false,
+      checkoutConfigured: false,
+      accessConfigured: false,
       accessDays: null,
       accessLabel: null,
       items: courses.map((course) => ({ courseSlug: course!.slug, courseCode: course!.code, configured: false, grossPence: null, netPence: null, vatPence: null, currency: 'GBP' })),
